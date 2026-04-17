@@ -1,0 +1,129 @@
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { authApi } from "../api/endpoints";
+import { setLogoutListener } from "../api/client";
+import { extractApiData, isApiSuccess } from "../api/response";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: "student" | "teacher" | "admin";
+  phone?: string;
+  profile_picture?: string;
+  created_at: string;
+}
+
+interface AuthContextType {
+  user: User | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (token: string, user: User) => Promise<void>;
+  logout: () => Promise<void>;
+  updateUser: (user: User) => void;
+}
+
+// ─── Context ──────────────────────────────────────────────────────────────────
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // ── Hydrate session from AsyncStorage on app start ──────────────────────
+  useEffect(() => {
+    const hydrate = async () => {
+      try {
+        const storedToken = await AsyncStorage.getItem("auth_token");
+        if (!storedToken) return;
+
+        setToken(storedToken);
+
+        // Validate token by hitting /auth/me
+        const res = await authApi.me();
+        const payload = res.data;
+        if (isApiSuccess(payload)) {
+          const me = extractApiData<User | null>(payload, null);
+          if (me) {
+            const normalizedMe =
+              !me.id && (me as any)._id
+                ? ({ ...(me as any), id: (me as any)._id } as User)
+                : me;
+
+            setUser(normalizedMe);
+          } else {
+            await AsyncStorage.removeItem("auth_token");
+            setToken(null);
+          }
+        } else {
+          await AsyncStorage.removeItem("auth_token");
+          setToken(null);
+        }
+      } catch {
+        // Token invalid – clear it silently
+        await AsyncStorage.removeItem("auth_token");
+        setToken(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    hydrate();
+
+    // Register the global 401 logout listener for the axios interceptor
+    setLogoutListener(async () => {
+      await AsyncStorage.removeItem("auth_token");
+      setToken(null);
+      setUser(null);
+    });
+  }, []);
+
+  // ── Actions ──────────────────────────────────────────────────────────────
+  const login = async (newToken: string, userData: User) => {
+    await AsyncStorage.setItem("auth_token", newToken);
+    setToken(newToken);
+    setUser(userData);
+  };
+
+  const logout = async () => {
+    await AsyncStorage.removeItem("auth_token");
+    setToken(null);
+    setUser(null);
+  };
+
+  const updateUser = (userData: User) => setUser(userData);
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        isAuthenticated: !!user,
+        isLoading,
+        login,
+        logout,
+        updateUser,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+// ─── Hook ─────────────────────────────────────────────────────────────────────
+export const useAuth = (): AuthContextType => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within <AuthProvider>");
+  return ctx;
+};
