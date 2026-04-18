@@ -16,7 +16,8 @@ export const authApi = {
 export const coursesApi = {
   list: () => client.get("/courses"),                                         // GET /courses (public)
   detail: (slug: string) => client.get(`/courses/${slug}`),                  // GET /courses/:slug
-  teacherCourses: () => client.get("/courses/teacher"),                      // GET /courses/teacher (teacher)
+  teacherCourses: () => client.get("/courses/teacher/my"),                   // GET /courses/teacher/my (teacher/admin)
+  adminAll: () => client.get("/courses/admin/all"),                          // GET /courses/admin/all (admin)
   create: (data: any) => client.post("/courses", data),                      // POST /courses
   update: (id: string, data: any) => client.put(`/courses/${id}`, data),     // PUT /courses/:id
   delete: (id: string) => client.delete(`/courses/${id}`),                   // DELETE /courses/:id
@@ -47,7 +48,8 @@ export const enrollmentsApi = {
 // ─── 4. LESSONS ───────────────────────────────────────────────────────────────
 // Exact backend routes from lessonRoutes.js
 export const lessonsApi = {
-  detail: (id: string) => client.get(`/lessons/${id}`),                      // GET /lessons/:id
+  byCourse: (courseId: string) => client.get(`/lessons/course/${courseId}`), // GET /lessons/course/:courseId
+  latestByCourse: (courseId: string) => client.get(`/lessons/course/${courseId}/latest`), // GET /lessons/course/:courseId/latest
   create: (data: any) => client.post("/lessons", data),                      // POST /lessons
   update: (id: string, data: any) => client.put(`/lessons/${id}`, data),    // PUT /lessons/:id
   delete: (id: string) => client.delete(`/lessons/${id}`),                  // DELETE /lessons/:id
@@ -59,6 +61,7 @@ export const assignmentsApi = {
   myAssignments: () => client.get("/assignments/my-assignments"),            // GET /assignments/my-assignments ← was /my (wrong!)
   mySubmissions: () => client.get("/assignments/submissions/me"),            // GET /assignments/submissions/me
   byCourse: (courseId: string) => client.get(`/assignments/course/${courseId}`), // GET /assignments/course/:courseId
+  submissionsByAssignment: (id: string) => client.get(`/assignments/${id}/submissions`), // GET /assignments/:id/submissions
   create: (data: any) => client.post("/assignments", data),                  // POST /assignments
   update: (id: string, data: any) => client.put(`/assignments/${id}`, data),// PUT /assignments/:id
   delete: (id: string) => client.delete(`/assignments/${id}`),              // DELETE /assignments/:id

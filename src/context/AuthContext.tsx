@@ -34,6 +34,17 @@ interface AuthContextType {
 // ─── Context ──────────────────────────────────────────────────────────────────
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const normalizeUser = (raw: any): User => {
+  const email = String(raw?.email || "");
+  const fallbackNameFromEmail = email.includes("@") ? email.split("@")[0] : "Student";
+
+  return {
+    ...raw,
+    id: String(raw?.id || raw?._id || ""),
+    name: String(raw?.name || raw?.full_name || raw?.username || fallbackNameFromEmail),
+  } as User;
+};
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
@@ -56,12 +67,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         if (isApiSuccess(payload)) {
           const me = extractApiData<User | null>(payload, null);
           if (me) {
-            const normalizedMe =
-              !me.id && (me as any)._id
-                ? ({ ...(me as any), id: (me as any)._id } as User)
-                : me;
-
-            setUser(normalizedMe);
+            setUser(normalizeUser(me));
           } else {
             await AsyncStorage.removeItem("auth_token");
             setToken(null);
@@ -93,7 +99,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const login = async (newToken: string, userData: User) => {
     await AsyncStorage.setItem("auth_token", newToken);
     setToken(newToken);
-    setUser(userData);
+    setUser(normalizeUser(userData));
   };
 
   const logout = async () => {
@@ -102,7 +108,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setUser(null);
   };
 
-  const updateUser = (userData: User) => setUser(userData);
+  const updateUser = (userData: User) => setUser(normalizeUser(userData));
 
   return (
     <AuthContext.Provider

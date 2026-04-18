@@ -6,8 +6,9 @@ import {
   Platform,
   ScrollView,
   Alert,
+  TouchableOpacity,
 } from "react-native";
-import { Mail, Lock, User, Phone, GraduationCap } from "lucide-react-native";
+import { Mail, Lock, User, Phone, GraduationCap, ArrowRight } from "lucide-react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "../../context/AuthContext";
 import { authApi } from "../../api/endpoints";
@@ -77,18 +78,41 @@ export default function SignupScreen({ navigation }: Props) {
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <View className="h-48 bg-blue-900 justify-end pb-8 px-6 rounded-b-[40px] overflow-hidden">
-             <View className="absolute inset-0 bg-blue-900/60" />
-            <Text className="text-white text-3xl font-bold leading-tight relative z-10">
-              Create Account
+          {/* Header Area with decorative elements */}
+          <View className="h-60 bg-blue-600 justify-end pb-10 px-6 rounded-b-[48px] overflow-hidden">
+             {/* Decorative background shapes */}
+             <View 
+                className="absolute -top-10 -left-10 w-40 h-40 bg-blue-500 rounded-full opacity-30" 
+                style={{ transform: [{ scale: 1.5 }] }}
+              />
+              <View 
+                className="absolute bottom-10 -right-10 w-24 h-24 bg-blue-400 rounded-full opacity-20" 
+              />
+
+            <View className="flex-row items-center gap-2 mb-4 relative z-10">
+              <View className="bg-white/20 p-2 rounded-xl">
+                <GraduationCap size={24} color="#FFF" />
+              </View>
+              <Text className="text-white font-bold text-xl tracking-tight">
+                CodeCure
+              </Text>
+            </View>
+            <Text className="text-white text-4xl font-extrabold leading-tight relative z-10">
+              Create{"\n"}Account
             </Text>
-            <Text className="text-blue-100 font-medium mt-1 relative z-10">
+            <Text className="text-blue-100/80 font-medium mt-2 text-base relative z-10">
               Join thousands of learners today
             </Text>
           </View>
 
-          <View className="px-6 pt-8 pb-8 flex-1">
+          <View className="px-6 pt-10 pb-8 flex-1">
+            <View className="space-y-1 mb-6">
+              <Text className="text-slate-900 text-2xl font-bold">Register</Text>
+              <Text className="text-slate-500 font-medium">Step up your coding journey</Text>
+            </View>
+
             <Input
               label="Full Name"
               placeholder="e.g. John Doe"
@@ -130,18 +154,18 @@ export default function SignupScreen({ navigation }: Props) {
               onPress={handleSignup}
               isLoading={isLoading}
               className="mt-4"
+              leftIcon={<ArrowRight size={20} color="white" />}
             />
 
-            <View className="flex-row justify-center mt-8">
-              <Text className="text-slate-500 font-medium">
+            <View className="flex-row justify-center mt-8 pb-4">
+              <Text className="text-slate-500 font-medium text-base">
                 Already have an account?{" "}
               </Text>
-              <Text
-                className="text-blue-600 font-bold"
-                onPress={() => navigation.navigate("Login")}
-              >
-                Sign in
-              </Text>
+              <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+                <Text className="text-blue-600 font-bold text-base">
+                  Sign in
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         </ScrollView>

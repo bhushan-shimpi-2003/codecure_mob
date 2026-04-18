@@ -1,14 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, RefreshControl, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView, RefreshControl, TouchableOpacity, useWindowDimensions } from "react-native";
 import { useAuth } from "../../context/AuthContext";
 import { enrollmentsApi } from "../../api/endpoints";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
-import { BookOpen, Trophy, Clock } from "lucide-react-native";
+import { BookOpen, Trophy, Clock, ClipboardList, Video, Sparkles } from "lucide-react-native";
 import { Skeleton } from "../../components/Skeleton";
 import { COLORS } from "../../utils/theme";
 import { extractApiData, isApiSuccess } from "../../api/response";
+import { StudentScreenHeader } from "../../components/StudentScreenHeader";
+import { StudentStatCard } from "../../components/StudentStatCard";
 
 export default function DashboardScreen({ navigation }: any) {
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
+  const horizontalPadding = isTablet ? 30 : 24;
+  const shellMaxWidth = isTablet ? 980 : undefined;
+
   const { user } = useAuth();
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,79 +46,105 @@ export default function DashboardScreen({ navigation }: any) {
     fetchDashboardData();
   };
 
+  const completionAvg =
+    enrollments.length > 0
+      ? Math.round(
+          enrollments.reduce((sum, item) => sum + Number(item?.progress || 0), 0) / enrollments.length
+        )
+      : 0;
+
+  const firstName = user?.name?.split(" ")[0] || "Learner";
+
   return (
     <SafeAreaWrapper>
       <ScrollView
-        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+        className="flex-1"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        contentContainerStyle={{ paddingBottom: isTablet ? 34 : 24 }}
       >
-        <View className="mb-8">
-          <Text className="text-2xl font-bold text-slate-900 mb-1">
-            Hi, {user?.name?.split(" ")[0]}! 👋
-          </Text>
-          <Text className="text-slate-500 font-medium">Ready to learn today?</Text>
-        </View>
+        <View style={{ width: "100%", maxWidth: shellMaxWidth, alignSelf: "center" }}>
+          <StudentScreenHeader
+            badge="Student Workspace"
+            title={`Welcome, ${firstName}`}
+            subtitle="Track progress, continue your courses, and stay interview-ready"
+            actionIcon={<Sparkles size={20} color="white" />}
+            onActionPress={() => navigation.navigate("Courses")}
+          />
 
-        {/* Stats Row */}
-        <View className="flex-row justify-between mb-8">
-          {[
-            { label: "Enrolled", value: enrollments.length || 0, icon: BookOpen, color: "text-blue-600", bg: "bg-blue-100" },
-            { label: "Completed", value: 0, icon: Trophy, color: "text-amber-500", bg: "bg-amber-100" },
-            { label: "Hours", value: 0, icon: Clock, color: "text-emerald-500", bg: "bg-emerald-100" },
-          ].map((stat, idx) => (
-            <TouchableOpacity 
-              key={idx} 
-              onPress={() => idx === 1 ? navigation.navigate("MockInterviews") : null}
-              className="bg-white flex-1 mx-1.5 p-4 rounded-3xl items-center shadow-sm border border-slate-100"
-            >
-              <View className={`${stat.bg} p-2 rounded-full mb-2`}>
-                <stat.icon size={20} className={stat.color} />
+          <View style={{ paddingHorizontal: horizontalPadding }} className="pt-1 pb-2 flex-row flex-wrap justify-between">
+            <StudentStatCard label="Enrolled" value={enrollments.length || 0} Icon={BookOpen} tone="blue" />
+            <StudentStatCard label="Progress" value={`${completionAvg}%`} Icon={Trophy} tone="amber" />
+            <StudentStatCard label="Live Track" value={enrollments.length > 0 ? "On" : "Off"} Icon={Clock} tone="emerald" />
+          </View>
+
+          <View style={{ paddingHorizontal: horizontalPadding, paddingTop: 10 }}>
+            <Text className="text-sm font-black text-slate-500 uppercase tracking-wider mb-3">Quick Access</Text>
+            <View className="flex-row gap-3 mb-7">
+              <TouchableOpacity
+                onPress={() => navigation.navigate("Assignments")}
+                className="flex-1 bg-slate-900 p-4 rounded-3xl items-center"
+              >
+                <ClipboardList size={20} color="white" />
+                <Text className="text-white font-bold text-xs uppercase mt-2">Assignments</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => navigation.navigate("MockInterviews")}
+                className="flex-1 bg-blue-600 p-4 rounded-3xl items-center"
+              >
+                <Video size={20} color="white" />
+                <Text className="text-white font-bold text-xs uppercase mt-2">Interviews</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text className="text-sm font-black text-slate-500 uppercase tracking-wider mb-3">My Learning Path</Text>
+
+            {isLoading ? (
+              <View className="gap-4">
+                <Skeleton height={140} className="rounded-3xl" />
+                <Skeleton height={140} className="rounded-3xl" />
               </View>
-              <Text className="text-2xl font-black text-slate-900">{stat.value}</Text>
-              <Text className="text-xs font-semibold text-slate-500">{stat.label}</Text>
-            </TouchableOpacity>
-          ))}
+            ) : enrollments.length === 0 ? (
+              <View className="bg-white p-8 rounded-3xl border border-slate-100 items-center justify-center">
+                <BookOpen size={42} color={COLORS.slate300} />
+                <Text className="text-slate-600 font-semibold mt-4 text-center">
+                  You have no active enrollments yet. Explore courses to begin.
+                </Text>
+              </View>
+            ) : (
+              enrollments.map((enr, i) => {
+                const courseRef = enr?.courses || enr?.course;
+                const enrollmentId = enr?.id || enr?._id || i;
+
+                return (
+                  <TouchableOpacity
+                    key={enrollmentId}
+                    onPress={() => {
+                      const idOrSlug = courseRef?.slug || courseRef?.id || courseRef?._id;
+                      if (idOrSlug) {
+                        navigation.navigate("CourseDetail", { idOrSlug, isEnrolled: true });
+                      }
+                    }}
+                    className="bg-white p-5 rounded-3xl mb-4 border border-slate-100 shadow-sm"
+                  >
+                    <Text className="font-black text-slate-900 text-base" numberOfLines={1}>
+                      {courseRef?.title || "Enrolled Course"}
+                    </Text>
+                    <Text className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mt-1">Continue where you left off</Text>
+
+                    <View className="w-full bg-slate-100 h-2 rounded-full mt-4 overflow-hidden">
+                      <View className="bg-blue-600 h-full" style={{ width: `${enr.progress || 0}%` }} />
+                    </View>
+
+                    <View className="flex-row items-center justify-between mt-3">
+                      <Text className="text-xs text-slate-500 font-bold">{enr.progress || 0}% complete</Text>
+                      <Text className="text-xs text-blue-600 font-black uppercase">Open course</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })
+            )}
+          </View>
         </View>
-
-        <Text className="text-lg font-bold text-slate-900 mb-4">My Learning</Text>
-
-        {isLoading ? (
-          <View className="gap-4">
-            <Skeleton height={140} className="rounded-3xl" />
-            <Skeleton height={140} className="rounded-3xl" />
-          </View>
-        ) : enrollments.length === 0 ? (
-          <View className="bg-white p-8 rounded-3xl border border-slate-100 items-center justify-center">
-             <BookOpen size={48} color={COLORS.slate300} />
-             <Text className="text-slate-600 font-medium mt-4 text-center">
-               You haven't enrolled in any courses yet.
-             </Text>
-          </View>
-        ) : (
-          enrollments.map((enr, i) => {
-            const courseRef = enr?.courses || enr?.course;
-            const enrollmentId = enr?.id || enr?._id || i;
-
-            return (
-            <TouchableOpacity 
-              key={enrollmentId} 
-              onPress={() => courseRef?.slug && navigation.navigate("CourseDetail", { slug: courseRef.slug })}
-              className="bg-white p-4 rounded-3xl mb-4 border border-slate-100 shadow-sm flex-row"
-            >
-               <View className="w-20 h-20 bg-slate-100 rounded-2xl mr-4" />
-               <View className="flex-1 justify-center">
-                  <Text className="font-bold text-slate-900 text-base" numberOfLines={2}>
-                    {courseRef?.title || "Enrolled Course"}
-                  </Text>
-                  <View className="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
-                    <View className="bg-blue-600 h-full" style={{ width: `${enr.progress || 0}%` }} />
-                  </View>
-                  <Text className="text-xs text-slate-500 font-semibold mt-1">{enr.progress || 0}% Complete</Text>
-               </View>
-            </TouchableOpacity>
-          );
-          })
-        )}
       </ScrollView>
     </SafeAreaWrapper>
   );

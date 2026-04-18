@@ -16,7 +16,7 @@ import { COLORS } from "../../utils/theme";
 import { Skeleton } from "../../components/Skeleton";
 import { extractApiData } from "../../api/response";
 
-export default function AdminDashboardScreen() {
+export default function AdminDashboardScreen({ navigation }: any) {
   const [stats, setStats] = useState({
     totalStudents: 0,
     totalStaff: 0,
@@ -78,10 +78,10 @@ export default function AdminDashboardScreen() {
   }, []);
 
   const adminActions = [
-    { label: "Manage Faculty", icon: Briefcase, color: "text-blue-600", bg: "bg-blue-50" },
-    { label: "Student Records", icon: UserCheck, color: "text-emerald-600", bg: "bg-emerald-50" },
-    { label: "Transactions", icon: CreditCard, color: "text-amber-600", bg: "bg-amber-50" },
-    { label: "System Settings", icon: Settings, color: "text-slate-600", bg: "bg-slate-50" },
+    { label: "Manage Faculty", icon: Briefcase, color: "text-blue-600", bg: "bg-blue-50", route: "AdminStaff" },
+    { label: "Enrollment Requests", icon: UserCheck, color: "text-emerald-600", bg: "bg-emerald-50", route: "AdminEnrollments" },
+    { label: "Content Oversight", icon: BarChart3, color: "text-purple-600", bg: "bg-purple-50", route: "AdminContent" },
+    { label: "Platform Pulse", icon: Settings, color: "text-slate-600", bg: "bg-slate-50", route: "AdminPulse" },
   ];
 
   return (
@@ -125,6 +125,7 @@ export default function AdminDashboardScreen() {
           {adminActions.map((action, i) => (
             <TouchableOpacity 
               key={i}
+              onPress={() => navigation.navigate(action.route)}
               className={`flex-row items-center p-5 ${i !== adminActions.length - 1 ? 'border-b border-slate-50' : ''}`}
             >
               <View className={`${action.bg} p-2 rounded-xl mr-4`}>

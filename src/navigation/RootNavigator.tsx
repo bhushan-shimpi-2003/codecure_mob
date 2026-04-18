@@ -5,13 +5,14 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from "../context/AuthContext";
 import AuthNavigator from "./AuthNavigator";
 import MainNavigator from "./MainNavigator";
+import TeacherMainNavigator from "./TeacherMainNavigator";
+import AdminMainNavigator from "./AdminMainNavigator";
 import CourseDetailScreen from "../screens/shared/CourseDetailScreen";
 import LessonScreen from "../screens/student/LessonScreen";
 import AssignmentsScreen from "../screens/student/AssignmentsScreen";
-import DoubtsScreen from "../screens/student/DoubtsScreen";
 import MockInterviewsScreen from "../screens/student/MockInterviewsScreen";
-import AdminDashboardScreen from "../screens/admin/AdminDashboardScreen";
-import TeacherDashboardScreen from "../screens/teacher/TeacherDashboardScreen";
+import TeacherDoubtsScreen from "../screens/teacher/TeacherDoubtsScreen";
+import TeacherAssignmentsScreen from "../screens/teacher/TeacherAssignmentsScreen";
 import EditProfileScreen from "../screens/shared/EditProfileScreen";
 import { COLORS } from "../utils/theme";
 
@@ -37,9 +38,9 @@ export default function RootNavigator() {
           <>
             {/* Conditional Entry based on Role */}
             {user?.role === "admin" ? (
-              <Stack.Screen name="AdminMain" component={AdminDashboardScreen} />
+              <Stack.Screen name="AdminMain" component={AdminMainNavigator} />
             ) : user?.role === "teacher" ? (
-              <Stack.Screen name="TeacherMain" component={TeacherDashboardScreen} />
+              <Stack.Screen name="TeacherMain" component={TeacherMainNavigator} />
             ) : (
               <Stack.Screen name="StudentMain" component={MainNavigator} />
             )}
@@ -64,6 +65,16 @@ export default function RootNavigator() {
               name="MockInterviews" 
               component={MockInterviewsScreen} 
               options={{ headerShown: true, title: "Mock Interviews" }}
+            />
+            <Stack.Screen
+              name="TeacherDoubts"
+              component={TeacherDoubtsScreen}
+              options={{ headerShown: true, title: "Teacher Doubts" }}
+            />
+            <Stack.Screen
+              name="TeacherAssignments"
+              component={TeacherAssignmentsScreen}
+              options={{ headerShown: true, title: "Teacher Assignments" }}
             />
             <Stack.Screen 
               name="EditProfile" 

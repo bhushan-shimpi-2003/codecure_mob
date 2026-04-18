@@ -7,6 +7,7 @@ import {
   RefreshControl,
   Linking,
   Alert,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
 import { 
@@ -22,8 +23,15 @@ import { Button } from "../../components/Button";
 import { interviewsApi } from "../../api/endpoints";
 import { extractApiData, isApiSuccess } from "../../api/response";
 import { Skeleton } from "../../components/Skeleton";
+import { StudentScreenHeader } from "../../components/StudentScreenHeader";
+import { StudentStatCard } from "../../components/StudentStatCard";
 
 export default function MockInterviewsScreen() {
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
+  const horizontalPadding = isTablet ? 30 : 24;
+  const shellMaxWidth = isTablet ? 980 : undefined;
+
   const [interviews, setInterviews] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -119,76 +127,90 @@ export default function MockInterviewsScreen() {
   return (
     <SafeAreaWrapper>
       <ScrollView
-        contentContainerStyle={{ padding: 24 }}
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: isTablet ? 34 : 24 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <Text className="text-2xl font-black text-slate-900 mb-8">Mock Interviews</Text>
+        <View style={{ width: "100%", maxWidth: shellMaxWidth, alignSelf: "center" }}>
+          <StudentScreenHeader
+            badge="Student Workspace"
+            title="Mock Interviews"
+            subtitle="Practice under pressure and sharpen interview confidence"
+          />
 
-        <View className="mb-8">
-          <Text className="text-sm font-black text-blue-600 uppercase tracking-widest mb-4">Upcoming Session</Text>
-          {isLoading ? (
-            <Skeleton height={180} className="rounded-[32px]" />
-          ) : upcoming ? (
-            <View className="bg-slate-900 p-6 rounded-[32px] shadow-xl">
-              <View className="flex-row justify-between items-start mb-6">
-                <View>
-                  <Text className="text-white text-xl font-black mb-1">{upcoming.title || "Upcoming Mock"}</Text>
-                  <View className="flex-row items-center">
-                    <Calendar size={14} color="rgba(255,255,255,0.6)" />
-                    <Text className="text-white/60 text-xs font-bold ml-1">{formatDate(upcoming.scheduled_at)}</Text>
-                    <View className="w-1 h-1 bg-white/30 rounded-full mx-2" />
-                    <Clock size={14} color="rgba(255,255,255,0.6)" />
-                    <Text className="text-white/60 text-xs font-bold ml-1">{formatTime(upcoming.scheduled_at)}</Text>
+          <View style={{ paddingHorizontal: horizontalPadding }} className="pt-1 pb-2 flex-row flex-wrap justify-between">
+            <StudentStatCard label="Upcoming" value={upcoming ? 1 : 0} Icon={Calendar} tone="blue" />
+            <StudentStatCard label="Completed" value={completed.length} Icon={Award} tone="emerald" />
+          </View>
+
+          <View style={{ paddingHorizontal: horizontalPadding, paddingTop: 12 }}>
+            <View className="mb-8">
+              <Text className="text-sm font-black text-slate-500 uppercase tracking-wider mb-3">Upcoming Session</Text>
+              {isLoading ? (
+                <Skeleton height={180} className="rounded-[32px]" />
+              ) : upcoming ? (
+                <View className="bg-slate-900 p-6 rounded-[32px] shadow-xl">
+                  <View className="flex-row justify-between items-start mb-6">
+                    <View className="flex-1 mr-4">
+                      <Text className="text-white text-xl font-black mb-1">{upcoming.title || "Upcoming Mock"}</Text>
+                      <View className="flex-row items-center">
+                        <Calendar size={14} color="rgba(255,255,255,0.6)" />
+                        <Text className="text-white/60 text-xs font-bold ml-1">{formatDate(upcoming.scheduled_at)}</Text>
+                        <View className="w-1 h-1 bg-white/30 rounded-full mx-2" />
+                        <Clock size={14} color="rgba(255,255,255,0.6)" />
+                        <Text className="text-white/60 text-xs font-bold ml-1">{formatTime(upcoming.scheduled_at)}</Text>
+                      </View>
+                    </View>
+                    <View className="bg-blue-600 p-3 rounded-2xl">
+                      <Video color="white" size={24} />
+                    </View>
                   </View>
+
+                  <Button
+                    title="Join Meeting"
+                    className="bg-white"
+                    textClassName="text-slate-900"
+                    onPress={() => handleJoin(upcoming.meeting_link)}
+                    leftIcon={<ExternalLink size={18} color={COLORS.slate900} />}
+                  />
                 </View>
-                <View className="bg-blue-600 p-3 rounded-2xl">
-                  <Video color="white" size={24} />
+              ) : (
+                <View className="bg-white p-8 rounded-[32px] border border-slate-100 items-center">
+                  <Calendar size={32} color={COLORS.slate300} />
+                  <Text className="text-slate-500 font-bold mt-4">No upcoming sessions scheduled.</Text>
                 </View>
+              )}
+            </View>
+
+            <Text className="text-sm font-black text-slate-500 uppercase tracking-wider mb-3">Past Interviews</Text>
+
+            {completed.map((item, index) => (
+              <View key={String(item?.id || item?._id || index)} className="bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm mb-4 flex-row items-center">
+                <View className="bg-emerald-50 w-14 h-14 rounded-2xl items-center justify-center mr-4">
+                  <Award size={24} color={COLORS.success} />
+                </View>
+                <View className="flex-1">
+                  <Text className="font-bold text-slate-900 text-base">{item.title}</Text>
+                  <Text className="text-xs text-slate-500 font-bold uppercase mt-1">Score: {item?.score ?? "N/A"}/10</Text>
+                </View>
+                <TouchableOpacity className="bg-slate-50 p-2 rounded-xl">
+                  <ChevronRight size={18} color={COLORS.slate300} />
+                </TouchableOpacity>
               </View>
+            ))}
 
-              <Button 
-                title="Join Meeting" 
-                className="bg-white" 
-                textClassName="text-slate-900" 
-                onPress={() => handleJoin(upcoming.meeting_link)}
-                leftIcon={<ExternalLink size={18} color={COLORS.slate900} />}
-              />
-            </View>
-          ) : (
-            <View className="bg-white p-8 rounded-[32px] border border-slate-100 items-center">
+            {!isLoading && completed.length === 0 ? (
+              <View className="bg-white p-6 rounded-[32px] border border-slate-100 mb-4">
+                <Text className="text-slate-500 font-medium text-center">No completed interviews yet.</Text>
+              </View>
+            ) : null}
+
+            <TouchableOpacity className="mt-6 border-2 border-dashed border-slate-200 p-8 rounded-[32px] items-center justify-center bg-white">
               <Calendar size={32} color={COLORS.slate300} />
-              <Text className="text-slate-500 font-bold mt-4">No upcoming sessions scheduled.</Text>
-            </View>
-          )}
+              <Text className="text-slate-500 font-bold mt-4">Your next schedule appears here</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-
-        <Text className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">Past Interviews</Text>
-        
-        {completed.map((item, index) => (
-          <View key={String(item?.id || item?._id || index)} className="bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm mb-4 flex-row items-center">
-             <View className="bg-emerald-50 w-14 h-14 rounded-2xl items-center justify-center mr-4">
-                <Award size={24} color={COLORS.success} />
-             </View>
-             <View className="flex-1">
-                <Text className="font-bold text-slate-900 text-base">{item.title}</Text>
-                <Text className="text-xs text-slate-500 font-bold uppercase mt-1">Score: {item?.score ?? "N/A"}/10</Text>
-             </View>
-             <TouchableOpacity className="bg-slate-50 p-2 rounded-xl">
-               <ChevronRight size={18} color={COLORS.slate300} />
-             </TouchableOpacity>
-          </View>
-        ))}
-
-        {!isLoading && completed.length === 0 && (
-          <View className="bg-white p-6 rounded-[32px] border border-slate-100 mb-4">
-            <Text className="text-slate-500 font-medium text-center">No completed interviews yet.</Text>
-          </View>
-        )}
-
-        <TouchableOpacity className="mt-8 border-2 border-dashed border-slate-200 p-8 rounded-[32px] items-center justify-center">
-          <Calendar size={32} color={COLORS.slate300} />
-          <Text className="text-slate-500 font-bold mt-4">Schedule New Mock Interview</Text>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaWrapper>
   );
