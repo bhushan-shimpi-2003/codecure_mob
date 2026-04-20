@@ -123,3 +123,8 @@ export const adminApi = {
   updateSetting: (key: string, value: string) =>
     client.put(`/admin/settings/${key}`, { value }),                         // PUT /admin/settings/:key
 };
+
+// ─── 9. PUBLIC / JOBS ────────────────────────────────────────────────────────
+export const jobsApi = {
+  list: () => client.get("/jobs"),                                          // GET /jobs
+};

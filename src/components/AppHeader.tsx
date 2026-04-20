@@ -9,6 +9,8 @@ interface AppHeaderProps {
   title?: string;
   subtitle?: string;
   showBack?: boolean;
+  showMenu?: boolean;
+  onMenuPress?: () => void;
   role?: string;
   roleIcon?: any;
 }
@@ -17,6 +19,8 @@ export function AppHeader({
     title = "CodeCure Academy", 
     subtitle, 
     showBack = false, 
+    showMenu = true,
+    onMenuPress,
     role = "Student",
     roleIcon: Icon = GraduationCap 
 }: AppHeaderProps) {
@@ -40,14 +44,15 @@ export function AppHeader({
             >
               <ChevronLeft size={24} color={COLORS.primary} strokeWidth={2.5} />
             </TouchableOpacity>
-          ) : (
+          ) : showMenu ? (
             <TouchableOpacity 
+              onPress={onMenuPress}
               className="mr-3 w-10 h-10 items-center justify-center"
               activeOpacity={0.7}
             >
               <Menu size={24} color={COLORS.primary} strokeWidth={2.5} />
             </TouchableOpacity>
-          )}
+          ) : null}
           
           <View className="flex-row items-center">
             <Text className="text-xl font-black tracking-tighter text-blue-600">CodeCure</Text>

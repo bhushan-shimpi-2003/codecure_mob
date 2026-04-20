@@ -18,7 +18,8 @@ import {
   doubtsApi,
   assignmentsApi,
   coursesApi, 
-  lessonsApi
+  lessonsApi,
+  jobsApi
 } from "../../api/endpoints";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
 import { 
@@ -109,6 +110,8 @@ export default function DashboardScreen({ navigation }: any) {
   const [upcomingEvent, setUpcomingEvent] = useState<any>(null);
   const [activities, setActivities] = useState<any[]>([]);
   const [recommendedCourses, setRecommendedCourses] = useState<any[]>([]);
+  const [pendingAssignments, setPendingAssignments] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
   
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -122,10 +125,11 @@ export default function DashboardScreen({ navigation }: any) {
         interviewsApi.myInterviews(),
         doubtsApi.myDoubts(),
         assignmentsApi.myAssignments(),
-        coursesApi.list()
+        coursesApi.list(),
+        jobsApi.list()
       ]);
 
-      const [enrRes, intRes, dbtRes, asgRes, crsRes] = results;
+      const [enrRes, intRes, dbtRes, asgRes, crsRes, jobRes] = results;
 
         // 1. Enrollments & Last Attended
         if (enrRes.status === "fulfilled" && isApiSuccess(enrRes.value.data)) {
@@ -173,7 +177,7 @@ export default function DashboardScreen({ navigation }: any) {
       // 2. Upcoming Events
       if (intRes.status === "fulfilled" && isApiSuccess(intRes.value.data)) {
         const interviews = extractApiData<any[]>(intRes.value.data, []);
-        const futureEvs = interviews.filter(i => new Date(i.date).getTime() > Date.now());
+        const futureEvs = interviews.filter(i => String(i.status).toLowerCase() !== "completed");
         setUpcomingEvent(futureEvs[0] || null);
       }
 
@@ -202,7 +206,11 @@ export default function DashboardScreen({ navigation }: any) {
       }
 
       if (asgRes.status === "fulfilled" && isApiSuccess(asgRes.value.data)) {
-        const assignments = extractApiData<any[]>(asgRes.value.data, []).slice(0, 2);
+        const assignmentsData = extractApiData<any[]>(asgRes.value.data, []);
+        const pending = assignmentsData.filter(a => !Array.isArray(a.submissions) || a.submissions.length === 0);
+        setPendingAssignments(pending.slice(0, 3));
+
+        const assignments = assignmentsData.slice(0, 2);
         assignments.forEach(a => combined.push({
           title: "New Assignment",
           subtitle: a.title,
@@ -212,6 +220,12 @@ export default function DashboardScreen({ navigation }: any) {
           iconColor: "#6366f1",
           iconBg: "bg-indigo-50"
         }));
+      }
+
+      // 5. Jobs
+      if (jobRes.status === "fulfilled" && isApiSuccess(jobRes.value.data)) {
+        const jobsData = extractApiData<any[]>(jobRes.value.data, []);
+        setJobs(jobsData.slice(0, 3));
       }
 
       combined.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -357,21 +371,91 @@ export default function DashboardScreen({ navigation }: any) {
 
           {upcomingEvent && (
             <View className="mb-10">
-              <Text className="text-lg font-black text-slate-900 mb-4 px-1">Upcoming Events</Text>
+              <View className="flex-row items-center justify-between mb-4 px-1">
+                <Text className="text-lg font-black text-slate-900">Upcoming Mock Interview</Text>
+                <TouchableOpacity onPress={() => navigation.navigate("MockInterviews")}>
+                   <Text className="text-blue-600 font-bold text-xs uppercase">View All</Text>
+                </TouchableOpacity>
+              </View>
               <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate("MockInterviews")}>
-                <LinearGradient colors={["#007991", "#78ffd6"]} className="p-8 rounded-[40px] relative overflow-hidden">
-                  <View className="flex-row items-center mb-3">
-                    <Calendar size={16} color="white" />
-                    <Text className="text-white text-xs font-black uppercase tracking-wider ml-2">
-                        {`Scheduled for ${new Date(upcomingEvent.date).toLocaleDateString()}`}
+                <LinearGradient 
+                   colors={["#004AC6", "#2563EB"]} 
+                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                   className="p-8 rounded-[40px] relative overflow-hidden shadow-xl shadow-blue-500/20"
+                >
+                  <View className="absolute -right-10 -bottom-10 opacity-10">
+                    <Calendar size={180} color="white" />
+                  </View>
+                  <View className="flex-row items-center mb-4">
+                    <View className="bg-white/20 p-2 rounded-xl mr-3">
+                        <Calendar size={16} color="white" />
+                    </View>
+                    <Text className="text-white text-[10px] font-black uppercase tracking-[2px]">
+                        {new Date(upcomingEvent.scheduled_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </Text>
                   </View>
-                  <Text className="text-white text-xl font-black mb-10 leading-tight">{upcomingEvent.title}</Text>
-                  <View className="bg-white rounded-full py-4 items-center">
-                    <Text className="text-slate-900 font-bold text-base">Join Session</Text>
+                  <Text className="text-white text-xl font-black mb-10 leading-tight w-2/3">{upcomingEvent.title}</Text>
+                  <View className="bg-white rounded-2xl py-4 items-center shadow-lg">
+                    <Text className="text-blue-700 font-black text-sm uppercase tracking-widest">Join Meeting</Text>
                   </View>
                 </LinearGradient>
               </TouchableOpacity>
+            </View>
+          )}
+
+          {pendingAssignments.length > 0 && (
+            <View className="mb-10">
+               <View className="flex-row items-center justify-between mb-4 px-1">
+                  <Text className="text-lg font-black text-slate-900">Pending Assignments</Text>
+                  <TouchableOpacity onPress={() => navigation.navigate("Assignments")}>
+                    <Text className="text-blue-600 font-bold text-xs uppercase">All Tasks</Text>
+                  </TouchableOpacity>
+               </View>
+               {pendingAssignments.map((asg, i) => (
+                  <TouchableOpacity 
+                    key={i} 
+                    onPress={() => navigation.navigate("Assignments")}
+                    className="bg-white p-6 rounded-[32px] mb-4 flex-row items-center border border-slate-50 shadow-sm"
+                  >
+                     <View className="w-12 h-12 bg-indigo-50 rounded-2xl items-center justify-center mr-4">
+                        <ClipboardList size={22} color="#4F46E5" />
+                     </View>
+                     <View className="flex-1">
+                        <Text className="font-black text-slate-800 text-[15px]" numberOfLines={1}>{asg.title}</Text>
+                        <Text className="text-slate-400 text-xs font-bold mt-1 uppercase">Due: {asg.due_date ? new Date(asg.due_date).toLocaleDateString() : 'Next Week'}</Text>
+                     </View>
+                     <ChevronRight size={18} color="#CBD5E1" />
+                  </TouchableOpacity>
+               ))}
+            </View>
+          )}
+
+          {jobs.length > 0 && (
+            <View className="mb-10">
+               <Text className="text-lg font-black text-slate-900 mb-4 px-1">Career Opportunities</Text>
+               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 4, paddingRight: 20 }}>
+                  {jobs.map((job, i) => (
+                    <TouchableOpacity 
+                        key={i}
+                        className="bg-white rounded-[40px] p-8 mr-4 border border-slate-100 shadow-xl shadow-slate-200/40"
+                        style={{ width: CARD_WIDTH }}
+                    >
+                        <View className="flex-row justify-between items-start mb-6">
+                            <View className="w-14 h-14 bg-slate-50 rounded-2xl items-center justify-center border border-slate-100">
+                                <Star size={24} color="#F59E0B" fill="#F59E0B" />
+                            </View>
+                            <View className="bg-emerald-50 px-3 py-1 rounded-full">
+                                <Text className="text-emerald-600 text-[10px] font-black uppercase tracking-widest">New</Text>
+                            </View>
+                        </View>
+                        <Text className="text-xl font-black text-slate-900 mb-2 h-14" numberOfLines={2}>{job.title}</Text>
+                        <Text className="text-slate-400 font-bold text-xs mb-8 uppercase tracking-wider">{job.company || 'Tech Solutions'} • {job.location || 'Remote'}</Text>
+                        <TouchableOpacity className="bg-slate-900 py-4 rounded-2xl items-center">
+                            <Text className="text-white font-black text-xs uppercase tracking-widest">Apply Now</Text>
+                        </TouchableOpacity>
+                    </TouchableOpacity>
+                  ))}
+               </ScrollView>
             </View>
           )}
 

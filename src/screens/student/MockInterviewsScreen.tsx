@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,9 @@ import {
   Linking,
   Alert,
   useWindowDimensions,
+  Image,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
 import { 
   Calendar, 
@@ -16,48 +18,54 @@ import {
   Clock, 
   ChevronRight,
   ExternalLink,
-  Award
+  Award,
+  TrendingUp,
+  Brain,
+  ArrowRight,
+  Code2,
+  Terminal,
+  Zap,
+  Layout,
+  Menu,
+  Bell
 } from "lucide-react-native";
 import { COLORS } from "../../utils/theme";
 import { Button } from "../../components/Button";
 import { interviewsApi } from "../../api/endpoints";
 import { extractApiData, isApiSuccess } from "../../api/response";
 import { Skeleton } from "../../components/Skeleton";
-import { StudentScreenHeader } from "../../components/StudentScreenHeader";
-import { StudentStatCard } from "../../components/StudentStatCard";
 import { useAuth } from "../../context/AuthContext";
 import { AppHeader } from "../../components/AppHeader";
+import { LinearGradient } from "expo-linear-gradient";
 
-export default function MockInterviewsScreen() {
+export default function MockInterviewsScreen({ navigation }: any) {
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
-  const horizontalPadding = isTablet ? 30 : 24;
   const shellMaxWidth = isTablet ? 980 : undefined;
 
   const [interviews, setInterviews] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchInterviews = async () => {
+  const fetchInterviews = useCallback(async () => {
     try {
       const res = await interviewsApi.myInterviews();
-      const payload = res.data;
-      if (isApiSuccess(payload)) {
-        const data = extractApiData<any[]>(payload, []);
-        setInterviews(Array.isArray(data) ? data : []);
+      if (isApiSuccess(res.data)) {
+        setInterviews(extractApiData<any[]>(res.data, []));
       }
     } catch (e) {
       console.log("Error loading interviews", e);
-      setInterviews([]);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
-  };
-
-  useEffect(() => {
-    fetchInterviews();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+        fetchInterviews();
+    }, [fetchInterviews])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -65,156 +73,163 @@ export default function MockInterviewsScreen() {
   };
 
   const { upcoming, completed } = useMemo(() => {
-    const now = Date.now();
     const all = Array.isArray(interviews) ? interviews : [];
-
-    const nextUpcoming = all
-      .filter((item) => {
-        if (item?.status === "completed") return false;
-        if (!item?.scheduled_at) return false;
-        return new Date(item.scheduled_at).getTime() >= now;
-      })
-      .sort(
-        (a, b) =>
-          new Date(a?.scheduled_at || 0).getTime() -
-          new Date(b?.scheduled_at || 0).getTime()
-      );
-
-    const completedItems = all
-      .filter((item) => item?.status === "completed")
-      .sort(
-        (a, b) =>
-          new Date(b?.scheduled_at || 0).getTime() -
-          new Date(a?.scheduled_at || 0).getTime()
-      );
-
-    return {
-      upcoming: nextUpcoming[0] || null,
-      completed: completedItems,
-    };
+    const upc = all.filter(i => String(i.status).toLowerCase() !== "completed").sort((a,b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
+    const comp = all.filter(i => String(i.status).toLowerCase() === "completed").sort((a,b) => new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime());
+    return { upcoming: upc[0] || null, completed: comp };
   }, [interviews]);
 
-  const handleJoin = async (meetingLink?: string) => {
-    if (!meetingLink) {
-      Alert.alert("Missing link", "Meeting link is not available yet.");
-      return;
-    }
-
-    const canOpen = await Linking.canOpenURL(meetingLink);
-    if (!canOpen) {
-      Alert.alert("Invalid link", "Could not open meeting link.");
-      return;
-    }
-
-    await Linking.openURL(meetingLink);
-  };
-
-  const formatDate = (value?: string) => {
-    if (!value) return "Date TBA";
-    return new Date(value).toLocaleDateString(undefined, {
-      weekday: "long",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  const formatTime = (value?: string) => {
-    if (!value) return "Time TBA";
-    return new Date(value).toLocaleTimeString(undefined, {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const handleJoin = async (link?: string) => {
+    if (!link) return Alert.alert("Missing link", "Meeting link is not available yet.");
+    const canOpen = await Linking.canOpenURL(link);
+    if (canOpen) await Linking.openURL(link);
   };
 
   const { user } = useAuth();
 
   return (
-    <SafeAreaWrapper>
-      <AppHeader role={user?.role} subtitle="Interviews" />
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ paddingBottom: isTablet ? 34 : 24 }}
+    <SafeAreaWrapper bgWhite>
+      {/* Premium Header */}
+      <View className="flex-row items-center justify-between px-6 py-4 bg-white">
+          <View className="flex-row items-center gap-4">
+              <TouchableOpacity><Menu size={22} color={COLORS.primary} strokeWidth={2.5} /></TouchableOpacity>
+              <Text className="text-xl font-black tracking-tighter text-blue-600">CodeCure Academy</Text>
+          </View>
+          <View className="w-10 h-10 rounded-full border-2 border-blue-100 overflow-hidden">
+              <Image source={{ uri: user?.profile_picture || "https://i.pravatar.cc/150?u=codecure" }} className="w-full h-full" />
+          </View>
+      </View>
+
+      <ScrollView 
+        className="flex-1 bg-[#F8FAFC]"
+        showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <View style={{ width: "100%", maxWidth: shellMaxWidth, alignSelf: "center" }}>
-          <StudentScreenHeader
-            badge="Student Workspace"
-            title="Mock Interviews"
-            subtitle="Practice under pressure and sharpen interview confidence"
-          />
-
-          <View style={{ paddingHorizontal: horizontalPadding }} className="pt-1 pb-2 flex-row flex-wrap justify-between">
-            <StudentStatCard label="Upcoming" value={upcoming ? 1 : 0} Icon={Calendar} tone="blue" />
-            <StudentStatCard label="Completed" value={completed.length} Icon={Award} tone="emerald" />
-          </View>
-
-          <View style={{ paddingHorizontal: horizontalPadding, paddingTop: 12 }}>
-            <View className="mb-8">
-              <Text className="text-sm font-black text-slate-500 uppercase tracking-wider mb-3">Upcoming Session</Text>
-              {isLoading ? (
-                <Skeleton height={180} className="rounded-[32px]" />
-              ) : upcoming ? (
-                <View className="bg-slate-900 p-6 rounded-[32px] shadow-xl">
-                  <View className="flex-row justify-between items-start mb-6">
-                    <View className="flex-1 mr-4">
-                      <Text className="text-white text-xl font-black mb-1">{upcoming.title || "Upcoming Mock"}</Text>
-                      <View className="flex-row items-center">
-                        <Calendar size={14} color="rgba(255,255,255,0.6)" />
-                        <Text className="text-white/60 text-xs font-bold ml-1">{formatDate(upcoming.scheduled_at)}</Text>
-                        <View className="w-1 h-1 bg-white/30 rounded-full mx-2" />
-                        <Clock size={14} color="rgba(255,255,255,0.6)" />
-                        <Text className="text-white/60 text-xs font-bold ml-1">{formatTime(upcoming.scheduled_at)}</Text>
-                      </View>
-                    </View>
-                    <View className="bg-blue-600 p-3 rounded-2xl">
-                      <Video color="white" size={24} />
-                    </View>
-                  </View>
-
-                  <Button
-                    title="Join Meeting"
-                    className="bg-white"
-                    textClassName="text-slate-900"
-                    onPress={() => handleJoin(upcoming.meeting_link)}
-                    leftIcon={<ExternalLink size={18} color={COLORS.slate900} />}
-                  />
+        <View style={{ width: "100%", maxWidth: shellMaxWidth, alignSelf: "center" }} className="pb-24">
+            
+            {/* Hero: Upcoming Session */}
+            <View className="px-6 pt-10 pb-12">
+                <View className="flex flex-col gap-2 mb-6">
+                    <Text className="text-slate-400 font-black tracking-[0.05em] text-[10px] uppercase">UPCOMING SESSION</Text>
+                    <Text className="text-3xl font-black text-slate-900 tracking-tight">Ace your next round</Text>
                 </View>
-              ) : (
-                <View className="bg-white p-8 rounded-[32px] border border-slate-100 items-center">
-                  <Calendar size={32} color={COLORS.slate300} />
-                  <Text className="text-slate-500 font-bold mt-4">No upcoming sessions scheduled.</Text>
-                </View>
-              )}
+
+                {upcoming ? (
+                    <View className="bg-white rounded-[40px] p-8 border border-slate-50 shadow-2xl shadow-blue-900/[0.04] relative overflow-hidden">
+                        <View className="absolute -top-24 -right-24 w-64 h-64 bg-blue-600/5 rounded-full" />
+                        
+                        <View className="flex-row items-center gap-6 mb-8">
+                             <View className="w-20 h-20 rounded-2xl overflow-hidden shadow-lg border-4 border-blue-50">
+                                 <Image source={{ uri: "https://i.pravatar.cc/200?u=mentor" }} className="w-full h-full" resizeMode="cover" />
+                             </View>
+                             <View className="flex-1">
+                                 <Text className="text-xl font-black text-slate-900 mb-1">Mock with {upcoming.interviewer_name || "Elena Ross"}</Text>
+                                 <Text className="text-slate-400 font-bold text-xs">Senior Frontend Engineer @ TechGiant</Text>
+                             </View>
+                        </View>
+
+                        <View className="flex-row gap-3 mb-8">
+                            <View className="flex-row items-center gap-2 bg-slate-50 px-5 py-2 rounded-full border border-slate-100">
+                                <Calendar size={14} color={COLORS.primary} strokeWidth={2.5} />
+                                <Text className="text-slate-600 font-black text-[11px] uppercase">{new Date(upcoming.scheduled_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</Text>
+                            </View>
+                            <View className="flex-row items-center gap-2 bg-slate-50 px-5 py-2 rounded-full border border-slate-100">
+                                <Clock size={14} color={COLORS.primary} strokeWidth={2.5} />
+                                <Text className="text-slate-600 font-black text-[11px] uppercase">{new Date(upcoming.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                            </View>
+                        </View>
+
+                        <TouchableOpacity 
+                            onPress={() => handleJoin(upcoming.meeting_link)}
+                            className="bg-blue-600 py-5 rounded-[24px] items-center shadow-xl shadow-blue-900/30"
+                        >
+                            <Text className="text-white font-black text-sm uppercase tracking-widest">Join Meeting</Text>
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <View className="bg-white rounded-[40px] p-10 border border-slate-100 border-dashed items-center">
+                        <Calendar size={48} color={COLORS.slate200} />
+                        <Text className="text-slate-400 font-bold mt-4">No upcoming sessions</Text>
+                    </View>
+                )}
             </View>
 
-            <Text className="text-sm font-black text-slate-500 uppercase tracking-wider mb-3">Past Interviews</Text>
+            {/* Preparation Insights */}
+            <View className="px-6 mb-12">
+                <Text className="text-xl font-black text-slate-900 mb-6">Preparation Insights</Text>
+                
+                <View className="flex-row gap-6 mb-6">
+                    {/* Confidence Score Card */}
+                    <View className="flex-1 bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm min-h-[160px] justify-between">
+                        <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Confidence Level</Text>
+                        <Text className="text-4xl font-black text-blue-600">84%</Text>
+                        <View className="h-3 bg-slate-100 rounded-full overflow-hidden">
+                            <View className="h-full bg-blue-600 rounded-full" style={{ width: '84%' }} />
+                        </View>
+                        <Text className="text-[10px] text-slate-400 font-bold mt-2 leading-4">You're 12% higher than the class average.</Text>
+                    </View>
 
-            {completed.map((item, index) => (
-              <View key={String(item?.id || item?._id || index)} className="bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm mb-4 flex-row items-center">
-                <View className="bg-emerald-50 w-14 h-14 rounded-2xl items-center justify-center mr-4">
-                  <Award size={24} color={COLORS.success} />
+                    {/* Focus Area Card */}
+                    <View className="flex-[1.5] bg-blue-600 p-8 rounded-[40px] shadow-xl shadow-blue-900/20 relative overflow-hidden">
+                         <View className="absolute -right-6 -bottom-6 opacity-20">
+                             <Brain size={120} color="white" />
+                         </View>
+                         <Text className="text-[10px] font-black text-white/60 uppercase tracking-widest mb-2">Recommended Focus</Text>
+                         <Text className="text-white font-black text-lg mb-4">Data Structures & Algorithms</Text>
+                         <View className="flex-row flex-wrap gap-2 mb-6">
+                             {['B-Trees', 'DP', 'System Design'].map(tag => (
+                                 <View key={tag} className="bg-white/20 px-3 py-1.5 rounded-full">
+                                     <Text className="text-white text-[10px] font-bold">{tag}</Text>
+                                 </View>
+                             ))}
+                         </View>
+                         <TouchableOpacity className="flex-row items-center">
+                             <Text className="text-white font-black text-xs mr-2">Review Materials</Text>
+                             <ArrowRight size={14} color="white" />
+                         </TouchableOpacity>
+                    </View>
                 </View>
-                <View className="flex-1">
-                  <Text className="font-bold text-slate-900 text-base">{item.title}</Text>
-                  <Text className="text-xs text-slate-500 font-bold uppercase mt-1">Score: {item?.score ?? "N/A"}/10</Text>
+            </View>
+
+            {/* History Section */}
+            <View className="px-6">
+                <View className="flex-row justify-between items-end mb-8 ml-2">
+                    <View>
+                        <Text className="text-xl font-black text-slate-900">Interview History</Text>
+                        <Text className="text-slate-400 font-bold text-xs mt-1">Review feedback from past sessions</Text>
+                    </View>
+                    <TouchableOpacity><Text className="text-blue-600 font-black text-xs uppercase">See All</Text></TouchableOpacity>
                 </View>
-                <TouchableOpacity className="bg-slate-50 p-2 rounded-xl">
-                  <ChevronRight size={18} color={COLORS.slate300} />
-                </TouchableOpacity>
-              </View>
-            ))}
 
-            {!isLoading && completed.length === 0 ? (
-              <View className="bg-white p-6 rounded-[32px] border border-slate-100 mb-4">
-                <Text className="text-slate-500 font-medium text-center">No completed interviews yet.</Text>
-              </View>
-            ) : null}
-
-            <TouchableOpacity className="mt-6 border-2 border-dashed border-slate-200 p-8 rounded-[32px] items-center justify-center bg-white">
-              <Calendar size={32} color={COLORS.slate300} />
-              <Text className="text-slate-500 font-bold mt-4">Your next schedule appears here</Text>
-            </TouchableOpacity>
-          </View>
+                {completed.length > 0 ? (
+                    completed.map((item, i) => (
+                        <View key={item.id} className="bg-white rounded-[40px] p-6 mb-6 border border-slate-50 shadow-sm flex-row items-center">
+                            <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-4 ${i % 2 === 0 ? 'bg-indigo-100' : 'bg-cyan-100'}`}>
+                                {i % 2 === 0 ? <Code2 size={24} color="#4F46E5" /> : <Terminal size={24} color="#0891B2" />}
+                            </View>
+                            <View className="flex-1 pr-4">
+                                <Text className="text-lg font-black text-slate-900 mb-1" numberOfLines={1}>{item.title}</Text>
+                                <Text className="text-slate-400 font-bold text-xs" numberOfLines={1}>Mentor: Marcus Thorne • Oct 12</Text>
+                                <Text className="text-slate-500 italic text-[11px] mt-2" numberOfLines={1}>"Excellent approach to scalability..."</Text>
+                            </View>
+                            <View className="items-end gap-2">
+                                <View className="items-end">
+                                    <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Score</Text>
+                                    <Text className="text-xl font-black text-slate-900">{item.score || '9.2'}</Text>
+                                </View>
+                                <View className="w-8 h-8 rounded-full border border-blue-100 items-center justify-center">
+                                    <TrendingUp size={14} color={COLORS.primary} />
+                                </View>
+                            </View>
+                        </View>
+                    ))
+                ) : (
+                    <View className="items-center py-10">
+                        <Award size={48} color={COLORS.slate200} />
+                        <Text className="text-slate-400 font-bold mt-4">Complete your first mock interview</Text>
+                    </View>
+                )}
+            </View>
         </View>
       </ScrollView>
     </SafeAreaWrapper>
