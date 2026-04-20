@@ -236,7 +236,7 @@ export default function ProfileScreen({ navigation }: any) {
                     className="flex-row items-center justify-center border-2 border-red-50 py-6 rounded-[32px] bg-red-50/20"
                 >
                     <LogOut size={20} color="#EF4444" strokeWidth={2.5} className="mr-3" />
-                    <Text className="text-red-500 font-black text-xs uppercase tracking-widest">Sign out of Academy</Text>
+                    <Text className="text-red-500 font-black text-xs uppercase tracking-widest">Log out</Text>
                 </TouchableOpacity>
                 <Text className="text-center text-slate-300 text-[10px] font-black uppercase tracking-widest mt-8">CodeCure v1.2.4 • Build 882</Text>
             </View>
