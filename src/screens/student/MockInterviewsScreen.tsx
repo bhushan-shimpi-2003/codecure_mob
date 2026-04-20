@@ -89,16 +89,7 @@ export default function MockInterviewsScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper bgWhite>
-      {/* Premium Header */}
-      <View className="flex-row items-center justify-between px-6 py-4 bg-white">
-          <View className="flex-row items-center gap-4">
-              <TouchableOpacity><Menu size={22} color={COLORS.primary} strokeWidth={2.5} /></TouchableOpacity>
-              <Text className="text-xl font-black tracking-tighter text-blue-600">CodeCure Academy</Text>
-          </View>
-          <View className="w-10 h-10 rounded-full border-2 border-blue-100 overflow-hidden">
-              <Image source={{ uri: user?.profile_picture || "https://i.pravatar.cc/150?u=codecure" }} className="w-full h-full" />
-          </View>
-      </View>
+      <AppHeader role={user?.role} subtitle="Preparation Center" />
 
       <ScrollView 
         className="flex-1 bg-[#F8FAFC]"

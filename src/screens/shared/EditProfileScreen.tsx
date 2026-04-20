@@ -43,9 +43,9 @@ export default function EditProfileScreen({ navigation }: any) {
   };
 
   return (
-    <SafeAreaWrapper>
+    <SafeAreaWrapper bgWhite>
       <AppHeader showBack role={user?.role} subtitle="Personal Settings" />
-      <ScrollView contentContainerStyle={{ padding: 24 }}>
+      <ScrollView className="flex-1 bg-[#F8FAFC]" contentContainerStyle={{ padding: 24 }} showsVerticalScrollIndicator={false}>
 
         <View className="items-center mb-10">
           <View className="relative">

@@ -260,7 +260,7 @@ export default function DashboardScreen({ navigation }: any) {
     });
   };
 
-  const firstName = user?.name?.split(" ")[0] || "Scholar";
+  const firstName = (user?.name || user?.email?.split("@")[0] || "Scholar").split(" ")[0];
 
   if (isLoading && !refreshing) {
     return (
@@ -275,19 +275,23 @@ export default function DashboardScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper bgWhite>
-      <AppHeader role={user?.role} />
+      <AppHeader role={user?.role} subtitle="Learning Dashboard" />
 
       <ScrollView 
-        className="flex-1 bg-slate-50/30"
+        className="flex-1 bg-[#F8FAFC]"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >
         <View className="px-6 pt-6 pb-12">
           
           <View className="mb-6">
-            <Text className="text-3xl font-black text-slate-900 tracking-tight">Good Morning,</Text>
-            <Text className="text-3xl font-black text-slate-900 tracking-tight">{firstName} 👋</Text>
-            <Text className="text-slate-500 font-medium text-base mt-1">Ready to tackle some code today?</Text>
+            <Text className="text-3xl font-black text-slate-900 tracking-tight">
+                Good <Text className="text-blue-600">Morning,</Text>
+            </Text>
+            <Text className="text-3xl font-black text-slate-900 tracking-tight">
+                {firstName} <Text className="text-blue-600">👋</Text>
+            </Text>
+            <Text className="text-slate-500 font-medium text-base mt-2">Ready to tackle some code today?</Text>
           </View>
 
           <View className="flex-row items-center bg-slate-100/80 px-4 py-3 rounded-2xl mb-8 border border-slate-200/50">

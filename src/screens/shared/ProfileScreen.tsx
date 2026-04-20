@@ -88,7 +88,7 @@ export default function ProfileScreen({ navigation }: any) {
     );
   };
 
-  const displayName = user?.name || (user as any)?.full_name || "Alex Thorne";
+  const displayName = user?.name || user?.email?.split("@")[0] || "Scholar";
   const displayEmail = user?.email || "alex.thorne@codecure.edu";
 
   // Time-aware greeting
@@ -101,21 +101,7 @@ export default function ProfileScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper bgWhite>
-      {/* Enhanced Header with Glassmorphism shadow */}
-      <View className="flex-row items-center justify-between px-6 py-4 bg-white shadow-sm shadow-slate-200">
-          <View className="flex-row items-center gap-4">
-              <Text className="text-xl font-black text-blue-600 tracking-tighter">CodeCure</Text>
-              <View className="bg-blue-50 px-2 py-0.5 rounded-md"><Text className="text-[10px] font-black text-blue-600 uppercase">Pro</Text></View>
-          </View>
-          <View className="flex-row items-center gap-5">
-              <TouchableOpacity><Bell size={22} color={COLORS.slate600} /></TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate("EditProfile")}>
-                  <View className="w-10 h-10 rounded-full border-2 border-slate-100 overflow-hidden shadow-sm">
-                       <Image source={{ uri: user?.profile_picture || "https://i.pravatar.cc/150?u=codecure" }} className="w-full h-full" />
-                  </View>
-              </TouchableOpacity>
-          </View>
-      </View>
+      <AppHeader role={user?.role} subtitle="Account Center" />
 
       <ScrollView 
         className="flex-1 bg-[#F8FAFC]" 

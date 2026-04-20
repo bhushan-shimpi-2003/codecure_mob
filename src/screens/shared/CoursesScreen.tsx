@@ -144,25 +144,25 @@ export default function CoursesScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper bgWhite>
-      {/* Custom Inline Header */}
-      <View className="flex-row items-center justify-between px-6 py-4 bg-white">
-          <View className="flex-row items-center">
-              <View className="w-10 h-10 rounded-full bg-slate-100 items-center justify-center border-2 border-white overflow-hidden shadow-sm">
-                  <Image source={{ uri: "https://i.pravatar.cc/150?u=codecure" }} className="w-full h-full" />
-              </View>
-              <Text className="ml-3 text-lg font-black text-slate-900 tracking-tight">CodeCure Academy</Text>
-          </View>
-          <Bell size={22} color={COLORS.primary} />
-      </View>
+      <AppHeader role={user?.role} subtitle="My Library" />
 
       <ScrollView className="flex-1 bg-[#F8FAFC]" showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <View style={{ width: "100%", maxWidth: shellMaxWidth, alignSelf: "center" }}>
             
-            {/* Page Header */}
-            <View className="px-6 pt-10 pb-6">
-                <Text className="text-4xl font-black text-slate-900 mb-2">My Courses</Text>
-                <Text className="text-slate-400 font-bold text-base">Pick up right where you left off</Text>
-            </View>
+
+             {/* Hero Header */}
+                      <View className="px-6 pt-8 mb-8">
+                        <View className="bg-blue-50 px-3 py-1 rounded-lg self-start mb-4">
+                          <Text className="text-blue-600 font-extrabold text-[10px] uppercase tracking-widest">Learning</Text>
+                        </View>
+                        <Text className="text-[34px] font-black text-slate-900 leading-tight">
+                           My
+                            <Text className="text-blue-600"> Courses</Text> 
+                        </Text>
+                        <Text className="text-slate-500 mt-4 text-[15px] leading-6 max-w-[90%]">
+                            Pic k up right where you left off.
+                        </Text>
+                      </View>
 
             {/* Premium Segmented Control */}
             <View className="px-6 mb-10">

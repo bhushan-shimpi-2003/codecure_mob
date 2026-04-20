@@ -163,7 +163,7 @@ export default function DoubtsScreen({ route, navigation }: any) {
             
             <View className="px-6 pt-10 pb-8">
                 <Text className="text-blue-600 text-[10px] font-black uppercase tracking-[3px] mb-2">Learning Support</Text>
-                <Text className="text-4xl font-black text-slate-900 mb-4">Your Doubts</Text>
+                <Text className="text-4xl font-black text-slate-900 mb-4">Your <Text className="text-blue-600">Doubts</Text> </Text>
                 <Text className="text-slate-400 font-bold text-sm leading-6">
                     Track your inquiries and teacher responses as you master the curriculum.
                 </Text>

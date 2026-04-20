@@ -265,7 +265,7 @@ export default function LessonScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaWrapper bgWhite>
-      <AppHeader showBack role={user?.role} subtitle={activeCourseTitle} />
+      <AppHeader showBack role={user?.role} subtitle="Active Lesson" />
       
       <ScrollView className="bg-[#F8FAFC]" showsVerticalScrollIndicator={false}>
         {/* Premium Video Player Container */}
