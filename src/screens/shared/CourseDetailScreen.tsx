@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import { View, Text, ScrollView, TouchableOpacity, Image, useWindowDimensions, Alert } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
@@ -23,7 +24,7 @@ import { Skeleton } from "../../components/Skeleton";
 import { Button } from "../../components/Button";
 import { extractApiData, getApiError, isApiSuccess } from "../../api/response";
 import { useAuth } from "../../context/AuthContext";
-import { calculateProgress, getProgressString } from "../../utils/progress";
+import { calculateProgress, getProgressString, parseCompletedLessons } from "../../utils/progress";
 import { AppHeader } from "../../components/AppHeader";
 
 export default function CourseDetailScreen({ route, navigation }: any) {
@@ -56,7 +57,7 @@ export default function CourseDetailScreen({ route, navigation }: any) {
     return false;
   };
 
-  const fetchCourseDetail = async () => {
+  const fetchCourseDetail = useCallback(async () => {
     try {
       const res = await coursesApi.detail(String(idOrSlug));
       const payload = res.data;
@@ -96,9 +97,13 @@ export default function CourseDetailScreen({ route, navigation }: any) {
         }
       }
     } catch (e) {} finally { setIsLoading(false); }
-  };
+  }, [idOrSlug, isStudent]);
 
-  useEffect(() => { if (idOrSlug) fetchCourseDetail(); }, [idOrSlug]);
+  useFocusEffect(
+    useCallback(() => {
+        if (idOrSlug) fetchCourseDetail();
+    }, [idOrSlug, fetchCourseDetail])
+  );
 
   const curriculumModules = useMemo(() => {
     const modules = Array.isArray(course?.modules) ? course.modules : [];
@@ -123,6 +128,14 @@ export default function CourseDetailScreen({ route, navigation }: any) {
       };
     });
   }, [course, courseLessons]);
+
+  // Auto-expand first module for enrolled students
+  useEffect(() => {
+    if (isEnrolled && curriculumModules.length > 0 && expandedModules.size === 0) {
+      const firstModId = String(curriculumModules[0]?.id || curriculumModules[0]?._id || "0");
+      setExpandedModules(new Set([firstModId]));
+    }
+  }, [isEnrolled, curriculumModules]);
 
   const toggleModule = (id: string) => {
     const next = new Set(expandedModules);
@@ -171,14 +184,38 @@ export default function CourseDetailScreen({ route, navigation }: any) {
 
                 <Text className="text-4xl font-black text-white leading-[46px] mb-6">{course?.title}</Text>
                 
-                <View className="flex-row items-center">
-                    <View className="w-10 h-10 rounded-full bg-blue-500 items-center justify-center border-2 border-white/20">
-                        <User size={20} color="white" />
+                <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center">
+                        <View className="w-10 h-10 rounded-full bg-blue-500 items-center justify-center border-2 border-white/20">
+                            <User size={20} color="white" />
+                        </View>
+                        <View className="ml-3">
+                            <Text className="text-white/50 text-[10px] font-bold uppercase tracking-widest">Instructor</Text>
+                            <Text className="text-white font-black text-sm">{(course as any)?.profiles?.name || "Alex Thorne"}</Text>
+                        </View>
                     </View>
-                    <View className="ml-3">
-                        <Text className="text-white/50 text-[10px] font-bold uppercase tracking-widest">Instructor</Text>
-                        <Text className="text-white font-black text-sm">{(course as any)?.profiles?.name || "Alex Thorne"}</Text>
-                    </View>
+                    
+                    {isEnrolled && (
+                        <View className="flex-row items-center gap-3">
+                            {currentProgressPercent === 100 ? (
+                                <View className="bg-emerald-500 px-5 py-3 rounded-2xl flex-row items-center shadow-xl shadow-emerald-900/50">
+                                    <Award size={16} color="white" className="mr-2" />
+                                    <Text className="text-white font-black text-xs uppercase tracking-widest">Completed</Text>
+                                </View>
+                            ) : (
+                                <TouchableOpacity 
+                                    onPress={() => {
+                                        const firstLesson = curriculumModules[0]?.lessons?.[0];
+                                        if (firstLesson) navigation.navigate("Lesson", { lesson: firstLesson, courseId: course.id, courseTitle: course.title });
+                                    }}
+                                    className="bg-white px-5 py-3 rounded-2xl flex-row items-center shadow-xl shadow-blue-900/50 active:opacity-90"
+                                >
+                                    <PlayCircle size={16} color={COLORS.primary} className="mr-2" />
+                                    <Text className="text-blue-600 font-black text-xs uppercase tracking-widest">Resume</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    )}
                 </View>
             </LinearGradient>
         </View>
@@ -237,7 +274,10 @@ export default function CourseDetailScreen({ route, navigation }: any) {
                             {isExpanded && isEnrolled && (
                                 <View className="px-6 pb-6 pt-2 border-t border-slate-50">
                                     {mod.lessons?.map((lesson: any, lIdx: number) => {
-                                        const isDone = Array.isArray(enrollmentItem?.completed_lessons) && enrollmentItem.completed_lessons.includes(String(lesson.id || lesson._id));
+                                        const completed = parseCompletedLessons(enrollmentItem?.completed_lessons);
+                                        const lessonId = String(lesson.id || lesson._id || "");
+                                        const isDone = completed.some(id => String(id) === lessonId);
+                                        
                                         return (
                                             <TouchableOpacity 
                                                 key={lesson.id || lIdx}
@@ -249,7 +289,19 @@ export default function CourseDetailScreen({ route, navigation }: any) {
                                                 ) : (
                                                     <PlayCircle size={18} color={COLORS.primary} className="mr-3" />
                                                 )}
-                                                <Text className={`flex-1 text-sm font-bold ${isDone ? 'text-emerald-700' : 'text-slate-700'}`}>{lesson.title}</Text>
+                                                <View className="flex-1">
+                                                    <Text className={`text-sm font-bold mb-1 ${isDone ? 'text-emerald-700' : 'text-slate-700'}`}>{lesson.title}</Text>
+                                                    <View className="flex-row items-center gap-2">
+                                                        <View className="bg-blue-100/50 px-2 py-0.5 rounded-md flex-row items-center">
+                                                            <PlayCircle size={10} color={COLORS.primary} className="mr-1" />
+                                                            <Text className="text-[10px] text-blue-600 font-bold uppercase tracking-tighter">Video</Text>
+                                                        </View>
+                                                        {lesson.duration && (
+                                                            <Text className="text-slate-400 text-[10px] font-medium">{lesson.duration}</Text>
+                                                        )}
+                                                    </View>
+                                                </View>
+                                                <Text className="text-blue-600/40 text-[10px] font-black uppercase tracking-widest ml-2">Play Now</Text>
                                             </TouchableOpacity>
                                         );
                                     })}
@@ -260,34 +312,28 @@ export default function CourseDetailScreen({ route, navigation }: any) {
                 })}
             </View>
 
-            {/* Pricing Section */}
-            <View className="bg-white p-8 rounded-[44px] border border-slate-100 shadow-sm mb-12">
-                <Text className="text-slate-400 text-xs font-black uppercase tracking-[3px] mb-2">Lifetime Access</Text>
-                <View className="flex-row items-end gap-3 mb-8">
-                    <Text className="text-[44px] font-black text-slate-900 leading-[44px] tracking-tighter">₹{course?.price || 1999}</Text>
-                    <Text className="text-xl font-bold text-slate-300 line-through mb-1">₹{Math.floor((course?.price || 1999) * 1.5)}</Text>
-                </View>
+            {/* Pricing Section - Only show if NOT enrolled */}
+            {!isEnrolled && (
+                <View className="bg-white p-8 rounded-[44px] border border-slate-100 shadow-sm mb-12">
+                    <Text className="text-slate-400 text-xs font-black uppercase tracking-[3px] mb-2">Lifetime Access</Text>
+                    <View className="flex-row items-end gap-3 mb-8">
+                        <Text className="text-[44px] font-black text-slate-900 leading-[44px] tracking-tighter">₹{course?.price || 1999}</Text>
+                        <Text className="text-xl font-bold text-slate-300 line-through mb-1">₹{Math.floor((course?.price || 1999) * 1.5)}</Text>
+                    </View>
 
-                <View className="gap-5 mb-10">
-                    {[
-                        { icon: CheckCircle, text: "Industry Recognized Certificate", color: "#2563EB" },
-                        { icon: Zap, text: "Lifetime Updates & Access", color: "#2563EB" },
-                        { icon: MessageSquare, text: "Private Student Community", color: "#2563EB" }
-                    ].map((item, i) => (
-                        <View key={i} className="flex-row items-center gap-4">
-                            <item.icon size={20} color={item.color} />
-                            <Text className="text-slate-600 font-bold text-[15px]">{item.text}</Text>
-                        </View>
-                    ))}
-                </View>
+                    <View className="gap-5 mb-10">
+                        {[
+                            { icon: CheckCircle, text: "Industry Recognized Certificate", color: "#2563EB" },
+                            { icon: Zap, text: "Lifetime Updates & Access", color: "#2563EB" },
+                            { icon: MessageSquare, text: "Private Student Community", color: "#2563EB" }
+                        ].map((item, i) => (
+                            <View key={i} className="flex-row items-center gap-4">
+                                <item.icon size={20} color={item.color} />
+                                <Text className="text-slate-600 font-bold text-[15px]">{item.text}</Text>
+                            </View>
+                        ))}
+                    </View>
 
-                {isEnrolled ? (
-                    <Button 
-                        title="Continue Learning" 
-                        className="py-5" 
-                        onPress={() => navigation.navigate("Courses")}
-                    />
-                ) : (
                     <View className="gap-3">
                         <Button 
                              title={enrollmentRequested ? "Request Pending" : "Request Enrollment"} 
@@ -295,13 +341,20 @@ export default function CourseDetailScreen({ route, navigation }: any) {
                              className="py-5" 
                              onPress={handleEnroll} 
                         />
-                        <TouchableOpacity className="py-5 bg-white border border-blue-600 rounded-[28px] items-center flex-row justify-center">
+                        <TouchableOpacity 
+                            onPress={() => {
+                                const firstLesson = curriculumModules[0]?.lessons?.[0];
+                                if (firstLesson) navigation.navigate("Lesson", { lesson: firstLesson, courseId: course.id, courseTitle: course.title });
+                                else Alert.alert("Coming Soon", "The intro video for this course is being prepared.");
+                            }}
+                            className="py-5 bg-white border border-blue-600 rounded-[28px] items-center flex-row justify-center active:opacity-80"
+                        >
                             <PlayCircle size={20} color={COLORS.primary} className="mr-2" />
                             <Text className="text-blue-600 font-black text-[15px] uppercase tracking-widest">Watch Intro Video</Text>
                         </TouchableOpacity>
                     </View>
-                )}
-            </View>
+                </View>
+            )}
 
             {/* Quote */}
             <View className="bg-slate-100/50 p-10 rounded-[44px] mb-12 border border-slate-100">

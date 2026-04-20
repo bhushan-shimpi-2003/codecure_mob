@@ -14,6 +14,8 @@ interface InputProps extends TextInputProps {
   error?: string;
   leftIcon?: React.ReactNode;
   isPassword?: boolean;
+  containerClassName?: string;
+  inputClassName?: string;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -22,6 +24,8 @@ export const Input: React.FC<InputProps> = ({
   leftIcon,
   isPassword = false,
   className = "",
+  containerClassName = "",
+  inputClassName = "",
   ...props
 }) => {
   const [isFocused, setIsFocused] = useState(false);
@@ -42,12 +46,12 @@ export const Input: React.FC<InputProps> = ({
             : isFocused
             ? "border-blue-500 bg-white"
             : "border-slate-200"
-        }`}
+        } ${containerClassName}`}
       >
         {leftIcon && <View className="mr-3">{leftIcon}</View>}
 
         <TextInput
-          className="flex-1 h-full text-base text-slate-900 font-medium"
+          className={`flex-1 h-full text-base text-slate-900 font-medium ${inputClassName}`}
           placeholderTextColor={COLORS.slate400}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
