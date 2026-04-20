@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, ScrollView, RefreshControl, useWindowDimensions } from "react-native";
+import { View, Text, ScrollView, RefreshControl, useWindowDimensions, TouchableOpacity } from "react-native";
 import { coursesApi, enrollmentsApi } from "../../api/endpoints";
 import { CourseCard } from "../../components/CourseCard";
 import { Input } from "../../components/Input";
@@ -10,6 +10,8 @@ import { COLORS } from "../../utils/theme";
 import { extractApiData, isApiSuccess } from "../../api/response";
 import { StudentScreenHeader } from "../../components/StudentScreenHeader";
 import { StudentStatCard } from "../../components/StudentStatCard";
+import { useAuth } from "../../context/AuthContext";
+import { AppHeader } from "../../components/AppHeader";
 
 export default function ExploreCoursesScreen({ navigation }: any) {
   const { width } = useWindowDimensions();
@@ -104,68 +106,110 @@ export default function ExploreCoursesScreen({ navigation }: any) {
     [notEnrolledCourses, search]
   );
 
-  const gridItemWidth = "48.5%";
+  const CATEGORIES = ["All Courses", "Beginner", "Intermediate", "Advanced"];
+  const [activeCategory, setActiveCategory] = useState("All Courses");
+
+  const filteredByCategory = useMemo(() => {
+    if (activeCategory === "All Courses") return notEnrolledCourses;
+    return notEnrolledCourses.filter(c => (c.level || "").toLowerCase() === activeCategory.toLowerCase());
+  }, [notEnrolledCourses, activeCategory]);
+
+  const finalFiltered = useMemo(
+    () =>
+      filteredByCategory.filter((course) =>
+        String(course?.title || "")
+          .toLowerCase()
+          .includes(search.toLowerCase())
+      ),
+    [filteredByCategory, search]
+  );
+
+  const featuredCourse = useMemo(() => finalFiltered[0], [finalFiltered]);
+  const otherCourses = useMemo(() => finalFiltered.slice(1), [finalFiltered]);
+
+  const { user } = useAuth();
 
   return (
-    <SafeAreaWrapper>
+    <SafeAreaWrapper bgWhite>
+      <AppHeader role={user?.role} subtitle="Catalog" />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: isTablet ? 34 : 24 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View style={{ width: "100%", maxWidth: shellMaxWidth, alignSelf: "center" }}>
-          <StudentScreenHeader
-            badge="Student Workspace"
-            title="Courses"
-            subtitle="Browse courses not enrolled yet and filter quickly"
-          />
-
-          <View style={{ paddingHorizontal: horizontalPadding }} className="pt-1 pb-2 flex-row flex-wrap justify-between">
-            <StudentStatCard label="Available" value={notEnrolledCourses.length} Icon={BookOpen} tone="blue" />
-            <StudentStatCard label="Filtered" value={filteredCourses.length} Icon={Layers} tone="slate" />
+          
+          {/* Hero Header */}
+          <View className="px-6 pt-8 mb-8">
+            <View className="bg-blue-50 px-3 py-1 rounded-lg self-start mb-4">
+              <Text className="text-blue-600 font-extrabold text-[10px] uppercase tracking-widest">Learning Catalog</Text>
+            </View>
+            <Text className="text-[34px] font-black text-slate-900 leading-tight">
+                Elevate your{"\n"}
+                <Text className="text-blue-600">Engineering</Text> craft.
+            </Text>
+            <Text className="text-slate-500 mt-4 text-[15px] leading-6 max-w-[90%]">
+                Curated paths designed for the modern scholar. From foundational logic to distributed systems.
+            </Text>
           </View>
 
-          <View style={{ paddingHorizontal: horizontalPadding, paddingTop: 12 }}>
-            <Input
-              placeholder="Filter courses..."
-              value={search}
-              onChangeText={setSearch}
-              leftIcon={<Search size={20} color={COLORS.slate400} />}
-            />
+          {/* Categories Tab */}
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            className="mb-8"
+            contentContainerStyle={{ paddingHorizontal: 24 }}
+          >
+            {CATEGORIES.map((cat: string) => (
+              <TouchableOpacity
+                key={cat}
+                onPress={() => setActiveCategory(cat)}
+                className={`mr-3 px-6 py-3 rounded-2xl border ${activeCategory === cat ? 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-200' : 'bg-slate-100 border-slate-100'}`}
+              >
+                <Text className={`font-black text-xs ${activeCategory === cat ? 'text-white' : 'text-slate-500'}`}>
+                    {cat}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
 
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-xs font-black text-slate-500 uppercase tracking-widest">Available Courses</Text>
-              <Text className="text-[11px] font-black text-slate-500 uppercase tracking-wider">{filteredCourses.length}</Text>
-            </View>
-            <Text className="text-slate-400 text-xs mb-2">Only courses you are not enrolled in are listed here</Text>
-
+          <View style={{ paddingHorizontal: 24 }}>
             {isLoading ? (
-              <View className="flex-row flex-wrap justify-between mt-2">
-                <View style={{ width: gridItemWidth }}>
-                  <Skeleton height={280} className="rounded-3xl" />
+                <View className="gap-6">
+                    <Skeleton height={350} className="rounded-[40px]" />
+                    <Skeleton height={250} className="rounded-[40px]" />
+                    <Skeleton height={250} className="rounded-[40px]" />
                 </View>
-                <View style={{ width: gridItemWidth }}>
-                  <Skeleton height={280} className="rounded-3xl" />
-                </View>
-              </View>
-            ) : filteredCourses.length === 0 ? (
-              <View className="flex-1 items-center justify-center py-10 bg-white border border-slate-100 rounded-3xl">
-                <Text className="text-slate-500 font-semibold text-center">No courses match your filter.</Text>
+            ) : finalFiltered.length === 0 ? (
+              <View className="items-center justify-center py-20 bg-white border border-slate-100 rounded-[40px]">
+                <Layers size={48} color={COLORS.slate200} />
+                <Text className="text-slate-400 font-bold mt-4">No content matches this criteria</Text>
               </View>
             ) : (
-              <View className="flex-row flex-wrap justify-between">
-                {filteredCourses.map((item, index) => (
-                  <View key={String(item?.id || item?._id || item?.slug || index)} style={{ width: gridItemWidth }}>
+              <View>
+                {/* Featured Card */}
+                {featuredCourse && (
+                    <View className="mb-2">
+                        <CourseCard 
+                            course={featuredCourse} 
+                            onPress={() => {
+                                const idOrSlug = featuredCourse?.slug || featuredCourse?.id || featuredCourse?._id;
+                                if (idOrSlug) navigation.navigate("CourseDetail", { idOrSlug, isEnrolled: false });
+                            }}
+                        />
+                    </View>
+                )}
+
+                {/* Other Courses */}
+                {otherCourses.map((item, index) => (
                     <CourseCard
-                      course={item}
-                      onPress={() => {
-                        const idOrSlug = item?.slug || item?.id || item?._id;
-                        if (idOrSlug) {
-                          navigation.navigate("CourseDetail", { idOrSlug, isEnrolled: false });
-                        }
-                      }}
+                        key={String(item?.id || item?._id || item?.slug || index)}
+                        course={item}
+                        onPress={() => {
+                            const idOrSlug = item?.slug || item?.id || item?._id;
+                            if (idOrSlug) navigation.navigate("CourseDetail", { idOrSlug, isEnrolled: false });
+                        }}
                     />
-                  </View>
                 ))}
               </View>
             )}
@@ -175,3 +219,4 @@ export default function ExploreCoursesScreen({ navigation }: any) {
     </SafeAreaWrapper>
   );
 }
+

@@ -5,6 +5,7 @@ import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
 import { User, Settings, ShieldCheck, LogOut, ChevronRight, Mail, Phone } from "lucide-react-native";
 import { COLORS } from "../../utils/theme";
 import { authApi } from "../../api/endpoints";
+import { AppHeader } from "../../components/AppHeader";
 
 export default function AdminProfileScreen({ navigation }: any) {
   const { user, logout } = useAuth();
@@ -43,6 +44,7 @@ export default function AdminProfileScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper>
+      <AppHeader role={user?.role} subtitle="Admin center" />
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 24, paddingTop: 16, paddingBottom: 24 }}>
         <View className="mb-4">
           <Text className="text-sm font-black text-blue-600 uppercase tracking-widest mb-1">Admin Panel</Text>

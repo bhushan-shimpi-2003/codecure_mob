@@ -7,6 +7,7 @@ import { TeacherScreenHeader } from "../../components/TeacherScreenHeader";
 import { TeacherStatCard } from "../../components/TeacherStatCard";
 import { COLORS } from "../../utils/theme";
 import { authApi } from "../../api/endpoints";
+import { AppHeader } from "../../components/AppHeader";
 
 export default function TeacherProfileScreen({ navigation }: any) {
   const { width } = useWindowDimensions();
@@ -50,6 +51,7 @@ export default function TeacherProfileScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper>
+      <AppHeader role={user?.role} subtitle="Teacher Center" />
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: isTablet ? 34 : 24 }}>
         <View style={{ width: "100%", maxWidth: shellMaxWidth, alignSelf: "center" }}>
           <TeacherScreenHeader

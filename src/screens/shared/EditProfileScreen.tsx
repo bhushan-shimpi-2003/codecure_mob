@@ -8,6 +8,7 @@ import { COLORS } from "../../utils/theme";
 import { Input } from "../../components/Input";
 import { Button } from "../../components/Button";
 import { extractApiData, getApiError, isApiSuccess } from "../../api/response";
+import { AppHeader } from "../../components/AppHeader";
 
 export default function EditProfileScreen({ navigation }: any) {
   const { user, updateUser } = useAuth();
@@ -43,8 +44,8 @@ export default function EditProfileScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper>
+      <AppHeader showBack role={user?.role} subtitle="Personal Settings" />
       <ScrollView contentContainerStyle={{ padding: 24 }}>
-        <Text className="text-2xl font-black text-slate-900 mb-8">Edit Profile</Text>
 
         <View className="items-center mb-10">
           <View className="relative">

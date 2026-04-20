@@ -9,13 +9,16 @@ import {
   BookOpen, 
   Star,
   CheckCircle2,
-  User
+  User,
+  Clock
 } from "lucide-react-native";
 import { COLORS } from "../../utils/theme";
 import { Skeleton } from "../../components/Skeleton";
 import { Button } from "../../components/Button";
 import { extractApiData, getApiError, isApiSuccess } from "../../api/response";
 import { useAuth } from "../../context/AuthContext";
+import { calculateProgress, getProgressString } from "../../utils/progress";
+import { AppHeader } from "../../components/AppHeader";
 
 export default function CourseDetailScreen({ route, navigation }: any) {
   const { user } = useAuth();
@@ -29,6 +32,7 @@ export default function CourseDetailScreen({ route, navigation }: any) {
   const [courseLessons, setCourseLessons] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEnrolled, setIsEnrolled] = useState(Boolean(route?.params?.isEnrolled));
+  const [enrollmentItem, setEnrollmentItem] = useState<any>(null);
   const [enrollmentRequested, setEnrollmentRequested] = useState(false);
 
   const isStudent = user?.role === "student";
@@ -84,6 +88,7 @@ export default function CourseDetailScreen({ route, navigation }: any) {
           let enrolledDetected = false;
           let pendingEnrollmentDetected = false;
           let requestDetected = false;
+          let matchedEnr = null;
 
           if (
             enrollmentsRes.status === "fulfilled" &&
@@ -95,10 +100,12 @@ export default function CourseDetailScreen({ route, navigation }: any) {
               return matchesCourseRef(courseRef, data, idOrSlug);
             });
 
-            enrolledDetected = matchedEnrollments.some((item) => {
+            matchedEnr = matchedEnrollments.find((item) => {
               const studentStatus = normalize(item?.student_status || item?.status);
               return studentStatus === "active" || studentStatus === "approved";
             });
+
+            enrolledDetected = !!matchedEnr;
 
             pendingEnrollmentDetected =
               !enrolledDetected &&
@@ -123,6 +130,7 @@ export default function CourseDetailScreen({ route, navigation }: any) {
           }
 
           setIsEnrolled(enrolledDetected);
+          setEnrollmentItem(matchedEnr);
           setEnrollmentRequested(!enrolledDetected && (pendingEnrollmentDetected || requestDetected));
         }
       }
@@ -226,6 +234,9 @@ export default function CourseDetailScreen({ route, navigation }: any) {
   const moduleCount = Array.isArray(course?.modules) ? course.modules.length : 0;
   const studentCount = Number(course?.students_enrolled || 0);
 
+  const currentProgressPercent = useMemo(() => calculateProgress(enrollmentItem), [enrollmentItem]);
+  const currentProgressText = useMemo(() => getProgressString(enrollmentItem), [enrollmentItem]);
+
   const handleEnroll = async () => {
     if (!isStudent) return;
 
@@ -281,6 +292,7 @@ export default function CourseDetailScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaWrapper>
+      <AppHeader showBack role={user?.role} subtitle="Course Overview" />
       <ScrollView>
         {/* Banner */}
         <View className="h-64 bg-slate-900 justify-center items-center">
@@ -296,20 +308,46 @@ export default function CourseDetailScreen({ route, navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        <View className="-mt-8 bg-slate-50 rounded-t-[40px]">
+        <View className="-mt-8 bg-slate-100 rounded-t-[40px]">
           <View style={{ width: "100%", maxWidth: shellMaxWidth, alignSelf: "center", paddingHorizontal: horizontalPadding, paddingTop: 24, paddingBottom: 8 }}>
-          <View className="flex-row items-center mb-2">
-            <View className="bg-blue-100 px-3 py-1 rounded-full mr-2">
-              <Text className="text-blue-600 text-xs font-bold">{course?.category || "Development"}</Text>
-            </View>
+          <View className="flex-row items-center justify-between mb-2">
             <View className="flex-row items-center">
-              <Star size={14} color={COLORS.warning} fill={COLORS.warning} />
-              <Text className="text-slate-900 font-bold ml-1 text-xs">4.8</Text>
+                <View className="bg-blue-100 px-3 py-1 rounded-full mr-2">
+                  <Text className="text-blue-600 text-xs font-bold">{course?.category || "Development"}</Text>
+                </View>
+                <View className="flex-row items-center">
+                  <Star size={14} color={COLORS.warning} fill={COLORS.warning} />
+                  <Text className="text-slate-900 font-bold ml-1 text-xs">4.8</Text>
+                </View>
             </View>
+            {isEnrolled && (
+                <View className="bg-emerald-100 px-3 py-1 rounded-full">
+                    <Text className="text-emerald-700 text-[10px] font-black uppercase tracking-wider">{currentProgressPercent}% Done</Text>
+                </View>
+            )}
           </View>
 
           <Text className="text-2xl font-black text-slate-900 mb-2">{course?.title}</Text>
           <Text className="text-slate-500 text-sm leading-5 mb-6">{course?.description}</Text>
+
+          {/* Enrolled Progress Bar */}
+          {isEnrolled && (
+            <View className="bg-white p-6 rounded-[34px] border border-slate-200 mb-8 shadow-sm">
+                <View className="flex-row justify-between items-end mb-3">
+                    <View>
+                        <Text className="text-slate-400 text-[10px] font-black uppercase tracking-[2px] mb-1">Your Progress</Text>
+                        <Text className="text-xl font-black text-slate-900">{currentProgressPercent}%</Text>
+                    </View>
+                    <Text className="text-blue-600 font-bold text-xs uppercase">{currentProgressText}</Text>
+                </View>
+                <View className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <View 
+                        className="h-full bg-blue-600 rounded-full" 
+                        style={{ width: `${currentProgressPercent}%` }} 
+                    />
+                </View>
+            </View>
+          )}
 
           {/* Stats */}
           <View className="flex-row bg-white p-4 rounded-3xl border border-slate-100 shadow-sm mb-8">
@@ -325,11 +363,6 @@ export default function CourseDetailScreen({ route, navigation }: any) {
             </View>
           </View>
 
-          <View className="bg-white border border-slate-100 rounded-2xl px-4 py-3 mb-6 flex-row justify-between items-center">
-            <Text className="text-xs font-black uppercase tracking-wider text-slate-500">Total lessons</Text>
-            <Text className="text-slate-900 font-black">{resolvedLessonCount}</Text>
-          </View>
-
           <Text className="text-lg font-bold text-slate-900 mb-4">Curriculum</Text>
           
           {/* Modules List */}
@@ -343,6 +376,10 @@ export default function CourseDetailScreen({ route, navigation }: any) {
                   {mod.lessons && mod.lessons.map((lesson: any, lIdx: number) => {
                     const isPreviewLesson = Boolean(lesson?.is_free_preview);
                     const canOpenLesson = hasLessonAccess || isPreviewLesson;
+
+                    // Check if lesson is completed in the enrollment object
+                    const isLessonDone = Array.isArray(enrollmentItem?.completed_lessons) && 
+                        enrollmentItem.completed_lessons.includes(String(lesson.id || lesson._id));
 
                     return (
                       <TouchableOpacity
@@ -362,16 +399,21 @@ export default function CourseDetailScreen({ route, navigation }: any) {
                             courseId: course.id || course._id,
                             courseTitle: course.title,
                             videoUrl: lesson.video_url,
-                            lessonTitle: lesson.title
+                            lessonTitle: lesson.title,
+                            progress: currentProgressPercent
                           });
                         }}
-                        className="bg-white p-4 rounded-3xl border border-slate-100 flex-row items-center"
+                        className={`p-4 rounded-3xl border flex-row items-center ${isLessonDone ? 'bg-emerald-50 border-emerald-100' : 'bg-white border-slate-100'}`}
                       >
-                        <View className="bg-slate-50 w-10 h-10 rounded-2xl items-center justify-center mr-4">
-                          <PlayCircle size={20} color={COLORS.primary} />
+                        <View className={`${isLessonDone ? 'bg-emerald-100' : 'bg-slate-50'} w-10 h-10 rounded-2xl items-center justify-center mr-4`}>
+                          {isLessonDone ? (
+                              <CheckCircle2 size={20} color="#059669" />
+                          ) : (
+                              <PlayCircle size={20} color={COLORS.primary} />
+                          )}
                         </View>
                         <View className="flex-1">
-                          <Text className="font-bold text-slate-900">{lesson.title}</Text>
+                          <Text className={`font-bold ${isLessonDone ? 'text-emerald-900' : 'text-slate-900'}`}>{lesson.title}</Text>
                           <View className="flex-row items-center mt-1">
                             <Text className="text-xs text-slate-400">{lesson.duration || "10m"}</Text>
                             {isPreviewLesson ? (
@@ -382,7 +424,13 @@ export default function CourseDetailScreen({ route, navigation }: any) {
                           </View>
                         </View>
                         {hasLessonAccess ? (
-                          <CheckCircle2 size={18} color={COLORS.success} />
+                          isLessonDone ? (
+                            <View className="bg-emerald-200/50 p-1 rounded-full">
+                                <CheckCircle2 size={14} color="#059669" />
+                            </View>
+                          ) : (
+                            <ChevronRight size={18} color={COLORS.slate300} />
+                          )
                         ) : isPreviewLesson ? (
                           <PlayCircle size={18} color={COLORS.primary} />
                         ) : (
@@ -418,15 +466,25 @@ export default function CourseDetailScreen({ route, navigation }: any) {
             title={
               isStudent
                 ? isEnrolled
-                  ? "Enrolled"
+                  ? "Continue Learning"
                   : enrollmentRequested
                     ? "Requested"
                     : "Enroll Now"
                 : "Course Access"
             }
             className="flex-[1.5]"
-            onPress={handleEnroll}
-            disabled={isStudent ? isEnrolled || enrollmentRequested : true}
+            onPress={() => {
+                if (isEnrolled) {
+                    navigation.navigate("Lesson", { 
+                        courseId: course.id || course._id, 
+                        courseTitle: course.title,
+                        progress: currentProgressPercent
+                    });
+                } else {
+                    handleEnroll();
+                }
+            }}
+            disabled={isStudent ? (!isEnrolled && enrollmentRequested) : true}
           />
         </View>
       </View>

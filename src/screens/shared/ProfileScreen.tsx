@@ -17,6 +17,7 @@ import { COLORS } from "../../utils/theme";
 import { authApi } from "../../api/endpoints";
 import { StudentScreenHeader } from "../../components/StudentScreenHeader";
 import { StudentStatCard } from "../../components/StudentStatCard";
+import { AppHeader } from "../../components/AppHeader";
 
 export default function ProfileScreen({ navigation }: any) {
   const { width } = useWindowDimensions();
@@ -66,6 +67,7 @@ export default function ProfileScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper>
+      <AppHeader role={user?.role} subtitle="Account Center" />
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: isTablet ? 34 : 24 }}>
         <View style={{ width: "100%", maxWidth: shellMaxWidth, alignSelf: "center" }}>
           <StudentScreenHeader

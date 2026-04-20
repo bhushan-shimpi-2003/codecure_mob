@@ -10,6 +10,8 @@ import { COLORS } from "../../utils/theme";
 import { extractApiData, isApiSuccess } from "../../api/response";
 import { StudentScreenHeader } from "../../components/StudentScreenHeader";
 import { StudentStatCard } from "../../components/StudentStatCard";
+import { useAuth } from "../../context/AuthContext";
+import { AppHeader } from "../../components/AppHeader";
 
 export default function CoursesScreen({ navigation }: any) {
   const { width } = useWindowDimensions();
@@ -73,64 +75,66 @@ export default function CoursesScreen({ navigation }: any) {
     [enrollments]
   );
 
+  const { user } = useAuth();
+
   return (
-    <SafeAreaWrapper>
+    <SafeAreaWrapper bgWhite>
+      <AppHeader role={user?.role} subtitle="Workplace" />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: isTablet ? 34 : 24 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View style={{ width: "100%", maxWidth: shellMaxWidth, alignSelf: "center" }}>
-          <StudentScreenHeader
-            badge="Student Workspace"
-            title="My Courses"
-            subtitle="Track and continue your enrolled learning paths"
-          />
-
-          <View style={{ paddingHorizontal: horizontalPadding }} className="pt-1 pb-2 flex-row flex-wrap justify-between">
-            <StudentStatCard label="Enrolled" value={enrollments.length} Icon={BookOpen} tone="blue" />
-            <StudentStatCard label="Active" value={activeEnrolledCount} Icon={CheckCircle2} tone="emerald" />
+          
+          <View className="px-6 pt-8 mb-4">
+             <View className="bg-emerald-50 px-3 py-1 rounded-lg self-start mb-4">
+                <Text className="text-emerald-600 font-extrabold text-[10px] uppercase tracking-widest">Active Workplace</Text>
+             </View>
+             <Text className="text-[34px] font-black text-slate-900 leading-tight">
+                My{"\n"}
+                <Text className="text-blue-600">Learning</Text> Paths.
+            </Text>
           </View>
 
-          <View style={{ paddingHorizontal: horizontalPadding, paddingTop: 12 }}>
+          <View style={{ paddingHorizontal: 24, paddingTop: 12 }}>
             <Input
-              placeholder="Search courses..."
+              placeholder="Search your courses..."
               value={search}
               onChangeText={setSearch}
               leftIcon={<Search size={20} color={COLORS.slate400} />}
             />
 
-            <View className="flex-row items-center justify-between mb-2">
+            <View className="flex-row items-center justify-between mb-4 mt-2">
               <Text className="text-xs font-black text-slate-500 uppercase tracking-widest">Enrolled Courses</Text>
-              <Text className="text-[11px] font-black text-blue-600 uppercase tracking-wider">{enrolledCourses.length}</Text>
-            </View>
-            <Text className="text-slate-400 text-xs mb-3">Courses approved for your learning path</Text>
-            {isLoading ? (
-              <View className="flex-row flex-wrap justify-between mt-2 mb-4">
-                <View style={{ width: gridItemWidth }}>
-                  <Skeleton height={280} className="rounded-3xl" />
-                </View>
-                <View style={{ width: gridItemWidth }}>
-                  <Skeleton height={280} className="rounded-3xl" />
-                </View>
+              <View className="bg-blue-600 px-2 py-0.5 rounded-md">
+                <Text className="text-[10px] font-black text-white uppercase tracking-wider">{enrolledCourses.length}</Text>
               </View>
+            </View>
+
+            {isLoading ? (
+                <View className="gap-6">
+                    <Skeleton height={280} className="rounded-[40px]" />
+                    <Skeleton height={280} className="rounded-[40px]" />
+                </View>
             ) : enrollments.length === 0 ? (
-              <View className="bg-white rounded-2xl border border-slate-100 px-4 py-4 mb-4">
-                <Text className="text-slate-500 text-sm">You are not enrolled yet. Explore and request access below.</Text>
+              <View className="bg-white rounded-[40px] border border-slate-100 p-10 items-center justify-center">
+                <BookOpen size={48} color={COLORS.slate200} />
+                <Text className="text-slate-500 font-bold mt-4 text-center">You haven't joined any courses yet. Check the catalog!</Text>
               </View>
             ) : enrolledCourses.length === 0 ? (
-              <View className="bg-white rounded-2xl border border-slate-100 px-4 py-4 mb-4">
-                <Text className="text-slate-500 text-sm">No enrolled course matches your search.</Text>
+              <View className="bg-white rounded-[40px] border border-slate-100 p-10 items-center justify-center">
+                <Text className="text-slate-400 font-bold text-center">No match found in your library.</Text>
               </View>
             ) : (
-              <View className="flex-row flex-wrap justify-between">
+              <View>
                 {enrolledCourses.map((entry, i) => {
                   const enr = entry.enrollment;
                   const courseRef = entry.course;
                   const idOrSlug = courseRef?.slug || courseRef?.id || courseRef?._id;
                   return (
-                    <View key={String(enr?.id || enr?._id || i)} style={{ width: gridItemWidth }}>
                       <CourseCard
+                        key={String(enr?.id || enr?._id || i)}
                         course={courseRef || { title: "Enrolled Course" }}
                         isEnrolled
                         onPress={() => {
@@ -139,7 +143,6 @@ export default function CoursesScreen({ navigation }: any) {
                           }
                         }}
                       />
-                    </View>
                   );
                 })}
               </View>
@@ -150,3 +153,4 @@ export default function CoursesScreen({ navigation }: any) {
     </SafeAreaWrapper>
   );
 }
+

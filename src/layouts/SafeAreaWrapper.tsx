@@ -1,5 +1,6 @@
 import React from "react";
-import { SafeAreaView, StatusBar, ViewProps, Platform } from "react-native";
+import { StatusBar, ViewProps, Platform } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS } from "../utils/theme";
 
 interface SafeAreaWrapperProps extends ViewProps {
@@ -24,13 +25,12 @@ export const SafeAreaWrapper: React.FC<SafeAreaWrapperProps> = ({
     <SafeAreaView
       className={`flex-1 ${bgColorClass} ${className}`}
       style={[
-        { paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0 },
         transparent && { backgroundColor: "transparent" },
         style
       ]}
       {...props}
     >
-      <StatusBar barStyle={statusBarStyle} backgroundColor={statusBarBg} />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={statusBarBg} translucent={transparent} />
       {children}
     </SafeAreaView>
   );

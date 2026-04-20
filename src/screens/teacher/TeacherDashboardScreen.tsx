@@ -19,6 +19,8 @@ import { Skeleton } from "../../components/Skeleton";
 import { extractApiData, getApiError, isApiSuccess } from "../../api/response";
 import { TeacherScreenHeader } from "../../components/TeacherScreenHeader";
 import { TeacherStatCard } from "../../components/TeacherStatCard";
+import { AppHeader } from "../../components/AppHeader";
+import { useAuth } from "../../context/AuthContext";
 
 export default function TeacherDashboardScreen({ navigation }: any) {
   const [courses, setCourses] = useState<any[]>([]);
@@ -162,8 +164,11 @@ export default function TeacherDashboardScreen({ navigation }: any) {
     });
   };
 
+  const { user } = useAuth();
+
   return (
     <SafeAreaWrapper>
+      <AppHeader role={user?.role || "Teacher"} />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: isTablet ? 36 : 24 }}

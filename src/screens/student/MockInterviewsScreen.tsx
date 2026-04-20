@@ -25,6 +25,8 @@ import { extractApiData, isApiSuccess } from "../../api/response";
 import { Skeleton } from "../../components/Skeleton";
 import { StudentScreenHeader } from "../../components/StudentScreenHeader";
 import { StudentStatCard } from "../../components/StudentStatCard";
+import { useAuth } from "../../context/AuthContext";
+import { AppHeader } from "../../components/AppHeader";
 
 export default function MockInterviewsScreen() {
   const { width } = useWindowDimensions();
@@ -124,8 +126,11 @@ export default function MockInterviewsScreen() {
     });
   };
 
+  const { user } = useAuth();
+
   return (
     <SafeAreaWrapper>
+      <AppHeader role={user?.role} subtitle="Interviews" />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: isTablet ? 34 : 24 }}

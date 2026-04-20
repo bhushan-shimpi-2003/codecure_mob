@@ -10,6 +10,8 @@ import { Skeleton } from "../../components/Skeleton";
 import { extractApiData, isApiSuccess } from "../../api/response";
 import { StudentScreenHeader } from "../../components/StudentScreenHeader";
 import { StudentStatCard } from "../../components/StudentStatCard";
+import { useAuth } from "../../context/AuthContext";
+import { AppHeader } from "../../components/AppHeader";
 
 export default function AssignmentsScreen() {
   const { width } = useWindowDimensions();
@@ -74,8 +76,11 @@ export default function AssignmentsScreen() {
     }
   };
 
+  const { user } = useAuth();
+
   return (
     <SafeAreaWrapper>
+      <AppHeader role={user?.role} subtitle="Training" />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: isTablet ? 34 : 24 }}

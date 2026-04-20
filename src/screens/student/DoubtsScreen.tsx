@@ -10,6 +10,8 @@ import { Skeleton } from "../../components/Skeleton";
 import { extractApiData, getApiError, isApiSuccess } from "../../api/response";
 import { StudentScreenHeader } from "../../components/StudentScreenHeader";
 import { StudentStatCard } from "../../components/StudentStatCard";
+import { useAuth } from "../../context/AuthContext";
+import { AppHeader } from "../../components/AppHeader";
 
 export default function DoubtsScreen({ route, navigation }: any) {
   const { width } = useWindowDimensions();
@@ -99,8 +101,11 @@ export default function DoubtsScreen({ route, navigation }: any) {
   const resolvedCount = doubts.filter((item) => item?.status === "resolved").length;
   const pendingCount = doubts.length - resolvedCount;
 
+  const { user } = useAuth();
+
   return (
     <SafeAreaWrapper>
+      <AppHeader role={user?.role} subtitle="Support Hub" />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: isTablet ? 34 : 24 }}
