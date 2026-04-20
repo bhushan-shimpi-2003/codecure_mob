@@ -45,17 +45,7 @@ export default function RootNavigator() {
               <Stack.Screen name="StudentMain" component={MainNavigator} />
             )}
 
-            {/* Shared & Student Stack Screens */}
-            <Stack.Screen 
-              name="CourseDetail" 
-              component={CourseDetailScreen} 
-              options={{ headerShown: true, title: "Course Details" }}
-            />
-            <Stack.Screen 
-              name="Lesson" 
-              component={LessonScreen} 
-              options={{ headerShown: true, title: "Lesson Player" }}
-            />
+            {/* Global screens that don't belong to a specific tab branch or hide tabs intentionally */}
             <Stack.Screen 
               name="Assignments" 
               component={AssignmentsScreen} 

@@ -1,5 +1,6 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import {
   LayoutDashboard,
   BookOpen,
@@ -12,9 +13,36 @@ import TeacherCoursesScreen from "../screens/teacher/TeacherCoursesScreen";
 import TeacherSubmissionsScreen from "../screens/teacher/TeacherSubmissionsScreen";
 import TeacherInterviewsScreen from "../screens/teacher/TeacherInterviewsScreen";
 import TeacherProfileScreen from "../screens/teacher/TeacherProfileScreen";
+import CourseDetailScreen from "../screens/shared/CourseDetailScreen";
+import LessonScreen from "../screens/student/LessonScreen";
 import { COLORS } from "../utils/theme";
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
+
+// ─── Component Definitions ───────────────────────────────────────────────────
+
+function TeacherDashboardStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="TeacherDashboardHome" component={TeacherDashboardScreen} />
+      <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
+      <Stack.Screen name="Lesson" component={LessonScreen} />
+    </Stack.Navigator>
+  );
+}
+
+function TeacherCoursesStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="TeacherCoursesHome" component={TeacherCoursesScreen} />
+      <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
+      <Stack.Screen name="Lesson" component={LessonScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// ─── Main Navigator ──────────────────────────────────────────────────────────
 
 export default function TeacherMainNavigator() {
   return (
@@ -49,16 +77,16 @@ export default function TeacherMainNavigator() {
       }}
     >
       <Tab.Screen
-        name="TeacherDashboard"
-        component={TeacherDashboardScreen}
+        name="TeacherDashboardTab"
+        component={TeacherDashboardStack}
         options={{
           title: "Dashboard",
           tabBarIcon: ({ color, size }) => <LayoutDashboard color={color} size={size} />,
         }}
       />
       <Tab.Screen
-        name="TeacherCourses"
-        component={TeacherCoursesScreen}
+        name="TeacherCoursesTab"
+        component={TeacherCoursesStack}
         options={{
           title: "Courses",
           tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} />,

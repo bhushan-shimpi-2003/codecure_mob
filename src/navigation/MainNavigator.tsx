@@ -1,14 +1,52 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { LayoutDashboard, BookOpen, User, MessageSquare, Layers } from "lucide-react-native";
 import DashboardScreen from "../screens/student/DashboardScreen";
 import CoursesScreen from "../screens/shared/CoursesScreen";
 import ExploreCoursesScreen from "../screens/student/ExploreCoursesScreen";
 import ProfileScreen from "../screens/shared/ProfileScreen";
 import DoubtsScreen from "../screens/student/DoubtsScreen";
+import CourseDetailScreen from "../screens/shared/CourseDetailScreen";
+import LessonScreen from "../screens/student/LessonScreen";
 import { COLORS } from "../utils/theme";
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
+
+// ─── Component Definitions ───────────────────────────────────────────────────
+
+function DashboardStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="DashboardHome" component={DashboardScreen} />
+      <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
+      <Stack.Screen name="Lesson" component={LessonScreen} />
+    </Stack.Navigator>
+  );
+}
+
+function MyCoursesStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MyCoursesHome" component={CoursesScreen} />
+      <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
+      <Stack.Screen name="Lesson" component={LessonScreen} />
+    </Stack.Navigator>
+  );
+}
+
+function ExploreStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="ExploreHome" component={ExploreCoursesScreen} />
+      <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
+      <Stack.Screen name="Lesson" component={LessonScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// ─── Main Navigator ──────────────────────────────────────────────────────────
 
 export default function MainNavigator() {
   return (
@@ -43,24 +81,24 @@ export default function MainNavigator() {
       }}
     >
       <Tab.Screen
-        name="Dashboard"
-        component={DashboardScreen}
+        name="DashboardTab"
+        component={DashboardStack}
         options={{
           title: "Home",
           tabBarIcon: ({ color, size }) => <LayoutDashboard color={color} size={size} />,
         }}
       />
       <Tab.Screen
-        name="MyCourses"
-        component={CoursesScreen}
+        name="MyCoursesTab"
+        component={MyCoursesStack}
         options={{
           title: "My Courses",
           tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} />,
         }}
       />
       <Tab.Screen
-        name="Courses"
-        component={ExploreCoursesScreen}
+        name="CoursesTab"
+        component={ExploreStack}
         options={{
           title: "Courses",
           tabBarIcon: ({ color, size }) => <Layers color={color} size={size} />,
