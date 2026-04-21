@@ -1,133 +1,199 @@
-import React from "react";
-import { View, Text, ScrollView, TouchableOpacity, Image, Alert, useWindowDimensions } from "react-native";
-import { User, ShieldCheck, LogOut, ChevronRight, Mail, Phone, Settings } from "lucide-react-native";
-import { useAuth } from "../../context/AuthContext";
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
+} from "react-native";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
-import { TeacherScreenHeader } from "../../components/TeacherScreenHeader";
-import { TeacherStatCard } from "../../components/TeacherStatCard";
-import { COLORS } from "../../utils/theme";
-import { authApi } from "../../api/endpoints";
+import { authApi, coursesApi } from "../../api/endpoints";
+import { extractApiData, isApiSuccess } from "../../api/response";
+import { 
+  Mail, 
+  Phone, 
+  Link2, 
+  Code, 
+  Edit2, 
+  Star, 
+  Users, 
+} from "lucide-react-native";
 import { AppHeader } from "../../components/AppHeader";
 
-export default function TeacherProfileScreen({ navigation }: any) {
-  const { width } = useWindowDimensions();
-  const isTablet = width >= 768;
-  const horizontalPadding = isTablet ? 30 : 24;
-  const shellMaxWidth = isTablet ? 980 : undefined;
+export default function TeacherProfileScreen() {
+  const [profile, setProfile] = useState<any>(null);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const { user, logout } = useAuth();
+  const fetchData = async () => {
+    try {
+      const [pRes, cRes] = await Promise.all([
+        authApi.me(),
+        coursesApi.teacherCourses()
+      ]);
 
-  const displayName =
-    String(
-      user?.name ||
-        (user as any)?.full_name ||
-        (user as any)?.username ||
-        (user?.email ? String(user.email).split("@")[0] : "Teacher")
-    ) || "Teacher";
-
-  const handleLogout = () => {
-    Alert.alert("Logout", "Are you sure you want to log out?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Logout",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await authApi.logout();
-            await logout();
-          } catch (e) {
-            await logout();
-          }
-        },
-      },
-    ]);
+      if (isApiSuccess(pRes.data)) {
+        setProfile(extractApiData(pRes.data, null));
+      }
+      if (isApiSuccess(cRes.data)) {
+        setCourses(extractApiData<any[]>(cRes.data, []));
+      }
+    } catch (e) {
+      console.log("Error fetching profile data", e);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
   };
 
-  const menuItems = [
-    { icon: User, label: "Edit Profile", tone: "blue" },
-    { icon: ShieldCheck, label: "Security", tone: "emerald" },
-    { icon: Settings, label: "Settings", tone: "slate" },
-  ];
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  if (isLoading && !refreshing) {
+    return (
+      <SafeAreaWrapper>
+        <View className="flex-1 items-center justify-center bg-white">
+          <ActivityIndicator size="large" color="#2563EB" />
+        </View>
+      </SafeAreaWrapper>
+    );
+  }
 
   return (
     <SafeAreaWrapper>
-      <AppHeader role={user?.role} subtitle="Teacher Center" />
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: isTablet ? 34 : 24 }}>
-        <View style={{ width: "100%", maxWidth: shellMaxWidth, alignSelf: "center" }}>
-          <TeacherScreenHeader
-            badge="Teacher Workspace"
-            title="Profile"
-            subtitle="Manage your account and teaching identity"
-          />
-
-          <View style={{ paddingHorizontal: horizontalPadding }} className="pt-1 pb-2 flex-row flex-wrap justify-between">
-            <TeacherStatCard label="Role" value={String(user?.role || "teacher").toUpperCase()} Icon={ShieldCheck} tone="blue" />
-            <TeacherStatCard label="Status" value="Active" Icon={User} tone="emerald" />
+      <AppHeader role="Teacher" />
+      <ScrollView 
+        className="flex-1 bg-[#F8FAFC]" 
+        contentContainerStyle={{ paddingBottom: 60 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} />}
+      >
+        <View className="items-center pt-8 px-6">
+          {/* Avatar Section */}
+          <View className="relative">
+            <View className="w-44 h-44 rounded-[48px] overflow-hidden border-4 border-white shadow-2xl">
+              <Image 
+                source={{ uri: profile?.avatar_url || "https://i.pravatar.cc/300?img=12" }} 
+                className="w-full h-full bg-slate-200"
+              />
+            </View>
+            <TouchableOpacity className="absolute bottom-1 right-1 w-12 h-12 bg-blue-600 rounded-2xl items-center justify-center border-4 border-white shadow-lg">
+              <Edit2 size={18} color="white" />
+            </TouchableOpacity>
           </View>
 
-          <View style={{ paddingHorizontal: horizontalPadding, paddingTop: 12 }}>
-            <View className="items-center mb-7 bg-white border border-slate-100 rounded-3xl p-6">
-              <View className="w-24 h-24 rounded-full bg-blue-100 items-center justify-center border-4 border-white shadow-sm overflow-hidden mb-4">
-                {user?.profile_picture ? (
-                  <Image source={{ uri: user.profile_picture }} className="w-full h-full" />
-                ) : (
-                  <User size={48} color={COLORS.primary} />
-                )}
+          {/* Identity */}
+          <Text className="text-3xl font-black text-slate-900 mt-6">{profile?.name || "Professor"}</Text>
+          <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mt-1">{profile?.role || "MENTOR"}</Text>
+          
+          <Text className="text-slate-500 text-center mt-5 leading-5 px-4 font-medium">
+            {profile?.bio || "Expert educator at CodeCure Academy, dedicated to building the next generation of full-stack engineers."}
+          </Text>
+ 
+          {/* Stats Cards */}
+          <View className="flex-row gap-4 mt-8">
+             <View className="flex-1 bg-white rounded-[32px] p-6 items-center border border-slate-50 shadow-sm">
+                <Text className="text-2xl font-black text-blue-600">{profile?.experience_years || "5+"}</Text>
+                <Text className="text-[9px] font-black text-slate-400 uppercase tracking-wider mt-1">Exp. Years</Text>
+             </View>
+             <View className="flex-1 bg-white rounded-[32px] p-6 items-center border border-slate-50 shadow-sm">
+                <Text className="text-2xl font-black text-blue-600">{courses.length}</Text>
+                <Text className="text-[9px] font-black text-slate-400 uppercase tracking-wider mt-1">Total Courses</Text>
+             </View>
+          </View>
+ 
+          {/* Rating Card */}
+          <View className="w-full bg-blue-600 rounded-[36px] p-8 mt-4 shadow-xl shadow-blue-200 items-center">
+             <Text className="text-4xl font-black text-white">{profile?.rating || "5.0"}</Text>
+             <View className="flex-row gap-1 mt-1">
+                {[1,2,3,4,5].map(i => <Star key={i} size={14} color="white" fill="white" />)}
+             </View>
+             <Text className="text-[10px] font-black text-blue-100 uppercase tracking-[1px] mt-2">Student Rating</Text>
+          </View>
+ 
+          {/* Skills Tags */}
+          <View className="flex-row flex-wrap justify-center gap-2 mt-8">
+            {(profile?.skills || ["Programming", "Logic", "Development"]).map((skill: any) => (
+              <View key={skill} className="bg-blue-100 px-4 py-2 rounded-full">
+                <Text className="text-[10px] font-black text-blue-700 uppercase">{skill}</Text>
               </View>
-
-              <Text className="text-xl font-bold text-slate-900">{displayName}</Text>
-              <View className="bg-slate-900 px-3 py-1 rounded-full mt-2">
-                <Text className="text-white text-xs font-bold uppercase tracking-wider">{user?.role || "Teacher"}</Text>
-              </View>
-            </View>
-
-            <View className="bg-white rounded-3xl p-5 mb-6 border border-slate-100 shadow-sm">
-              <View className="flex-row items-center mb-4">
-                <View className="bg-slate-50 p-2 rounded-xl mr-4">
-                  <Mail size={18} color={COLORS.slate500} />
+            ))}
+          </View>
+ 
+          {/* Schedule Button */}
+          <TouchableOpacity className="w-full bg-blue-600 rounded-[28px] py-5 items-center justify-center mt-8 shadow-lg shadow-blue-200">
+              <Text className="text-white font-black text-base">Update Status</Text>
+          </TouchableOpacity>
+ 
+          {/* Connect & Inquiries */}
+          <View className="w-full bg-white rounded-[40px] p-8 mt-10 border border-slate-50 shadow-sm">
+             <Text className="text-lg font-black text-slate-900 mb-6">Connect & Inquiries</Text>
+             
+             <View className="gap-6">
+                <View className="flex-row items-center">
+                   <View className="w-10 h-10 rounded-2xl bg-blue-50 items-center justify-center">
+                      <Mail size={18} color="#2563EB" />
+                   </View>
+                   <View className="ml-4">
+                      <Text className="text-[9px] font-black text-slate-400 uppercase">Email Address</Text>
+                      <Text className="text-slate-900 font-bold text-sm">{profile?.email || "mentor@codecure.edu"}</Text>
+                   </View>
                 </View>
-                <View>
-                  <Text className="text-xs font-semibold text-slate-400">Email Address</Text>
-                  <Text className="text-sm font-bold text-slate-900">{user?.email}</Text>
+ 
+                <View className="flex-row items-center">
+                   <View className="w-10 h-10 rounded-2xl bg-blue-50 items-center justify-center">
+                      <Phone size={18} color="#2563EB" />
+                   </View>
+                   <View className="ml-4">
+                      <Text className="text-[9px] font-black text-slate-400 uppercase">Direct Line</Text>
+                      <Text className="text-slate-900 font-bold text-sm">{profile?.phone || "+91 (Mobile Only)"}</Text>
+                   </View>
                 </View>
-              </View>
+ 
+                <View className="flex-row gap-3 mt-2">
+                   <TouchableOpacity className="flex-1 bg-slate-50 rounded-2xl py-4 flex-row items-center justify-center">
+                      <Link2 size={16} color="#475569" />
+                      <Text className="text-slate-700 font-bold text-xs ml-2">LinkedIn</Text>
+                   </TouchableOpacity>
+                   <TouchableOpacity className="flex-1 bg-slate-50 rounded-2xl py-4 flex-row items-center justify-center">
+                      <Code size={16} color="#475569" />
+                      <Text className="text-slate-700 font-bold text-xs ml-2">GitHub</Text>
+                   </TouchableOpacity>
+                </View>
+             </View>
+          </View>
 
-              <View className="flex-row items-center">
-                <View className="bg-slate-50 p-2 rounded-xl mr-4">
-                  <Phone size={18} color={COLORS.slate500} />
-                </View>
-                <View>
-                  <Text className="text-xs font-semibold text-slate-400">Phone Number</Text>
-                  <Text className="text-sm font-bold text-slate-900">{user?.phone || "+91 98765 43210"}</Text>
-                </View>
-              </View>
-            </View>
+          {/* Current Courses */}
+          <View className="w-full mt-10">
+             <View className="flex-row items-center justify-between mb-6">
+                <Text className="text-xl font-black text-slate-900">Current Courses</Text>
+                <TouchableOpacity><Text className="text-[10px] font-black text-blue-600 uppercase">View All</Text></TouchableOpacity>
+             </View>
 
-            <View className="bg-white rounded-3xl overflow-hidden mb-6 border border-slate-100 shadow-sm">
-              {menuItems.map((item, idx) => (
-                <TouchableOpacity
-                  key={idx}
-                  onPress={() => (idx === 0 ? navigation.navigate("EditProfile") : null)}
-                  className={`flex-row items-center p-4 ${idx !== menuItems.length - 1 ? "border-b border-slate-50" : ""}`}
-                >
-                  <View className={`p-2 rounded-xl mr-4 ${item.tone === "blue" ? "bg-blue-50" : item.tone === "emerald" ? "bg-emerald-50" : "bg-slate-50"}`}>
-                    <item.icon size={20} color={item.tone === "blue" ? COLORS.primary : item.tone === "emerald" ? COLORS.success : COLORS.slate600} />
+             <View className="gap-4">
+                {courses.slice(0, 2).map((course) => (
+                  <View key={course.id || course._id} className="bg-white rounded-[32px] p-4 flex-row items-center border border-slate-50 shadow-sm">
+                     <Image 
+                       source={{ uri: course.image_url || "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=200" }} 
+                       className="w-16 h-16 rounded-2xl bg-slate-100"
+                     />
+                     <View className="flex-1 ml-4 pr-4">
+                        <Text className="text-sm font-black text-slate-900" numberOfLines={1}>{course.title}</Text>
+                        <View className="flex-row items-center mt-1">
+                           <Users size={12} color="#94A3B8" />
+                           <Text className="text-[10px] font-bold text-slate-400 ml-1.5">{course.enrolled_count || 0} Students enrolled</Text>
+                        </View>
+                        {/* Progress bar style */}
+                        <View className="h-1 bg-slate-100 rounded-full mt-3 overflow-hidden">
+                           <View className="h-full bg-blue-600 w-[60%]" />
+                        </View>
+                     </View>
                   </View>
-                  <Text className="flex-1 font-bold text-slate-700">{item.label}</Text>
-                  <ChevronRight size={18} color={COLORS.slate300} />
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <TouchableOpacity
-              onPress={handleLogout}
-              className="flex-row items-center justify-center p-4 rounded-3xl bg-red-50 border border-red-100"
-            >
-              <LogOut size={20} color={COLORS.error} className="mr-2" />
-              <Text className="text-red-500 font-bold text-base">Log Out</Text>
-            </TouchableOpacity>
-
-            <Text className="text-center text-slate-400 text-xs mt-8">CodeCure Academy v1.0.0</Text>
+                ))}
+             </View>
           </View>
         </View>
       </ScrollView>

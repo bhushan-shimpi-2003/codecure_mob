@@ -1,277 +1,259 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   View,
   Text,
   ScrollView,
+  Image,
   TouchableOpacity,
   RefreshControl,
-  Modal,
-  useWindowDimensions,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
 import { doubtsApi } from "../../api/endpoints";
-import { extractApiData, getApiError, isApiSuccess } from "../../api/response";
-import { Skeleton } from "../../components/Skeleton";
-import { Button } from "../../components/Button";
-import { Input } from "../../components/Input";
-import {
-  MessageCircleWarning,
-  CircleCheckBig,
-  Clock3,
+import { extractApiData, isApiSuccess } from "../../api/response";
+import { 
+  MessageSquare, 
+  CheckCircle2, 
+  Video, 
+  Paperclip, 
+  Play, 
+  Trash2, 
+  Edit3,
+  Search,
+  Filter,
+  ArrowRight,
+  Clock,
+  ChevronRight,
   User,
-  BookOpen,
 } from "lucide-react-native";
-import { COLORS } from "../../utils/theme";
-import { TeacherScreenHeader } from "../../components/TeacherScreenHeader";
-import { TeacherStatCard } from "../../components/TeacherStatCard";
+import { AppHeader } from "../../components/AppHeader";
 
 export default function TeacherDoubtsScreen() {
-  const { width } = useWindowDimensions();
-  const isTablet = width >= 768;
-  const horizontalPadding = isTablet ? 30 : 24;
-  const shellMaxWidth = isTablet ? 980 : undefined;
-
   const [doubts, setDoubts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
+  const [activeReplyText, setActiveReplyText] = useState("");
+  const [activeTab, setActiveTab] = useState<'pending' | 'resolved'>('pending');
 
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedDoubtId, setSelectedDoubtId] = useState<string | null>(null);
-  const [reply, setReply] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const fetchDoubts = async () => {
-    setErrorMessage(null);
+  const fetchData = async () => {
     try {
       const res = await doubtsApi.teacherDoubts();
-      const payload = res.data;
-      if (isApiSuccess(payload)) {
-        const data = extractApiData<any[]>(payload, []);
-        setDoubts(Array.isArray(data) ? data : []);
-      } else {
-        setDoubts([]);
-        setErrorMessage(getApiError(payload));
+      if (isApiSuccess(res.data)) {
+        setDoubts(extractApiData<any[]>(res.data, []));
       }
     } catch (e) {
-      console.log("Error loading teacher doubts", e);
-      setDoubts([]);
-      setErrorMessage("Failed to load doubts");
+      console.log("Error fetching doubts", e);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
   };
 
-  useEffect(() => {
-    fetchDoubts();
-  }, []);
+  const handleResolve = async (id: string) => {
+    if (!activeReplyText.trim()) {
+      Alert.alert("Error", "Please enter a response.");
+      return;
+    }
 
-  const pendingCount = useMemo(
-    () => doubts.filter((item) => item?.status !== "resolved").length,
-    [doubts]
-  );
-
-  const openResolveModal = (doubtId: string) => {
-    setSelectedDoubtId(doubtId);
-    setReply("");
-    setModalVisible(true);
-  };
-
-  const handleResolveDoubt = async () => {
-    if (!selectedDoubtId || !reply.trim()) return;
-
-    setIsSubmitting(true);
     try {
-      const res = await doubtsApi.resolve(selectedDoubtId, reply.trim());
+      const res = await doubtsApi.resolve(id, activeReplyText.trim());
       if (isApiSuccess(res.data)) {
-        setModalVisible(false);
-        setSelectedDoubtId(null);
-        setReply("");
-        fetchDoubts();
-      } else {
-        setErrorMessage(getApiError(res.data));
+        Alert.alert("Success", "Query resolved successfully.");
+        setActiveReplyText("");
+        setReplyingToId(null);
+        fetchData();
       }
     } catch (e) {
-      console.log("Error resolving doubt", e);
-      setErrorMessage("Failed to resolve doubt");
-    } finally {
-      setIsSubmitting(false);
+      Alert.alert("Error", "Failed to resolve query.");
     }
   };
 
-  const resolveSelectedTitle = useMemo(() => {
-    const match = doubts.find((item) => String(item?.id || item?._id) === String(selectedDoubtId));
-    return match?.subject || "Selected Doubt";
-  }, [doubts, selectedDoubtId]);
+  useEffect(() => { fetchData(); }, []);
+
+  const filteredDoubts = useMemo(() => {
+    return doubts.filter(d => activeTab === 'pending' ? !d.is_resolved : d.is_resolved);
+  }, [doubts, activeTab]);
+
+  const stats = {
+    pending: doubts.filter(d => !d.is_resolved).length,
+    resolved: doubts.filter(d => d.is_resolved).length
+  };
+
+  if (isLoading) {
+    return (
+      <SafeAreaWrapper>
+        <AppHeader role="Teacher" />
+        <View className="flex-1 items-center justify-center bg-[#F8FAFC]">
+          <ActivityIndicator size="large" color="#2563EB" />
+          <Text className="text-slate-400 font-bold mt-4">Loading Queries...</Text>
+        </View>
+      </SafeAreaWrapper>
+    );
+  }
 
   return (
     <SafeAreaWrapper>
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ paddingBottom: isTablet ? 32 : 24 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              setRefreshing(true);
-              fetchDoubts();
-            }}
-          />
-        }
+      <AppHeader role="Teacher" />
+      <ScrollView 
+        className="flex-1 bg-[#F8FAFC]" 
+        contentContainerStyle={{ paddingBottom: 60 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} />}
       >
-        <View style={{ width: "100%", maxWidth: shellMaxWidth, alignSelf: "center" }}>
-          <TeacherScreenHeader
-            badge="Teacher Workspace"
-            title="Doubts Queue"
-            subtitle="Respond quickly and keep learner confidence high"
-          />
+        <View className="px-6 pt-6">
+          <View className="flex-row items-center justify-between mb-2">
+            <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px]">INTELLECTUAL SUPPORT</Text>
+            <TouchableOpacity className="bg-white p-2 rounded-full shadow-sm border border-slate-100"><Filter size={14} color="#64748B" /></TouchableOpacity>
+          </View>
+          <Text className="text-4xl font-black text-slate-900 mb-8">Doubt Hub</Text>
 
-          <View style={{ paddingHorizontal: horizontalPadding }} className="pt-1 pb-2 flex-row flex-wrap justify-between">
-            <TeacherStatCard
-              label="Total"
-              value={doubts.length}
-              Icon={MessageCircleWarning}
-              tone="slate"
-            />
-            <TeacherStatCard
-              label="Pending"
-              value={pendingCount}
-              Icon={Clock3}
-              tone="amber"
-            />
+          {/* Stats Cards */}
+          <View className="flex-row justify-between mb-10">
+            <TouchableOpacity 
+              onPress={() => setActiveTab('pending')}
+              className={`w-[48%] p-6 rounded-[32px] border ${activeTab === 'pending' ? 'bg-white border-blue-100 shadow-sm' : 'bg-slate-50 border-slate-100'}`}
+            >
+              <View className={`w-10 h-10 rounded-xl items-center justify-center mb-4 ${activeTab === 'pending' ? 'bg-blue-600' : 'bg-slate-200'}`}>
+                <Clock size={18} color="white" />
+              </View>
+              <Text className={`text-2xl font-black ${activeTab === 'pending' ? 'text-slate-900' : 'text-slate-400'}`}>{stats.pending}</Text>
+              <Text className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">WAITING</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              onPress={() => setActiveTab('resolved')}
+              className={`w-[48%] p-6 rounded-[32px] border ${activeTab === 'resolved' ? 'bg-white border-emerald-100 shadow-sm' : 'bg-slate-50 border-slate-100'}`}
+            >
+              <View className={`w-10 h-10 rounded-xl items-center justify-center mb-4 ${activeTab === 'resolved' ? 'bg-emerald-600' : 'bg-slate-200'}`}>
+                <CheckCircle2 size={18} color="white" />
+              </View>
+              <Text className={`text-2xl font-black ${activeTab === 'resolved' ? 'text-slate-900' : 'text-slate-400'}`}>{stats.resolved}</Text>
+              <Text className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">RESOLVED</Text>
+            </TouchableOpacity>
           </View>
 
-          {errorMessage ? (
-            <View style={{ marginHorizontal: horizontalPadding }} className="mb-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-              <Text className="text-amber-700 text-sm font-semibold">{errorMessage}</Text>
-            </View>
-          ) : null}
+          {/* Doubts Feed */}
+          <View className="gap-8">
+            {filteredDoubts.length > 0 ? (
+              filteredDoubts.map((doubt) => {
+                const student = doubt.profiles || doubt.student || {};
+                const doubtId = doubt.id || doubt._id;
+                const isResolved = activeTab === 'resolved';
 
-          <View style={{ paddingHorizontal: horizontalPadding, paddingTop: 12 }}>
-          {isLoading ? (
-            <View className="gap-4">
-              <Skeleton height={170} className="rounded-3xl" />
-              <Skeleton height={170} className="rounded-3xl" />
-            </View>
-          ) : doubts.length === 0 ? (
-            <View className="bg-white border border-slate-100 rounded-3xl p-8 items-center justify-center">
-              <MessageCircleWarning size={36} color={COLORS.slate300} />
-              <Text className="text-slate-600 font-bold mt-3">No doubts to review</Text>
-            </View>
-          ) : (
-            doubts.map((item, index) => {
-              const doubtId = String(item?.id || item?._id || index);
-              const isResolved = item?.status === "resolved";
-              const student = item?.profiles || item?.student || {};
-              const course = item?.courses || item?.course || {};
+                return (
+                  <View key={doubtId} className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-50">
+                    <View className="flex-row items-center justify-between mb-8">
+                      <View className="flex-row items-center">
+                        <View className="relative">
+                          <Image 
+                            source={{ uri: student.avatar_url || `https://ui-avatars.com/api/?name=${student.name || 'S'}` }} 
+                            className="w-14 h-14 rounded-[20px] bg-slate-50"
+                          />
+                          <View className={`absolute -bottom-1 -right-1 w-5 h-5 border-4 border-white rounded-full ${isResolved ? 'bg-emerald-500' : 'bg-blue-500'}`} />
+                        </View>
+                        <View className="ml-4">
+                          <Text className="text-base font-black text-slate-900">{student.name || "Student"}</Text>
+                          <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-tight" numberOfLines={1}>
+                            {doubt.courses?.title || "Python Programming"}
+                          </Text>
+                        </View>
+                      </View>
+                      <View className="bg-slate-50 px-3 py-1.5 rounded-xl">
+                        <Text className="text-[9px] font-black text-slate-400 uppercase">
+                          {new Date(doubt.created_at || Date.now()).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                        </Text>
+                      </View>
+                    </View>
 
-              return (
-                <View
-                  key={doubtId}
-                  className="bg-white border border-slate-100 shadow-sm rounded-3xl p-5 mb-4"
-                >
-                  <View className="flex-row items-start justify-between">
-                    <View className="flex-1 mr-3">
-                      <Text className="text-slate-900 text-base font-black" numberOfLines={1}>
-                        {item?.subject || "Untitled doubt"}
+                    <View className="bg-slate-50/50 rounded-[32px] p-6 mb-8 border border-slate-100/50">
+                      <Text className="text-sm text-slate-600 leading-6 font-medium italic">
+                        "{doubt.query}"
                       </Text>
-                      <Text className="text-slate-600 text-sm mt-1" numberOfLines={3}>
-                        {item?.description || "No description"}
-                      </Text>
-                    </View>
-                    <View className={`px-2 py-1 rounded-lg ${isResolved ? "bg-emerald-100" : "bg-amber-100"}`}>
-                      <Text className={`text-[10px] font-black uppercase ${isResolved ? "text-emerald-700" : "text-amber-700"}`}>
-                        {isResolved ? "Resolved" : "Pending"}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View className="flex-row mt-4 gap-3">
-                    <View className="flex-row items-center flex-1">
-                      <User size={14} color={COLORS.slate400} />
-                      <Text className="text-xs text-slate-500 ml-1" numberOfLines={1}>
-                        {student?.name || student?.email || "Student"}
-                      </Text>
-                    </View>
-                    <View className="flex-row items-center flex-1">
-                      <BookOpen size={14} color={COLORS.slate400} />
-                      <Text className="text-xs text-slate-500 ml-1" numberOfLines={1}>
-                        {course?.title || "General"}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {item?.reply ? (
-                    <View className="bg-slate-50 rounded-2xl px-3 py-3 mt-4 border-l-4 border-blue-500">
-                      <Text className="text-xs font-black text-blue-600 uppercase">Teacher reply</Text>
-                      <Text className="text-slate-700 text-sm mt-1">{item.reply}</Text>
-                    </View>
-                  ) : null}
-
-                  <View className="flex-row items-center justify-between mt-4">
-                    <View className="flex-row items-center">
-                      <Clock3 size={14} color={COLORS.slate400} />
-                      <Text className="text-xs text-slate-500 ml-1">{isResolved ? "Resolved" : "Awaiting response"}</Text>
                     </View>
 
                     {!isResolved ? (
-                      <Button
-                        title="Resolve"
-                        className="h-10 px-4"
-                        textClassName="text-sm"
-                        onPress={() => openResolveModal(doubtId)}
-                        leftIcon={<CircleCheckBig size={16} color={COLORS.white} />}
-                      />
-                    ) : null}
+                      <View className="gap-6">
+                        <View className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-inner">
+                          <TextInput 
+                            placeholder="Share your expertise..."
+                            multiline
+                            className="text-slate-900 text-sm h-32 text-start align-top"
+                            placeholderTextColor="#94A3B8"
+                            value={doubtId === replyingToId ? activeReplyText : ""}
+                            onChangeText={(txt) => {
+                              setReplyingToId(doubtId);
+                              setActiveReplyText(txt);
+                            }}
+                          />
+                          <View className="flex-row justify-end gap-2 pt-4 border-t border-slate-50">
+                             <TouchableOpacity className="w-10 h-10 bg-slate-50 rounded-xl items-center justify-center border border-slate-100">
+                                <Video size={16} color="#64748B" />
+                             </TouchableOpacity>
+                             <TouchableOpacity className="w-10 h-10 bg-slate-50 rounded-xl items-center justify-center border border-slate-100">
+                                <Paperclip size={16} color="#64748B" />
+                             </TouchableOpacity>
+                          </View>
+                        </View>
+
+                        <TouchableOpacity 
+                          onPress={() => handleResolve(doubtId)}
+                          disabled={!activeReplyText.trim()}
+                          className={`rounded-[24px] py-6 flex-row items-center justify-center shadow-lg ${activeReplyText.trim() ? 'bg-slate-900 shadow-slate-200' : 'bg-slate-100'}`}
+                        >
+                          <Text className={`font-black text-xs uppercase tracking-widest mr-2 ${activeReplyText.trim() ? 'text-white' : 'text-slate-400'}`}>Dispatch Answer</Text>
+                          <ArrowRight size={16} color={activeReplyText.trim() ? "white" : "#94A3B8"} />
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <View className="bg-emerald-50 rounded-[32px] p-6 flex-row items-center justify-between border border-emerald-100">
+                        <View className="flex-row items-center flex-1 pr-4">
+                          <View className="w-10 h-10 rounded-full bg-white items-center justify-center mr-4 shadow-sm">
+                            <CheckCircle2 size={18} color="#10B981" />
+                          </View>
+                          <View className="flex-1">
+                            <Text className="text-[10px] font-black text-emerald-800 uppercase tracking-widest">RESOLUTION SENT</Text>
+                            <Text className="text-xs text-emerald-600 mt-1" numberOfLines={1}>{doubt.response || "No response text."}</Text>
+                          </View>
+                        </View>
+                        <ChevronRight size={16} color="#10B981" />
+                      </View>
+                    )}
+                  </View>
+                );
+              })
+            ) : (
+              <View className="items-center justify-center py-24 bg-white rounded-[48px] border border-dashed border-slate-200">
+                <View className="w-20 h-20 bg-slate-50 rounded-full items-center justify-center mb-6">
+                  <MessageSquare size={32} color="#CBD5E1" />
+                </View>
+                <Text className="text-slate-400 font-black text-lg">Empty Inbox</Text>
+                <Text className="text-slate-300 text-xs mt-2 font-bold uppercase tracking-widest">No {activeTab} queries</Text>
+              </View>
+            )}
+
+            {/* Quick Draft Section */}
+            <TouchableOpacity className="mt-8 bg-[#1E293B] rounded-[40px] p-10 relative overflow-hidden shadow-2xl">
+              <View className="relative z-10">
+                <Text className="text-blue-400 text-[10px] font-black uppercase tracking-[3px] mb-4">SMART TOOLS</Text>
+                <Text className="text-white text-2xl font-black mb-2">Video Resolution</Text>
+                <Text className="text-slate-400 text-sm leading-6">Record a quick screen capture or voice note to explain complex logical concepts visually.</Text>
+                <View className="flex-row items-center mt-8">
+                  <View className="bg-blue-600 px-6 py-3 rounded-full flex-row items-center">
+                    <Play size={12} color="white" fill="white" className="mr-2" />
+                    <Text className="text-white font-black text-[10px] uppercase tracking-widest">Launch Studio</Text>
                   </View>
                 </View>
-              );
-            })
-          )}
+              </View>
+              <View className="absolute -top-10 -right-10 w-40 h-40 bg-blue-600/10 rounded-full" />
+              <View className="absolute -bottom-20 -left-20 w-60 h-60 bg-blue-500/5 rounded-full" />
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
-
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View className="flex-1 bg-slate-900/50 justify-end">
-          <View className="bg-white rounded-t-[36px] p-6 h-[62%]">
-            <View className="flex-row items-center justify-between mb-4">
-              <Text className="text-slate-900 text-lg font-black">Resolve Doubt</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Text className="text-slate-500 font-bold">Close</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text className="text-slate-500 text-sm mb-3" numberOfLines={2}>
-              {resolveSelectedTitle}
-            </Text>
-
-            <Input
-              label="Reply"
-              placeholder="Write your answer for the student"
-              value={reply}
-              onChangeText={setReply}
-              multiline
-              numberOfLines={6}
-              style={{ textAlignVertical: "top" }}
-            />
-
-            <Button
-              title="Submit Resolution"
-              onPress={handleResolveDoubt}
-              isLoading={isSubmitting}
-              disabled={!reply.trim()}
-              className="mt-2"
-            />
-          </View>
-        </View>
-      </Modal>
     </SafeAreaWrapper>
   );
 }

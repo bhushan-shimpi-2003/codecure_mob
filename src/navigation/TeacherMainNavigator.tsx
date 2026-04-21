@@ -5,17 +5,27 @@ import {
   LayoutDashboard,
   BookOpen,
   ClipboardList,
+  MessageCircle,
   CalendarDays,
   User,
+  LayoutGrid,
 } from "lucide-react-native";
 import TeacherDashboardScreen from "../screens/teacher/TeacherDashboardScreen";
 import TeacherCoursesScreen from "../screens/teacher/TeacherCoursesScreen";
+import TeacherManageLessonsScreen from "../screens/teacher/TeacherManageLessonsScreen";
+import TeacherCreateLessonScreen from "../screens/teacher/TeacherCreateLessonScreen";
+import TeacherEditLessonScreen from "../screens/teacher/TeacherEditLessonScreen";
+import TeacherReviewSubmissionScreen from "../screens/teacher/TeacherReviewSubmissionScreen";
 import TeacherSubmissionsScreen from "../screens/teacher/TeacherSubmissionsScreen";
+import TeacherAssignmentsScreen from "../screens/teacher/TeacherAssignmentsScreen";
+import TeacherDoubtsScreen from "../screens/teacher/TeacherDoubtsScreen";
 import TeacherInterviewsScreen from "../screens/teacher/TeacherInterviewsScreen";
+import TeacherJobsScreen from "../screens/teacher/TeacherJobsScreen";
 import TeacherProfileScreen from "../screens/teacher/TeacherProfileScreen";
 import CourseDetailScreen from "../screens/shared/CourseDetailScreen";
 import LessonScreen from "../screens/student/LessonScreen";
 import { COLORS } from "../utils/theme";
+import { Briefcase } from "lucide-react-native";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -26,6 +36,8 @@ function TeacherDashboardStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="TeacherDashboardHome" component={TeacherDashboardScreen} />
+      <Stack.Screen name="TeacherSubmissions" component={TeacherSubmissionsScreen} />
+      <Stack.Screen name="TeacherReviewSubmission" component={TeacherReviewSubmissionScreen} />
       <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
       <Stack.Screen name="Lesson" component={LessonScreen} />
     </Stack.Navigator>
@@ -36,8 +48,32 @@ function TeacherCoursesStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="TeacherCoursesHome" component={TeacherCoursesScreen} />
+      <Stack.Screen name="TeacherManageLessons" component={TeacherManageLessonsScreen} />
+      <Stack.Screen name="TeacherCreateLesson" component={TeacherCreateLessonScreen} />
+      <Stack.Screen name="TeacherEditLesson" component={TeacherEditLessonScreen} />
+      <Stack.Screen name="TeacherSubmissions" component={TeacherSubmissionsScreen} />
+      <Stack.Screen name="TeacherReviewSubmission" component={TeacherReviewSubmissionScreen} />
       <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
       <Stack.Screen name="Lesson" component={LessonScreen} />
+    </Stack.Navigator>
+  );
+}
+
+function TeacherAssignmentsStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="TeacherAssignmentsHome" component={TeacherAssignmentsScreen} />
+      <Stack.Screen name="TeacherSubmissions" component={TeacherSubmissionsScreen} />
+      <Stack.Screen name="TeacherReviewSubmission" component={TeacherReviewSubmissionScreen} />
+    </Stack.Navigator>
+  );
+}
+
+function TeacherCareerStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="TeacherInterviewsHome" component={TeacherInterviewsScreen} />
+      <Stack.Screen name="TeacherJobsHome" component={TeacherJobsScreen} />
     </Stack.Navigator>
   );
 }
@@ -50,29 +86,26 @@ export default function TeacherMainNavigator() {
       screenOptions={{
         headerShown: false,
         tabBarHideOnKeyboard: true,
-        tabBarActiveTintColor: COLORS.teacherGreen,
+        tabBarActiveTintColor: "#2563EB", 
         tabBarInactiveTintColor: COLORS.slate400,
         tabBarStyle: {
           backgroundColor: "#ffffff",
           borderTopWidth: 1,
           borderTopColor: COLORS.slate100,
-          height: 68,
-          paddingBottom: 8,
-          paddingTop: 8,
-          elevation: 10,
-          shadowColor: COLORS.teacherGreen,
+          minHeight: 85,
+          paddingBottom: 20,
+          paddingTop: 10,
+          elevation: 20,
+          shadowColor: "#000",
           shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.06,
-          shadowRadius: 10,
-        },
-        tabBarItemStyle: {
-          borderRadius: 14,
-          marginHorizontal: 2,
+          shadowOpacity: 0.08,
+          shadowRadius: 15,
         },
         tabBarLabelStyle: {
-          fontFamily: "Inter",
           fontSize: 11,
-          fontWeight: "600",
+          fontWeight: "900",
+          marginTop: 2,
+          height: 18,
         },
       }}
     >
@@ -80,8 +113,8 @@ export default function TeacherMainNavigator() {
         name="TeacherDashboardTab"
         component={TeacherDashboardStack}
         options={{
-          title: "Dashboard",
-          tabBarIcon: ({ color, size }) => <LayoutDashboard color={color} size={size} />,
+          title: "Hub",
+          tabBarIcon: ({ color, size }) => <LayoutGrid color={color} size={22} />,
         }}
       />
       <Tab.Screen
@@ -89,31 +122,39 @@ export default function TeacherMainNavigator() {
         component={TeacherCoursesStack}
         options={{
           title: "Courses",
-          tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <BookOpen color={color} size={22} />,
         }}
       />
       <Tab.Screen
-        name="TeacherSubmissions"
-        component={TeacherSubmissionsScreen}
+        name="TeacherAssignmentsTab"
+        component={TeacherAssignmentsStack}
         options={{
-          title: "Submissions",
-          tabBarIcon: ({ color, size }) => <ClipboardList color={color} size={size} />,
+          title: "Lab",
+          tabBarIcon: ({ color, size }) => <ClipboardList color={color} size={22} />,
         }}
       />
       <Tab.Screen
-        name="TeacherInterviews"
-        component={TeacherInterviewsScreen}
+        name="TeacherDoubtsTab"
+        component={TeacherDoubtsScreen}
         options={{
-          title: "Calendar",
-          tabBarIcon: ({ color, size }) => <CalendarDays color={color} size={size} />,
+          title: "Doubts",
+          tabBarIcon: ({ color, size }) => <MessageCircle color={color} size={22} />,
+        }}
+      />
+      <Tab.Screen
+        name="TeacherCareerTab"
+        component={TeacherCareerStack}
+        options={{
+          title: "Career",
+          tabBarIcon: ({ color, size }) => <Briefcase color={color} size={22} />,
         }}
       />
       <Tab.Screen
         name="TeacherProfile"
         component={TeacherProfileScreen}
         options={{
-          title: "Profile",
-          tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
+          title: "Me",
+          tabBarIcon: ({ color, size }) => <User color={color} size={22} />,
         }}
       />
     </Tab.Navigator>

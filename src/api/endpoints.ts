@@ -127,4 +127,14 @@ export const adminApi = {
 // ─── 9. PUBLIC / JOBS ────────────────────────────────────────────────────────
 export const jobsApi = {
   list: () => client.get("/jobs"),                                          // GET /jobs
+  create: (data: any) => client.post("/jobs", data),                        // POST /jobs
+  update: (id: string, data: any) => client.put(`/jobs/${id}`, data),      // PUT /jobs/:id
+  delete: (id: string) => client.delete(`/jobs/${id}`),                    // DELETE /jobs/:id
+};
+
+// ─── 10. TEACHER SPECIFIC DASHBOARD ──────────────────────────────────────────
+export const teacherApi = {
+  stats: () => client.get("teacher/dashboard/stats"),                      // GET /api/teacher/dashboard/stats
+  activity: () => client.get("teacher/dashboard/activity"),                // GET /api/teacher/dashboard/activity
+  courseStudents: (courseId: string) => client.get(`teacher/course/${courseId}/students`), // GET /api/teacher/course/:courseId/students
 };

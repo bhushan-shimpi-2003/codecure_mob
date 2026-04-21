@@ -1,24 +1,21 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, ScrollView, RefreshControl, TouchableOpacity, useWindowDimensions } from "react-native";
+import { View, Text, ScrollView, RefreshControl, TouchableOpacity, useWindowDimensions, Image } from "react-native";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
-import { assignmentsApi, coursesApi, doubtsApi, interviewsApi } from "../../api/endpoints";
+import { coursesApi, doubtsApi, interviewsApi, teacherApi } from "../../api/endpoints";
 import { 
-  GraduationCap, 
-  FileText, 
+  BookOpen, 
+  Users, 
   HelpCircle, 
-  CalendarClock,
+  Calendar,
   ChevronRight,
-  BookOpenCheck,
-  CirclePlay,
-  MessageCircleWarning,
-  UserCheck
+  Code,
+  CheckCircle2,
+  Video,
+  Bell,
+  MessageSquare,
 } from "lucide-react-native";
 import { COLORS } from "../../utils/theme";
-import { Button } from "../../components/Button";
-import { Skeleton } from "../../components/Skeleton";
-import { extractApiData, getApiError, isApiSuccess } from "../../api/response";
-import { TeacherScreenHeader } from "../../components/TeacherScreenHeader";
-import { TeacherStatCard } from "../../components/TeacherStatCard";
+import { extractApiData, isApiSuccess } from "../../api/response";
 import { AppHeader } from "../../components/AppHeader";
 import { useAuth } from "../../context/AuthContext";
 
@@ -26,97 +23,42 @@ export default function TeacherDashboardScreen({ navigation }: any) {
   const [courses, setCourses] = useState<any[]>([]);
   const [pendingDoubts, setPendingDoubts] = useState<any[]>([]);
   const [upcomingInterviews, setUpcomingInterviews] = useState<any[]>([]);
-  const [totalAssignments, setTotalAssignments] = useState(0);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [dashboardStats, setDashboardStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const { width } = useWindowDimensions();
-  const isTablet = width >= 768;
-  const horizontalPadding = isTablet ? 30 : 24;
-  const shellMaxWidth = isTablet ? 980 : undefined;
+  const { user } = useAuth();
 
   const fetchTeacherData = async () => {
-    setErrorMessage(null);
-
     try {
-      const [coursesRes, doubtsRes, interviewsRes] = await Promise.allSettled([
+      const [coursesRes, doubtsRes, interviewsRes, activityRes, statsRes] = await Promise.allSettled([
         coursesApi.teacherCourses(),
         doubtsApi.teacherDoubts(),
         interviewsApi.teacherInterviews(),
+        teacherApi.activity(),
+        teacherApi.stats(),
       ]);
 
-      let nextCourses: any[] = [];
-
       if (coursesRes.status === "fulfilled" && isApiSuccess(coursesRes.value.data)) {
-        const coursesData = extractApiData<any[]>(coursesRes.value.data, []);
-        nextCourses = Array.isArray(coursesData) ? coursesData : [];
+        setCourses(extractApiData<any[]>(coursesRes.value.data, []));
       }
-
       if (doubtsRes.status === "fulfilled" && isApiSuccess(doubtsRes.value.data)) {
-        const doubtsData = extractApiData<any[]>(doubtsRes.value.data, []);
-        const unresolved = (Array.isArray(doubtsData) ? doubtsData : []).filter(
-          (item) => item?.status !== "resolved"
-        );
-        setPendingDoubts(unresolved);
-      } else {
-        setPendingDoubts([]);
+        const doubts = extractApiData<any[]>(doubtsRes.value.data, []);
+        setPendingDoubts(doubts.filter(d => d.status !== "resolved" && d.is_resolved !== true));
       }
-
       if (interviewsRes.status === "fulfilled" && isApiSuccess(interviewsRes.value.data)) {
-        const interviewsData = extractApiData<any[]>(interviewsRes.value.data, []);
-        const now = Date.now();
-        const upcoming = (Array.isArray(interviewsData) ? interviewsData : [])
-          .filter((item) => {
-            if (item?.status === "completed" || item?.status === "cancelled") return false;
-            const time = item?.scheduled_at ? new Date(item.scheduled_at).getTime() : 0;
-            return time >= now;
-          })
-          .sort(
-            (a, b) =>
-              new Date(a?.scheduled_at || 0).getTime() -
-              new Date(b?.scheduled_at || 0).getTime()
-          );
-        setUpcomingInterviews(upcoming);
-      } else {
-        setUpcomingInterviews([]);
+        const interviews = extractApiData<any[]>(interviewsRes.value.data, []);
+        setUpcomingInterviews(interviews.filter(i => i.status === "scheduled" || i.status === "pending"));
       }
-
-      if (nextCourses.length > 0) {
-        const assignmentCalls = await Promise.allSettled(
-          nextCourses.map((course) => {
-            const courseId = course?.id || course?._id;
-            if (!courseId) {
-              return Promise.resolve({ data: { success: true, data: [] } });
-            }
-            return assignmentsApi.byCourse(String(courseId));
-          })
-        );
-
-        const assignmentsCount = assignmentCalls.reduce((sum, result) => {
-          if (result.status !== "fulfilled") return sum;
-          if (!isApiSuccess(result.value.data)) return sum;
-          const data = extractApiData<any[]>(result.value.data, []);
-          return sum + (Array.isArray(data) ? data.length : 0);
-        }, 0);
-
-        setTotalAssignments(assignmentsCount);
-      } else {
-        setTotalAssignments(0);
+      if (activityRes.status === "fulfilled" && isApiSuccess(activityRes.value.data)) {
+        setActivities(extractApiData<any[]>(activityRes.value.data, []));
       }
-
-      setCourses(nextCourses);
-
-      const failedCall =
-        (coursesRes.status === "fulfilled" && !isApiSuccess(coursesRes.value.data) && getApiError(coursesRes.value.data)) ||
-        (doubtsRes.status === "fulfilled" && !isApiSuccess(doubtsRes.value.data) && getApiError(doubtsRes.value.data)) ||
-        (interviewsRes.status === "fulfilled" && !isApiSuccess(interviewsRes.value.data) && getApiError(interviewsRes.value.data));
-
-      if (failedCall) {
-        setErrorMessage(failedCall);
+      if (statsRes.status === "fulfilled" && isApiSuccess(statsRes.value.data)) {
+        setDashboardStats(extractApiData(statsRes.value.data, null));
       }
     } catch (e) {
-      console.log("Error loading teacher data", e);
-      setErrorMessage("Failed to refresh teacher dashboard data");
+      console.log("Error loading dashboard", e);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -128,257 +70,214 @@ export default function TeacherDashboardScreen({ navigation }: any) {
   }, []);
 
   const totalStudents = useMemo(
-    () =>
-      courses.reduce((sum, item) => sum + Number(item?.students_enrolled || 0), 0),
-    [courses]
+    () => dashboardStats?.total_students || courses.reduce((sum, item) => sum + Number(item?.students_enrolled || 0), 0),
+    [courses, dashboardStats]
   );
 
-  const stats = [
-    { label: "My Courses", value: courses.length, icon: GraduationCap, tone: "blue" as const },
-    { label: "Students", value: totalStudents, icon: UserCheck, tone: "emerald" as const },
-    {
-      label: "Assignments",
-      value: totalAssignments,
-      icon: FileText,
-      tone: "amber" as const,
-      onPress: () => navigation.navigate("TeacherAssignments"),
-    },
-    {
-      label: "Open Doubts",
-      value: pendingDoubts.length,
-      icon: HelpCircle,
-      tone: "violet" as const,
-      onPress: () => navigation.navigate("TeacherDoubts"),
-    },
-  ];
-
-  const formatDate = (value?: string) => {
-    if (!value) return "Not scheduled";
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return "Not scheduled";
-    return parsed.toLocaleString(undefined, {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const getActivityIcon = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case 'submission': return <Code size={16} color="#2563EB" />;
+      case 'doubt': return <HelpCircle size={16} color="#E11D48" />;
+      case 'quiz': return <CheckCircle2 size={16} color="#10B981" />;
+      default: return <Bell size={16} color="#64748B" />;
+    }
   };
 
-  const { user } = useAuth();
+  const getActivityColorClass = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case 'submission': return 'bg-blue-100';
+      case 'doubt': return 'bg-rose-100';
+      case 'quiz': return 'bg-emerald-100';
+      default: return 'bg-slate-100';
+    }
+  };
 
   return (
     <SafeAreaWrapper>
-      <AppHeader role={user?.role || "Teacher"} />
+      <AppHeader role="Teacher" />
       <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ paddingBottom: isTablet ? 36 : 24 }}
+        className="flex-1 bg-[#F8FAFC]"
+        contentContainerStyle={{ paddingBottom: 40 }}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              setRefreshing(true);
-              fetchTeacherData();
-            }}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchTeacherData(); }} />
         }
       >
-        <View style={{ width: "100%", maxWidth: shellMaxWidth, alignSelf: "center" }}>
-          <TeacherScreenHeader
-            badge="Faculty Dashboard"
-            title="Education Hub"
-            subtitle="Track classes, learner load, and live teaching queues"
-          />
+        <View className="px-6 pt-6">
+          <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-2">TEACHER DASHBOARD</Text>
+          <Text className="text-4xl font-black text-slate-900 leading-[44px]">Welcome back, {user?.name?.split(' ')[0] || "Professor"}.</Text>
+          <Text className="text-slate-500 text-sm mt-3 leading-5">
+            Your students have been busy! You have {pendingDoubts.length} pending doubts and {upcomingInterviews.length} interviews scheduled today.
+          </Text>
 
-          <View
-            style={{
-              paddingHorizontal: horizontalPadding,
-              paddingTop: 12,
-            }}
-          >
-
-            {errorMessage ? (
-          <View className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 mb-6">
-            <Text className="text-amber-700 font-bold text-xs uppercase tracking-wider">Data Notice</Text>
-            <Text className="text-amber-700 text-sm mt-1">{errorMessage}</Text>
-          </View>
-        ) : null}
-
-        {/* Stats Row */}
-        <View className="flex-row flex-wrap justify-between mb-8">
-          {stats.map((stat, i) => (
-            <TeacherStatCard
-              key={i}
-              label={stat.label}
-              value={stat.value}
-              Icon={stat.icon}
-              tone={stat.tone}
-              onPress={stat.onPress}
-            />
-          ))}
-        </View>
-
-        <Text className="text-lg font-bold text-slate-900 mb-4">My Courses</Text>
-        
-        {isLoading ? (
-          <Skeleton height={200} className="rounded-[32px]" />
-        ) : courses.length === 0 ? (
-          <View className="bg-white p-8 rounded-[32px] border border-slate-100 items-center justify-center">
-            <Text className="text-slate-500 font-medium">You haven't created any courses yet.</Text>
-          </View>
-        ) : (
-          courses.map((course) => (
+          {/* Stats Grid */}
+          <View className="flex-row flex-wrap justify-between mt-10">
+            {/* Courses */}
             <TouchableOpacity 
-              key={String(course?.id || course?._id || course?.slug)}
-              onPress={() => {
-                const idOrSlug = course?.slug || course?.id || course?._id;
-                if (idOrSlug) {
-                  navigation.navigate("CourseDetail", { idOrSlug });
-                }
-              }}
-              className="bg-white p-5 rounded-[32px] mb-4 border border-slate-100 shadow-sm flex-row items-center"
+              className="w-[47%] bg-white p-6 rounded-[32px] mb-6 shadow-sm border border-slate-50"
+              onPress={() => navigation.navigate("TeacherCoursesTab")}
             >
-              <View className="bg-slate-100 w-16 h-16 rounded-2xl mr-4 items-center justify-center">
-                <BookOpenCheck size={24} color={COLORS.primary} />
+              <View className="bg-blue-50 w-12 h-12 rounded-2xl items-center justify-center mb-4">
+                 <BookOpen size={20} color="#2563EB" />
               </View>
-              <View className="flex-1">
-                <Text className="font-bold text-slate-900 text-base" numberOfLines={1}>{course.title}</Text>
-                <Text className="text-xs text-slate-400 font-bold uppercase mt-1">
-                  {Number(course?.students_enrolled || 0)} Students enrolled
-                </Text>
-              </View>
-              <ChevronRight size={18} color={COLORS.slate300} />
+              <Text className="text-3xl font-black text-slate-900">{courses.length < 10 ? `0${courses.length}` : courses.length}</Text>
+              <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest">COURSES</Text>
             </TouchableOpacity>
-          ))
-        )}
 
-        <View className="flex-row items-center justify-between mt-6 mb-4">
-          <Text className="text-lg font-bold text-slate-900">Teaching Queue</Text>
-          <TouchableOpacity onPress={() => navigation.navigate("TeacherDoubts")}>
-            <Text className="text-xs font-black text-blue-600 uppercase">View Doubts</Text>
-          </TouchableOpacity>
-        </View>
-        {isLoading ? (
-          <Skeleton height={180} className="rounded-[32px] mb-4" />
-        ) : (
-          <View className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden mb-6">
-            <View className="px-5 py-4 border-b border-slate-50 flex-row items-center justify-between">
-              <View className="flex-row items-center">
-                <MessageCircleWarning size={16} color={COLORS.warning} />
-                <Text className="text-slate-900 font-bold ml-2">Pending Doubts</Text>
+            {/* Students */}
+            <TouchableOpacity className="w-[47%] bg-white p-6 rounded-[32px] mb-6 shadow-sm border border-slate-50">
+              <View className="bg-indigo-50 w-12 h-12 rounded-2xl items-center justify-center mb-4">
+                 <Users size={20} color="#4F46E5" />
               </View>
-              <Text className="text-xs font-black text-slate-500 uppercase">{pendingDoubts.length}</Text>
-            </View>
+              <Text className="text-3xl font-black text-slate-900">{totalStudents}</Text>
+              <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest">STUDENTS</Text>
+            </TouchableOpacity>
 
-            {pendingDoubts.slice(0, 3).map((item, idx) => (
-              <View
-                key={String(item?.id || item?._id || idx)}
-                className={`px-5 py-3 ${idx !== Math.min(pendingDoubts.length, 3) - 1 ? "border-b border-slate-50" : ""}`}
-              >
-                <Text className="text-slate-900 font-bold text-sm" numberOfLines={1}>
-                  {item?.subject || "Untitled doubt"}
-                </Text>
-                <Text className="text-slate-500 text-xs mt-1" numberOfLines={1}>
-                  {item?.description || "No description"}
-                </Text>
+            {/* Doubts */}
+            <TouchableOpacity 
+              className="w-[47%] bg-white p-6 rounded-[32px] mb-6 shadow-sm border border-slate-50 relative overflow-hidden"
+              onPress={() => navigation.navigate("TeacherDoubtsTab")}
+            >
+              <View className="absolute top-0 right-0 w-16 h-16 bg-[#FFE4E6] rounded-full -mr-8 -mt-8" />
+              <View className="absolute top-3 right-3 w-2 h-2 bg-[#E11D48] rounded-full" />
+              <View className="bg-rose-50 w-12 h-12 rounded-2xl items-center justify-center mb-4">
+                 <HelpCircle size={20} color="#E11D48" />
               </View>
-            ))}
+              <Text className="text-3xl font-black text-slate-900">{pendingDoubts.length < 10 ? `0${pendingDoubts.length}` : pendingDoubts.length}</Text>
+              <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest">PENDING DOUBTS</Text>
+            </TouchableOpacity>
 
-            {pendingDoubts.length === 0 ? (
-              <View className="px-5 py-4">
-                <Text className="text-slate-500 text-sm">No pending doubts right now.</Text>
+            {/* Interviews */}
+            <TouchableOpacity 
+              className="w-[47%] bg-[#1D4ED8] p-6 rounded-[32px] mb-6 shadow-xl shadow-blue-200"
+              onPress={() => navigation.navigate("TeacherCareerTab")}
+            >
+              <View className="bg-white/20 w-12 h-12 rounded-2xl items-center justify-center mb-4">
+                 <Calendar size={20} color="white" />
               </View>
+              <Text className="text-3xl font-black text-white">{upcomingInterviews.length < 10 ? `0${upcomingInterviews.length}` : upcomingInterviews.length}</Text>
+              <Text className="text-[10px] font-black text-blue-100 uppercase tracking-widest">INTERVIEWS</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Publish Vacancy Quick Action */}
+          <View className="mt-8 mb-6">
+             <TouchableOpacity 
+               className="bg-[#2D2E32] rounded-[40px] p-8 flex-row items-center justify-between"
+               onPress={() => navigation.navigate("TeacherCareerTab", { screen: 'TeacherJobs' })}
+             >
+                <View className="flex-1 mr-4">
+                   <Text className="text-white text-xl font-black mb-2">Publish Vacancy</Text>
+                   <Text className="text-slate-400 text-xs leading-4">Find talent for your projects or industry partners.</Text>
+                </View>
+                <View className="bg-blue-600 w-14 h-14 rounded-2xl items-center justify-center">
+                   <Bell size={24} color="white" />
+                </View>
+             </TouchableOpacity>
+          </View>
+ 
+          {/* Upcoming Interviews */}
+          <View>
+            <Text className="text-xl font-black text-slate-900 mb-6">Upcoming Interviews</Text>
+            
+            {upcomingInterviews.length > 0 ? (
+               upcomingInterviews.map((interview, idx) => (
+                 <View key={interview.id || idx} className="bg-white rounded-[32px] p-6 border border-slate-100 mb-4 flex-row items-center justify-between shadow-sm">
+                    <View>
+                       <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">
+                          {interview.time || "Scheduled"}
+                       </Text>
+                       <Text className="text-base font-black text-slate-900">{interview.title || "Technical Interview"}</Text>
+                       <Text className="text-slate-400 text-xs font-bold mt-0.5">{interview.student_name || interview.profiles?.name || "Student"}</Text>
+                    </View>
+                    <TouchableOpacity className="bg-blue-50 px-4 py-2 rounded-xl">
+                       <Text className="text-blue-600 font-bold text-xs">Join</Text>
+                    </TouchableOpacity>
+                 </View>
+               ))
             ) : (
-              <TouchableOpacity
-                onPress={() => navigation.navigate("TeacherDoubts")}
-                className="px-5 py-3 border-t border-slate-50"
-              >
-                <Text className="text-xs font-black text-blue-600 uppercase">Open full doubts queue</Text>
-              </TouchableOpacity>
+              <View className="bg-white rounded-[32px] p-8 border border-slate-100 mb-8 items-center">
+                <Calendar size={24} color="#CBD5E1" />
+                <Text className="text-slate-400 text-xs font-bold mt-3">No interviews scheduled today</Text>
+              </View>
             )}
           </View>
-        )}
-
-        {isLoading ? (
-          <Skeleton height={140} className="rounded-[32px] mb-8" />
-        ) : (
-          <View className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden mb-8">
-            <View className="px-5 py-4 border-b border-slate-50 flex-row items-center justify-between">
-              <View className="flex-row items-center">
-                <CalendarClock size={16} color={COLORS.primary} />
-                <Text className="text-slate-900 font-bold ml-2">Upcoming Interviews</Text>
-              </View>
-              <TouchableOpacity onPress={() => navigation.navigate("TeacherInterviews")}>
-                <Text className="text-xs font-black text-blue-600 uppercase">{upcomingInterviews.length} View</Text>
-              </TouchableOpacity>
+ 
+          {/* Efficiency Card */}
+          {dashboardStats ? (
+            <View className="bg-indigo-600 rounded-[36px] p-8 mt-4 mb-10 overflow-hidden shadow-xl shadow-indigo-100">
+               <View className="flex-row items-center justify-between mb-6">
+                  <Text className="text-white text-lg font-black">{dashboardStats.top_course || "Curriculum Efficiency"}</Text>
+               </View>
+               
+               <View className="flex-row items-center justify-between mb-2">
+                  <Text className="text-indigo-100 text-[10px] font-black uppercase tracking-widest">BATCH AVG. SCORE</Text>
+                  <Text className="text-white text-xs font-black">{dashboardStats.avg_score || "0"}%</Text>
+               </View>
+               <View className="h-2 bg-indigo-800 rounded-full overflow-hidden mb-4">
+                  <View className="h-full bg-cyan-400" style={{ width: `${dashboardStats.avg_score || 0}%` }} />
+               </View>
+               <Text className="text-indigo-100 text-[11px] font-medium leading-4">{dashboardStats.efficiency_note || "Your currect batch performance data."}</Text>
             </View>
-
-            {upcomingInterviews.slice(0, 3).map((item, idx) => (
-              <View
-                key={String(item?.id || item?._id || idx)}
-                className={`px-5 py-3 ${idx !== Math.min(upcomingInterviews.length, 3) - 1 ? "border-b border-slate-50" : ""}`}
-              >
-                <Text className="text-slate-900 font-bold text-sm" numberOfLines={1}>
-                  {item?.title || "Mock Interview"}
-                </Text>
-                <Text className="text-slate-500 text-xs mt-1">{formatDate(item?.scheduled_at)}</Text>
-              </View>
-            ))}
-
-            {upcomingInterviews.length === 0 ? (
-              <View className="px-5 py-4">
-                <Text className="text-slate-500 text-sm">No upcoming interviews scheduled.</Text>
-              </View>
+          ) : (
+            <View className="bg-slate-800 rounded-[36px] p-8 mt-4 mb-10 overflow-hidden">
+               <Text className="text-slate-400 text-xs font-bold text-center">Dashboard performance metrics available after first assessment.</Text>
+            </View>
+          )}
+ 
+          {/* Recent Student Activity - NOW AT LAST */}
+          <View className="mt-6 mb-10">
+            <View className="flex-row items-center justify-between mb-6">
+               <Text className="text-xl font-black text-slate-900">Recent student activity</Text>
+               <TouchableOpacity>
+                 <Text className="text-xs font-black text-blue-600">View all</Text>
+               </TouchableOpacity>
+            </View>
+ 
+            {activities.length > 0 ? (
+              activities.map((item, idx) => (
+                <View key={item.id || idx} className="flex-row mb-8">
+                   <View className="items-center mr-4">
+                      <View className={`w-10 h-10 rounded-full ${getActivityColorClass(item.type)} items-center justify-center z-10`}>
+                         {getActivityIcon(item.type)}
+                      </View>
+                      {idx < activities.length - 1 && <View className="w-[1.5px] flex-1 bg-slate-100 my-1" />}
+                   </View>
+                   <View className="flex-1 bg-white p-5 rounded-[28px] shadow-sm border border-slate-50">
+                      <View className="flex-row justify-between mb-1">
+                        <Text className="text-sm font-black text-slate-900 w-[70%]" numberOfLines={2}>{item.title || "Generic Activity"}</Text>
+                        <Text className="text-[10px] font-black text-slate-400 uppercase">{item.time_ago || "RECENT"}</Text>
+                      </View>
+                      <Text className="text-xs text-slate-500 leading-4">{item.description}</Text>
+                      
+                      <View className="flex-row gap-2 mt-3">
+                        {item.type === 'submission' && (item.status === 'pending' || !item.status) && (
+                          <TouchableOpacity 
+                            onPress={() => navigation.navigate("TeacherReviewSubmission", { submissionId: item.id })}
+                            className="bg-blue-50 self-start px-3 py-1.5 rounded-lg"
+                          >
+                            <Text className="text-[9px] font-black text-blue-600 uppercase tracking-wider">REVIEW REQUIRED</Text>
+                          </TouchableOpacity>
+                        )}
+                        {item.status === 'resolved' && (
+                          <View className="bg-slate-100 self-start px-3 py-1.5 rounded-lg">
+                             <Text className="text-[9px] font-black text-slate-500 uppercase tracking-wider">RESOLVED</Text>
+                          </View>
+                        )}
+                        {item.status === 'graded' && (
+                          <View className="bg-emerald-50 self-start px-3 py-1.5 rounded-lg">
+                             <Text className="text-[9px] font-black text-emerald-600 uppercase tracking-wider">GRADED</Text>
+                          </View>
+                        )}
+                      </View>
+                   </View>
+                </View>
+              ))
             ) : (
-              <TouchableOpacity
-                onPress={() => navigation.navigate("TeacherInterviews")}
-                className="px-5 py-3 border-t border-slate-50"
-              >
-                <Text className="text-xs font-black text-blue-600 uppercase">Manage interviews</Text>
-              </TouchableOpacity>
+              <View className="bg-white rounded-[32px] p-8 border border-dashed border-slate-200 items-center">
+                 <MessageSquare size={24} color="#CBD5E1" />
+                 <Text className="text-slate-400 text-xs font-bold mt-3">No recent activity detected</Text>
+              </View>
             )}
-          </View>
-        )}
-
-        <Text className="text-lg font-bold text-slate-900 mt-6 mb-4">Quick Actions</Text>
-        <View className="flex-row gap-4">
-          <TouchableOpacity
-            onPress={() => {
-              const firstCourse = courses[0];
-              const idOrSlug = firstCourse?.slug || firstCourse?.id || firstCourse?._id;
-              if (idOrSlug) {
-                navigation.navigate("CourseDetail", { idOrSlug });
-              }
-            }}
-            className="flex-1 bg-blue-600 p-4 rounded-3xl items-center"
-          >
-            <CirclePlay color="white" size={24} className="mb-1" />
-            <Text className="text-white font-bold text-xs uppercase">Open Course</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => navigation.navigate("TeacherAssignments")}
-            className="flex-1 bg-slate-900 p-4 rounded-3xl items-center"
-          >
-            <FileText color="white" size={24} className="mb-1" />
-            <Text className="text-white font-bold text-xs uppercase">Assignments</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View className="flex-row gap-3 mt-6">
-          <Button title="Refresh Dashboard" className="flex-1" onPress={fetchTeacherData} />
-          <Button
-            title="Submissions"
-            variant="outline"
-            className="flex-1"
-            onPress={() => navigation.navigate("TeacherSubmissions")}
-          />
-        </View>
-
-        <Button
-          title="Profile"
-          variant="ghost"
-          className="mt-3"
-          onPress={() => navigation.navigate("EditProfile")}
-        />
           </View>
         </View>
       </ScrollView>
