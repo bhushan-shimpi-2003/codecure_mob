@@ -26,7 +26,7 @@ import {
 } from "lucide-react-native";
 import { AppHeader } from "../../components/AppHeader";
 
-export default function TeacherJobsScreen() {
+export default function TeacherJobsScreen({ navigation }: any) {
   const [jobs, setJobs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

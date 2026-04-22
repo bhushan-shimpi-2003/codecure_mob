@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 import React, {
   createContext,
   useContext,
@@ -57,7 +58,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     const hydrate = async () => {
       try {
         const storedToken = await AsyncStorage.getItem("auth_token");
-        if (!storedToken) return;
+        if (!storedToken) {
+          setIsLoading(false);
+          return;
+        }
 
         setToken(storedToken);
 

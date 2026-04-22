@@ -91,10 +91,9 @@ export default function SplashScreen({ navigation }: Props) {
       </View>
 
       {/* Bottom Branding */}
-      <View className="absolute bottom-12 left-0 right-0 items-center opacity-60">
+      <View style={{ position: "absolute", bottom: 48, left: 0, right: 0, alignItems: "center", opacity: 0.6 }}>
         <Text
-          className="text-white/50 text-[10px] font-bold uppercase mb-2"
-          style={{ letterSpacing: 3 }}
+          style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, fontWeight: "bold", textTransform: "uppercase", marginBottom: 8, letterSpacing: 3 }}
         >
           Powered by Intellect
         </Text>

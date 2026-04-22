@@ -32,7 +32,7 @@ import {
 } from "lucide-react-native";
 import { AppHeader } from "../../components/AppHeader";
 
-export default function TeacherDoubtsScreen() {
+export default function TeacherDoubtsScreen({ navigation }: any) {
   const [doubts, setDoubts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

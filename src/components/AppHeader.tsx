@@ -33,6 +33,7 @@ export function AppHeader({
   const isTablet = width >= 768;
 
   const handleProfilePress = () => {
+    if (!navigation) return;
     const roleLower = user?.role?.toLowerCase() || role.toLowerCase();
     if (roleLower === "teacher") {
       navigation.navigate("TeacherMain", { screen: "TeacherProfile" });
@@ -52,7 +53,7 @@ export function AppHeader({
         <View className="flex-row items-center">
           {showBack ? (
             <TouchableOpacity 
-              onPress={() => navigation.goBack()}
+              onPress={() => navigation?.goBack()}
               className="mr-4 w-10 h-10 items-center justify-center bg-slate-50/50 rounded-xl"
               activeOpacity={0.7}
             >

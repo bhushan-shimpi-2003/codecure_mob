@@ -1,0 +1,98 @@
+diff --git a/node_modules/react-native-css-interop/.cache/android.js b/node_modules/react-native-css-interop/.cache/android.js
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/react-native-css-interop/.cache/android.map b/node_modules/react-native-css-interop/.cache/android.map
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/react-native-css-interop/.cache/ios.js b/node_modules/react-native-css-interop/.cache/ios.js
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/react-native-css-interop/.cache/macos.js b/node_modules/react-native-css-interop/.cache/macos.js
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/react-native-css-interop/.cache/native.js b/node_modules/react-native-css-interop/.cache/native.js
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/react-native-css-interop/.cache/windows.js b/node_modules/react-native-css-interop/.cache/windows.js
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/react-native-css-interop/dist/runtime/native/native-interop.js b/node_modules/react-native-css-interop/dist/runtime/native/native-interop.js
+index 254b7ba..bc39adb 100644
+--- a/node_modules/react-native-css-interop/dist/runtime/native/native-interop.js
++++ b/node_modules/react-native-css-interop/dist/runtime/native/native-interop.js
+@@ -13,7 +13,19 @@ const styles_1 = require("./styles");
+ function interop(component, configs, originalProps, ref) {
+     const inheritedVariables = (0, react_1.useContext)(styles_1.VariableContext);
+     const inheritedContainers = (0, react_1.useContext)(globals_1.containerContext);
+-    const props = { ...originalProps };
++    let props;
++    try {
++        props = { ...originalProps };
++    } catch {
++        props = {};
++        for (const key in originalProps) {
++            try {
++                props[key] = originalProps[key];
++            } catch {
++                // Skip props that throw when accessed
++            }
++        }
++    }
+     const sharedState = (0, react_1.useState)({
+         initialRender: true,
+         originalProps,
+@@ -682,7 +694,11 @@ function isDeepEqual(a, b) {
+             a.every((aValue, index) => isDeepEqual(aValue, b[index])));
+     }
+     else if (typeof a === "object" && a && b) {
+-        return isDeepEqual(Object.entries(a), Object.entries(b));
++        try {
++            return isDeepEqual(Object.entries(a), Object.entries(b));
++        } catch {
++            return false;
++        }
+     }
+     return a === b;
+ }
+diff --git a/node_modules/react-native-css-interop/dist/runtime/native/render-component.js b/node_modules/react-native-css-interop/dist/runtime/native/render-component.js
+index eba25ec..0c6ff2e 100644
+--- a/node_modules/react-native-css-interop/dist/runtime/native/render-component.js
++++ b/node_modules/react-native-css-interop/dist/runtime/native/render-component.js
+@@ -131,8 +131,13 @@ function stringify(object) {
+         }
+         seen.add(value);
+         const newValue = Array.isArray(value) ? [] : {};
+-        for (const entry of Object.entries(value)) {
+-            newValue[entry[0]] = replace(entry[0], entry[1]);
++        try {
++            for (const entry of Object.entries(value)) {
++                newValue[entry[0]] = replace(entry[0], entry[1]);
++            }
++        } catch {
++            seen.delete(value);
++            return "[Inaccessible]";
+         }
+         seen.delete(value);
+         return newValue;
+diff --git a/node_modules/react-native-css-interop/src/runtime/native/render-component.tsx b/node_modules/react-native-css-interop/src/runtime/native/render-component.tsx
+index cfb9a9e..0a5847d 100644
+--- a/node_modules/react-native-css-interop/src/runtime/native/render-component.tsx
++++ b/node_modules/react-native-css-interop/src/runtime/native/render-component.tsx
+@@ -251,8 +251,15 @@ function stringify(object: any) {
+ 
+       const newValue: any = Array.isArray(value) ? [] : {};
+ 
+-      for (const entry of Object.entries(value)) {
+-        newValue[entry[0]] = replace(entry[0], entry[1]);
++      try {
++        for (const entry of Object.entries(value)) {
++          newValue[entry[0]] = replace(entry[0], entry[1]);
++        }
++      } catch {
++        // Some objects (e.g. React Navigation context) have getter traps
++        // that throw errors when accessed outside their provider.
++        seen.delete(value);
++        return "[Inaccessible]";
+       }
+ 
+       seen.delete(value);
