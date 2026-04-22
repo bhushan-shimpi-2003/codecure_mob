@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Image, useWindowDimensions } from "react-
 import { GraduationCap, ChevronLeft, Menu, User, Bell } from "lucide-react-native";
 import { COLORS } from "../utils/theme";
 import { useAuth } from "../context/AuthContext";
+import { useNotifications } from "../context/NotificationContext";
 import { Alert } from "react-native";
 import { LogOut } from "lucide-react-native";
 import { authApi } from "../api/endpoints";
@@ -29,6 +30,7 @@ export function AppHeader({
     navigation,
 }: AppHeaderProps) {
   const { user, logout } = useAuth();
+  const { unreadCount } = useNotifications();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
 
@@ -51,7 +53,7 @@ export function AppHeader({
         className="px-6 py-4 flex-row items-center justify-between"
       >
         <View className="flex-row items-center">
-          {showBack ? (
+          {showBack && (
             <TouchableOpacity 
               onPress={() => navigation?.goBack()}
               className="mr-4 w-10 h-10 items-center justify-center bg-slate-50/50 rounded-xl"
@@ -59,15 +61,11 @@ export function AppHeader({
             >
               <ChevronLeft size={22} color={COLORS.primary} strokeWidth={3} />
             </TouchableOpacity>
-          ) : showMenu ? (
-            <TouchableOpacity 
-              onPress={onMenuPress}
-              className="mr-4 w-10 h-10 items-center justify-center bg-slate-50/50 rounded-xl"
-              activeOpacity={0.7}
-            >
-              <Menu size={22} color={COLORS.primary} strokeWidth={3} />
-            </TouchableOpacity>
-          ) : null}
+          )}
+          
+          <View className="w-10 h-10 bg-blue-600 rounded-xl items-center justify-center mr-3 shadow-sm shadow-blue-600/30">
+            <GraduationCap size={22} color="white" />
+          </View>
           
           <View>
             <View className="flex-row items-center">
@@ -80,21 +78,18 @@ export function AppHeader({
 
         <View className="flex-row items-center gap-5">
             {showBell && (
-                <TouchableOpacity className="relative">
+                <TouchableOpacity 
+                  className="relative"
+                  onPress={() => navigation?.navigate("Notifications")}
+                >
                     <Bell size={22} color={COLORS.slate600} strokeWidth={2} />
-                    <View className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-600 rounded-full border-2 border-white" />
+                    {unreadCount > 0 && (
+                      <View className="absolute -top-1 -right-1 bg-rose-500 rounded-full h-4 w-4 items-center justify-center border-2 border-white">
+                        <Text className="text-white text-[8px] font-black">{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                      </View>
+                    )}
                 </TouchableOpacity>
             )}
-            <TouchableOpacity 
-                onPress={handleProfilePress}
-                className="w-10 h-10 rounded-full border-2 border-slate-100 overflow-hidden bg-slate-50 items-center justify-center shadow-sm"
-            >
-                {user?.profile_picture ? (
-                    <Image source={{ uri: user.profile_picture }} className="w-full h-full" />
-                ) : (
-                    <User size={20} color={COLORS.slate400} />
-                )}
-            </TouchableOpacity>
         </View>
       </View>
     </View>

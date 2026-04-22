@@ -5,8 +5,10 @@ import React from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
 import { AuthProvider } from "./src/context/AuthContext";
+import { NotificationProvider } from "./src/context/NotificationContext";
 import AppNavigator from "./src/navigation/AppNavigator";
 import { vexo } from 'vexo-analytics';
+// import 'expo-image-picker';
 
 // Initialize Vexo at the root level, outside of any component
 // Recommended to wrap in production-only check
@@ -18,9 +20,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <NavigationContainer>
-          <AppNavigator />
-        </NavigationContainer>
+        <NotificationProvider>
+          <NavigationContainer>
+            <AppNavigator />
+          </NavigationContainer>
+        </NotificationProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

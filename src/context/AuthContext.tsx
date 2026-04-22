@@ -6,7 +6,7 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
-import * as SecureStore from "expo-secure-store";
+import { Storage } from "../utils/storage";
 import { authApi } from "../api/endpoints";
 import { setLogoutListener } from "../api/client";
 import { extractApiData, isApiSuccess } from "../api/response";
@@ -44,11 +44,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // ── Hydrate session from AsyncStorage on app start ──────────────────────
+  // ── Hydrate session from storage on app start ──────────────────────
   useEffect(() => {
     const hydrate = async () => {
       try {
-        const storedToken = await SecureStore.getItemAsync("auth_token");
+        const storedToken = await Storage.getItem("auth_token");
         if (!storedToken) {
           setIsLoading(false);
           return;
@@ -64,16 +64,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           if (me) {
             setUser(normalizeUser(me));
           } else {
-            await SecureStore.deleteItemAsync("auth_token");
+            await Storage.deleteItem("auth_token");
             setToken(null);
           }
         } else {
-          await SecureStore.deleteItemAsync("auth_token");
+          await Storage.deleteItem("auth_token");
           setToken(null);
         }
       } catch {
         // Token invalid – clear it silently
-        await SecureStore.deleteItemAsync("auth_token");
+        await Storage.deleteItem("auth_token");
         setToken(null);
       } finally {
         setIsLoading(false);
@@ -88,13 +88,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       setToken(null);
       setUser(null);
       // Then clean up storage
-      SecureStore.deleteItemAsync("auth_token").catch(() => {});
+      Storage.deleteItem("auth_token").catch(() => {});
     });
   }, []);
 
   // ── Actions ──────────────────────────────────────────────────────────────
   const login = async (newToken: string, userData: User) => {
-    await SecureStore.setItemAsync("auth_token", newToken);
+    await Storage.setItem("auth_token", newToken);
     setToken(newToken);
     setUser(normalizeUser(userData));
   };
@@ -105,7 +105,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setUser(null);
     // Then clean up persistent storage (non-blocking)
     try {
-      await SecureStore.deleteItemAsync("auth_token");
+      await Storage.deleteItem("auth_token");
     } catch (e) {
       // Storage cleanup failed but UI already transitioned
     }

@@ -1,140 +1,256 @@
-import React from "react";
-import { View, Text, ScrollView, TouchableOpacity, Image, Alert, Pressable, ActivityIndicator } from "react-native";
-import { useAuth } from "../../context/AuthContext";
+import React, { useEffect, useState } from "react";
+import { 
+  View, 
+  Text, 
+  ScrollView, 
+  TouchableOpacity, 
+  Switch, 
+  TextInput,
+  Dimensions,
+  Platform as RNPlatform,
+  Alert
+} from "react-native";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
-import { User, Settings, ShieldCheck, LogOut, ChevronRight, Mail, Phone } from "lucide-react-native";
+import { 
+  ChevronLeft, 
+  Settings, 
+  Globe, 
+  Bell, 
+  Sun, 
+  Moon, 
+  Monitor, 
+  Key, 
+  Eye, 
+  EyeOff,
+  Info,
+  LogOut
+} from "lucide-react-native";
 import { COLORS } from "../../utils/theme";
-import { authApi } from "../../api/endpoints";
-import { AppHeader } from "../../components/AppHeader";
+import { LinearGradient } from "expo-linear-gradient";
+import { adminApi } from "../../api/endpoints";
+import { extractApiData, isApiSuccess } from "../../api/response";
+import { useAuth } from "../../context/AuthContext";
+
+const { width } = Dimensions.get("window");
 
 export default function AdminProfileScreen({ navigation }: any) {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [pushNotifications, setPushNotifications] = useState(true);
+  const [theme, setTheme] = useState("Light");
+  
+  const [gatewayKey, setGatewayKey] = useState("");
+  const [storageSecret, setStorageSecret] = useState("");
+  
+  const [showGatewayKey, setShowGatewayKey] = useState(false);
+  const [showStorageSecret, setShowStorageSecret] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const displayName =
-    String(
-      user?.name ||
-        (user as any)?.full_name ||
-        (user as any)?.username ||
-        (user?.email ? String(user.email).split("@")[0] : "Admin")
-    ) || "Admin";
-
-  const [loggingOut, setLoggingOut] = React.useState(false);
-
-  const handleLogout = async () => {
-    if (loggingOut) return;
-    setLoggingOut(true);
-    await logout();
+  const fetchSettings = async () => {
+    try {
+      const res = await adminApi.getSettings();
+      if (isApiSuccess(res.data)) {
+        const data = extractApiData<any>(res.data, {});
+        // Map settings based on common keys
+        if (data.maintenance_mode !== undefined) setMaintenanceMode(data.maintenance_mode === 'true' || data.maintenance_mode === true);
+        if (data.push_notifications !== undefined) setPushNotifications(data.push_notifications === 'true' || data.push_notifications === true);
+        if (data.theme) setTheme(data.theme);
+        if (data.stripe_key || data.payment_key) setGatewayKey(data.stripe_key || data.payment_key);
+        if (data.aws_secret || data.storage_secret) setStorageSecret(data.aws_secret || data.storage_secret);
+      }
+    } catch (e) {
+      console.log("Error loading settings", e);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const menuItems = [
-    { icon: User, label: "Edit Profile", bg: "bg-blue-50", color: COLORS.primary },
-    { icon: ShieldCheck, label: "Security", bg: "bg-emerald-50", color: COLORS.success },
-    { icon: Settings, label: "Settings", bg: "bg-slate-50", color: COLORS.slate600 },
-  ];
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const updateConfig = async () => {
+    setIsUpdating(true);
+    try {
+      // Save multiple settings
+      const settingsToUpdate = [
+        adminApi.updateSetting("maintenance_mode", String(maintenanceMode)),
+        adminApi.updateSetting("push_notifications", String(pushNotifications)),
+        adminApi.updateSetting("theme", theme),
+        adminApi.updateSetting("payment_key", gatewayKey),
+        adminApi.updateSetting("storage_secret", storageSecret)
+      ];
+
+      await Promise.allSettled(settingsToUpdate);
+      Alert.alert("Success", "Platform configuration updated successfully");
+    } catch (e) {
+      Alert.alert("Error", "Failed to update some settings");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const SettingRow = ({ label, description, value, onValueChange }: any) => (
+    <View className="flex-row items-center justify-between mb-8">
+      <View className="flex-1 mr-4">
+        <Text className="text-slate-900 font-black text-base">{label}</Text>
+        <Text className="text-slate-400 text-xs font-bold leading-5 mt-1">{description}</Text>
+      </View>
+      <Switch 
+        value={value} 
+        onValueChange={onValueChange}
+        trackColor={{ false: "#E2E8F0", true: "#2563EB" }}
+        thumbColor={RNPlatform.OS === 'ios' ? '#FFFFFF' : (value ? '#FFFFFF' : '#F8FAFC')}
+      />
+    </View>
+  );
 
   return (
-    <SafeAreaWrapper>
-      <AppHeader role={user?.role} subtitle="Admin center" navigation={navigation} />
-      <ScrollView className="flex-1" contentContainerStyle={{ padding: 24, paddingTop: 16, paddingBottom: 24 }}>
-        <View className="mb-4">
-          <Text className="text-sm font-black text-blue-600 uppercase tracking-widest mb-1">Admin Panel</Text>
-          <Text className="text-2xl font-black text-slate-900">Admin Profile</Text>
-          <Text className="text-slate-500 mt-1">Manage your account and access controls</Text>
+    <SafeAreaWrapper bgWhite>
+      {/* Header */}
+      <View className="flex-row items-center px-6 py-4">
+        <TouchableOpacity className="p-2" onPress={() => navigation.goBack()}>
+           <ChevronLeft size={24} color={COLORS.slate900} />
+        </TouchableOpacity>
+        <View className="flex-1 items-center">
+           <Text className="text-slate-900 font-black text-lg">Platform Settings</Text>
         </View>
+        <TouchableOpacity className="p-2" onPress={logout}>
+           <LogOut size={20} color={COLORS.error} />
+        </TouchableOpacity>
+      </View>
 
-        <View className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm mb-5 items-center">
-          <View className="w-24 h-24 rounded-full bg-blue-100 items-center justify-center border-4 border-white shadow-sm overflow-hidden mb-4">
-            {user?.profile_picture ? (
-              <Image source={{ uri: user.profile_picture }} className="w-full h-full" />
-            ) : (
-              <User size={48} color={COLORS.primary} />
-            )}
-          </View>
-
-          <Text className="text-xl font-bold text-slate-900">{displayName}</Text>
-          <View className="bg-slate-900 px-3 py-1 rounded-full mt-2">
-            <Text className="text-white text-xs font-bold uppercase tracking-wider">{user?.role || "Admin"}</Text>
-          </View>
-        </View>
-
-        <View className="flex-row gap-3 mb-5">
-          <View className="flex-1 bg-white rounded-2xl border border-slate-100 p-4">
-            <Text className="text-xs text-slate-500 uppercase font-black tracking-wider">Role</Text>
-            <View className="flex-row items-center mt-1">
-              <ShieldCheck size={16} color={COLORS.primary} />
-              <Text className="text-sm font-black text-slate-900 ml-2">{String(user?.role || "admin").toUpperCase()}</Text>
-            </View>
-          </View>
-          <View className="flex-1 bg-white rounded-2xl border border-slate-100 p-4">
-            <Text className="text-xs text-slate-500 uppercase font-black tracking-wider">Status</Text>
-            <Text className="text-sm font-black text-emerald-600 mt-1">ACTIVE</Text>
-          </View>
-        </View>
-
-        <View className="bg-white rounded-3xl p-5 mb-5 border border-slate-100 shadow-sm">
-          <View className="flex-row items-center mb-4">
-            <View className="bg-slate-50 p-2 rounded-xl mr-4">
-              <Mail size={18} color={COLORS.slate500} />
-            </View>
-            <View>
-              <Text className="text-xs font-semibold text-slate-400">Email Address</Text>
-              <Text className="text-sm font-bold text-slate-900">{user?.email}</Text>
-            </View>
-          </View>
-
-          <View className="flex-row items-center">
-            <View className="bg-slate-50 p-2 rounded-xl mr-4">
-              <Phone size={18} color={COLORS.slate500} />
-            </View>
-            <View>
-              <Text className="text-xs font-semibold text-slate-400">Phone Number</Text>
-              <Text className="text-sm font-bold text-slate-900">{user?.phone || "+91 98765 43210"}</Text>
-            </View>
-          </View>
-        </View>
-
-        <View className="bg-white rounded-3xl overflow-hidden mb-5 border border-slate-100 shadow-sm">
-          {menuItems.map((item, idx) => (
-            <TouchableOpacity
-              key={idx}
-              onPress={() => (idx === 0 ? navigation.navigate("EditProfile") : null)}
-              className={`flex-row items-center p-4 ${idx !== menuItems.length - 1 ? "border-b border-slate-50" : ""}`}
-            >
-              <View className={`${item.bg} p-2 rounded-xl mr-4`}>
-                <item.icon size={20} color={item.color} />
-              </View>
-              <Text className="flex-1 font-bold text-slate-700">{item.label}</Text>
-              <ChevronRight size={18} color={COLORS.slate300} />
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Pressable
-          onPress={handleLogout}
-          disabled={loggingOut}
-          style={({ pressed }) => ({
-            opacity: pressed || loggingOut ? 0.5 : 1,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-            borderRadius: 24,
-            backgroundColor: '#FEF2F2',
-            borderWidth: 1,
-            borderColor: '#FEE2E2',
-          })}
+      <ScrollView 
+        className="flex-1 bg-[#F8FAFC]"
+        contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Hero Card */}
+        <LinearGradient
+          colors={['#0047AB', '#002D72']}
+          className="p-10 rounded-[44px] mb-10 overflow-hidden relative"
         >
-          {loggingOut ? (
-            <ActivityIndicator size="small" color="#EF4444" />
-          ) : (
-            <>
-              <LogOut size={20} color={COLORS.error} className="mr-2" />
-              <Text className="text-red-500 font-bold text-base">Log Out</Text>
-            </>
-          )}
-        </Pressable>
+           <View className="bg-white/20 px-4 py-1.5 rounded-full self-start mb-4 border border-white/20">
+              <Text className="text-white text-[10px] font-black uppercase tracking-widest">System</Text>
+           </View>
+           <Text className="text-white text-[44px] font-black leading-[48px] tracking-tighter">
+              Platform <Text className="text-blue-200">Settings</Text>
+           </Text>
+           <Text className="text-blue-100 text-base font-medium mt-2">Configure platform rules and integrations.</Text>
+        </LinearGradient>
 
-        <Text className="text-center text-slate-400 text-xs mt-8">CodeCure Academy v1.0.0</Text>
+        <Text className="text-slate-900 text-lg font-black mb-8">General</Text>
+        <View className="bg-white rounded-[44px] p-8 border border-slate-50 shadow-sm mb-10">
+           <SettingRow 
+             label="Maintenance Mode" 
+             description="Block student access for updates" 
+             value={maintenanceMode} 
+             onValueChange={setMaintenanceMode}
+           />
+           <View className="h-[1px] bg-slate-50 w-full mb-8" />
+           <SettingRow 
+             label="System Push Notifications" 
+             description="Global alerts for critical errors" 
+             value={pushNotifications} 
+             onValueChange={setPushNotifications}
+           />
+        </View>
+
+        <Text className="text-slate-900 text-lg font-black mb-8">Appearance</Text>
+        <View className="bg-white rounded-[44px] p-8 border border-slate-50 shadow-sm mb-10">
+           <Text className="text-slate-400 text-xs font-black uppercase tracking-widest mb-6">Application Theme</Text>
+           
+           <View className="bg-slate-50 p-2 rounded-[28px] flex-row">
+              {[
+                { label: "Light", icon: Sun },
+                { label: "Dark", icon: Moon },
+                { label: "System", icon: Monitor }
+              ].map((item) => (
+                <TouchableOpacity 
+                  key={item.label}
+                  onPress={() => setTheme(item.label)}
+                  className={`flex-1 flex-row items-center justify-center py-4 rounded-[22px] ${theme === item.label ? 'bg-white shadow-sm' : ''}`}
+                >
+                   <item.icon size={16} color={theme === item.label ? COLORS.primary : COLORS.slate400} className="mr-2" />
+                   <Text className={`font-black text-xs ${theme === item.label ? 'text-slate-900' : 'text-slate-400'}`}>{item.label}</Text>
+                </TouchableOpacity>
+              ))}
+           </View>
+        </View>
+
+        <Text className="text-slate-900 text-lg font-black mb-8">Integrations</Text>
+        <View className="bg-white rounded-[44px] p-8 border border-slate-50 shadow-sm mb-10">
+           <View className="flex-row items-center mb-10">
+              <View className="w-12 h-12 bg-blue-50 rounded-2xl items-center justify-center mr-4">
+                 <Key size={20} color={COLORS.primary} />
+              </View>
+              <View>
+                 <Text className="text-slate-900 font-black text-base">API Key Settings</Text>
+                 <Text className="text-slate-400 text-[10px] font-bold">Stripe & AWS Cloud Credentials</Text>
+              </View>
+           </View>
+
+           <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-4">Payment Gateway Key</Text>
+           <View className="bg-slate-50 h-16 rounded-[20px] flex-row items-center px-5 mb-8">
+              <TextInput 
+                value={gatewayKey}
+                onChangeText={setGatewayKey}
+                placeholder="sk_live_••••••••••••••••"
+                className="flex-1 font-bold text-slate-900 text-sm"
+                secureTextEntry={!showGatewayKey}
+              />
+              <TouchableOpacity onPress={() => setShowGatewayKey(!showGatewayKey)}>
+                 <Text className="text-blue-600 font-black text-[10px] uppercase tracking-widest">
+                    {showGatewayKey ? "HIDE" : "SHOW"}
+                 </Text>
+              </TouchableOpacity>
+           </View>
+
+           <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-4">Cloud Storage Secret</Text>
+           <View className="bg-slate-50 h-16 rounded-[20px] flex-row items-center px-5 mb-10">
+              <TextInput 
+                value={storageSecret}
+                onChangeText={setStorageSecret}
+                placeholder="aws_sec_••••••••••••••••"
+                className="flex-1 font-bold text-slate-900 text-sm"
+                secureTextEntry={!showStorageSecret}
+              />
+              <TouchableOpacity onPress={() => setShowStorageSecret(!showStorageSecret)}>
+                 <Text className="text-blue-600 font-black text-[10px] uppercase tracking-widest">
+                    {showStorageSecret ? "HIDE" : "SHOW"}
+                 </Text>
+              </TouchableOpacity>
+           </View>
+
+           <TouchableOpacity 
+             onPress={updateConfig}
+             disabled={isUpdating}
+             className={`bg-blue-600 py-6 rounded-[28px] items-center shadow-lg shadow-blue-600/20 ${isUpdating ? 'opacity-50' : ''}`}
+           >
+              <Text className="text-white font-black text-sm uppercase tracking-widest">
+                {isUpdating ? "UPDATING..." : "Update Configuration"}
+              </Text>
+           </TouchableOpacity>
+        </View>
+
+        <View className="bg-slate-100/50 p-6 rounded-[32px] flex-row items-center justify-between mb-8">
+           <View className="flex-row items-center">
+              <View className="w-10 h-10 bg-slate-900 rounded-full items-center justify-center mr-4">
+                 <Info size={18} color="white" />
+              </View>
+              <Text className="text-slate-900 font-black text-sm">Platform Version</Text>
+           </View>
+           <Text className="text-slate-400 font-black text-xs uppercase">v4.2.0-stable</Text>
+        </View>
+
+        <TouchableOpacity 
+          onPress={logout}
+          className="bg-rose-50 border border-rose-100 py-6 rounded-[28px] flex-row items-center justify-center"
+        >
+           <LogOut size={20} color="#F43F5E" className="mr-3" />
+           <Text className="text-rose-600 font-black text-sm uppercase tracking-widest">Sign Out from Admin</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaWrapper>
   );

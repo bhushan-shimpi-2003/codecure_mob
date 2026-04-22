@@ -7,6 +7,10 @@ export const authApi = {
     client.post("/auth/login", { email, password }),
   me: () => client.get("/auth/me"),
   updateProfile: (data: any) => client.put("/auth/me", data),
+  changePassword: (data: any) => client.put("/auth/change-password", data),
+  updateAvatar: (formData: FormData) => client.post("/auth/avatar", formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
   deleteProfile: () => client.delete("/auth/me"),
   logout: () => client.post("/auth/logout"),
 };
@@ -137,4 +141,13 @@ export const teacherApi = {
   stats: () => client.get("/teacher/dashboard/stats"),                      // GET /api/teacher/dashboard/stats
   activity: () => client.get("/teacher/dashboard/activity"),                // GET /api/teacher/dashboard/activity
   courseStudents: (courseId: string) => client.get(`/teacher/course/${courseId}/students`), // GET /api/teacher/course/:courseId/students
+};
+// ─── 11. NOTIFICATIONS ────────────────────────────────────────────────────────
+export const notificationsApi = {
+  my: () => client.get("/notifications/me"),                                 // GET /notifications/me
+  markAsRead: (id: string) => client.put(`/notifications/${id}/read`, {}),   // PUT /notifications/:id/read
+  markAllAsRead: () => client.put("/notifications/read-all", {}),            // PUT /notifications/read-all
+  send: (data: { user_id?: string; role?: string; title: string; message: string; type?: string }) => 
+    client.post("/notifications/send", data),                                // POST /notifications/send (admin)
+  delete: (id: string) => client.delete(`/notifications/${id}`),             // DELETE /notifications/:id
 };

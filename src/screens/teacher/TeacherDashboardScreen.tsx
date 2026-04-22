@@ -104,12 +104,15 @@ export default function TeacherDashboardScreen({ navigation }: { navigation: App
           <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchTeacherData(); }} />
         }
       >
-        <View className="px-6 pt-6">
-          <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-2">TEACHER DASHBOARD</Text>
-          <Text className="text-4xl font-black text-slate-900 leading-[44px]">Welcome back, {user?.name?.split(' ')[0] || "Professor"}.</Text>
-          <Text className="text-slate-500 text-sm mt-3 leading-5">
-            Your students have been busy! You have {pendingDoubts.length} pending doubts and {upcomingInterviews.length} interviews scheduled today.
-          </Text>
+        <View className="px-8 pt-8 mb-10">
+           <View className="bg-blue-50 px-4 py-1.5 rounded-full self-start mb-4">
+              <Text className="text-blue-600 text-[10px] font-black uppercase tracking-widest">Instructor</Text>
+           </View>
+           <Text className="text-[44px] font-black text-slate-900 leading-[48px] tracking-tighter">
+              Teacher <Text className="text-blue-600">Hub</Text>
+           </Text>
+           <Text className="text-slate-400 text-base font-medium mt-2">Welcome back, {user?.name?.split(' ')[0] || "Professor"}.</Text>
+        </View>
 
           {/* Stats Grid */}
           <View className="flex-row flex-wrap justify-between mt-10">
@@ -281,7 +284,6 @@ export default function TeacherDashboardScreen({ navigation }: { navigation: App
               </View>
             )}
           </View>
-        </View>
       </ScrollView>
     </SafeAreaWrapper>
   );

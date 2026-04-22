@@ -21,7 +21,7 @@ import {
   Send,
   ExternalLink,
 } from "lucide-react-native";
-import { assignmentsApi } from "../../api/endpoints";
+import { assignmentsApi, notificationsApi } from "../../api/endpoints";
 import { isApiSuccess } from "../../api/response";
 
 export default function TeacherReviewSubmissionScreen({ navigation, route }: any) {
@@ -49,6 +49,14 @@ export default function TeacherReviewSubmissionScreen({ navigation, route }: any
         Alert.alert("Success", "Submission graded successfully", [
           { text: "OK", onPress: () => navigation.goBack() }
         ]);
+
+        // Notify Student
+        notificationsApi.send({
+          user_id: student.id || student._id,
+          title: 'Assignment Graded!',
+          message: `Your submission has been reviewed. Score: ${score}/100. Feedback: ${comments.trim().substring(0, 50)}...`,
+          type: 'assignment'
+        });
       }
     } catch (e) {
       Alert.alert("Error", "Failed to submit grade");

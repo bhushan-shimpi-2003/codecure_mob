@@ -47,11 +47,15 @@ export default function TeacherCoursesScreen({ navigation }: any) {
       <AppHeader navigation={navigation} role="Teacher" />
       <ScrollView className="flex-1 bg-[#F8FAFC]" contentContainerStyle={{ paddingBottom: 40 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchCourses(); }} />}>
         <View className="px-6 pt-6">
-          <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px]">CURRICULUM ENGINE</Text>
-            <View className="bg-emerald-100 px-3 py-1 rounded-full"><Text className="text-[9px] font-black text-emerald-600">LIVE TRACKING</Text></View>
-          </View>
-          <Text className="text-4xl font-black text-slate-900 mb-6">Course Lab</Text>
+        <View className="px-8 pt-8 mb-10">
+           <View className="bg-blue-50 px-4 py-1.5 rounded-full self-start mb-4">
+              <Text className="text-blue-600 text-[10px] font-black uppercase tracking-widest">Curriculum</Text>
+           </View>
+           <Text className="text-[44px] font-black text-slate-900 leading-[48px] tracking-tighter">
+              Course <Text className="text-blue-600">Lab</Text>
+           </Text>
+           <Text className="text-slate-400 text-base font-medium mt-2">Manage your tracks and student progress.</Text>
+        </View>
           <View className="flex-row justify-between mb-10">
             <View className="w-[48%] bg-white p-5 rounded-[32px] shadow-sm border border-slate-50">
               <View className="bg-blue-50 w-10 h-10 rounded-2xl items-center justify-center mb-3"><Users size={18} color="#2563EB" /></View>

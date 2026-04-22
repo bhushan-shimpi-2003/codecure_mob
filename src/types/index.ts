@@ -5,6 +5,7 @@ export interface User {
   email: string;
   role: 'student' | 'teacher' | 'admin';
   avatar?: string;
+  profile_picture?: string;
   skills?: string[];
   bio?: string;
   phone?: string;

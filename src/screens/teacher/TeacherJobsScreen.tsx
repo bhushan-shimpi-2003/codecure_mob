@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
-import { jobsApi } from "../../api/endpoints";
+import { jobsApi, notificationsApi } from "../../api/endpoints";
 import { extractApiData, isApiSuccess } from "../../api/response";
 import { 
   Briefcase, 
@@ -91,6 +91,15 @@ export default function TeacherJobsScreen({ navigation }: any) {
       });
       if (isApiSuccess(res.data)) {
         Alert.alert("Success", "Job vacancy published successfully");
+        
+        // Notify Students
+        notificationsApi.send({
+          role: 'student',
+          title: 'New Career Opportunity!',
+          message: `${company} just posted a new position: ${title.trim()}. Check it out now!`,
+          type: 'job'
+        });
+
         setTitle(""); setCompany(""); setLocation(""); setSalary(""); setDescription(""); setSkills(""); setLink("");
         setShowPostModal(false);
         fetchJobs();

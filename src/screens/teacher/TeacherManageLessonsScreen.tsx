@@ -28,7 +28,7 @@ import {
   Link as LinkIcon,
   Edit3,
 } from "lucide-react-native";
-import { coursesApi, lessonsApi } from "../../api/endpoints";
+import { coursesApi, lessonsApi, notificationsApi } from "../../api/endpoints";
 import { extractApiData, isApiSuccess } from "../../api/response";
 
 
@@ -116,6 +116,15 @@ export default function TeacherManageLessonsScreen({ navigation, route }: any) {
       const res = await lessonsApi.create(payload);
       if (isApiSuccess(res.data)) {
         Alert.alert("Success", "Lesson published successfully");
+        
+        // Notify Students
+        notificationsApi.send({
+          role: 'student',
+          title: 'New Lesson Published!',
+          message: `Check out the new lesson: "${newLessonTitle}" in ${course?.title || 'your course'}.`,
+          type: 'academy'
+        });
+
         setNewLessonTitle("");
         setNewLessonVideoUrl("");
         setNewLessonDuration("");
@@ -143,6 +152,15 @@ export default function TeacherManageLessonsScreen({ navigation, route }: any) {
       const res = await coursesApi.addModule(courseId, { title: newModuleTitle });
       if (isApiSuccess(res.data)) {
         Alert.alert("Success", "Module added successfully");
+
+        // Notify Students
+        notificationsApi.send({
+          role: 'student',
+          title: 'Curriculum Expansion!',
+          message: `A new module "${newModuleTitle}" has been added to ${course?.title || 'your course'}.`,
+          type: 'academy'
+        });
+
         setNewModuleTitle("");
         setShowModuleInput(false);
         fetchCourseData();

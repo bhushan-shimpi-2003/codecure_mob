@@ -19,7 +19,13 @@ const Stack = createNativeStackNavigator();
 
 function DashboardStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator 
+      screenOptions={{ 
+        headerShown: false,
+        animation: 'slide_from_right',
+        animationDuration: 400
+      }}
+    >
       <Stack.Screen name="DashboardHome" component={DashboardScreen} />
       <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
       <Stack.Screen name="Lesson" component={LessonScreen} />
@@ -29,7 +35,13 @@ function DashboardStack() {
 
 function MyCoursesStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator 
+      screenOptions={{ 
+        headerShown: false,
+        animation: 'slide_from_right',
+        animationDuration: 400
+      }}
+    >
       <Stack.Screen name="MyCoursesHome" component={CoursesScreen} />
       <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
       <Stack.Screen name="Lesson" component={LessonScreen} />
@@ -39,7 +51,13 @@ function MyCoursesStack() {
 
 function ExploreStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator 
+      screenOptions={{ 
+        headerShown: false,
+        animation: 'slide_from_right',
+        animationDuration: 400
+      }}
+    >
       <Stack.Screen name="ExploreHome" component={ExploreCoursesScreen} />
       <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
       <Stack.Screen name="Lesson" component={LessonScreen} />
@@ -55,29 +73,24 @@ export default function MainNavigator() {
       screenOptions={{
         headerShown: false,
         tabBarHideOnKeyboard: true,
-        tabBarActiveTintColor: COLORS.studentBlue,
+        tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.slate400,
         tabBarStyle: {
           backgroundColor: "#ffffff",
           borderTopWidth: 1,
           borderTopColor: COLORS.slate100,
-          height: 68,
-          paddingBottom: 8,
-          paddingTop: 8,
-          elevation: 10,
-          shadowColor: COLORS.studentBlue,
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.06,
-          shadowRadius: 10,
-        },
-        tabBarItemStyle: {
-          borderRadius: 14,
-          marginHorizontal: 2,
+          height: 85,
+          paddingBottom: 20,
+          paddingTop: 12,
         },
         tabBarLabelStyle: {
-          fontFamily: "Inter",
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: "600",
+          textTransform: 'uppercase',
+          letterSpacing: 0.5,
+        },
+        tabBarIconStyle: {
+          marginBottom: 2,
         },
       }}
     >

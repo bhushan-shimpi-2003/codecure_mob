@@ -12,7 +12,7 @@ import {
   Modal,
 } from "react-native";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
-import { interviewsApi, coursesApi, teacherApi } from "../../api/endpoints";
+import { interviewsApi, coursesApi, teacherApi, notificationsApi } from "../../api/endpoints";
 import { extractApiData, isApiSuccess } from "../../api/response";
 import { 
   CalendarClock, 
@@ -95,6 +95,15 @@ export default function TeacherInterviewsScreen({ navigation }: any) {
       });
       if (isApiSuccess(res.data)) {
         Alert.alert("Success", "Interview scheduled successfully");
+        
+        // Notify Student
+        notificationsApi.send({
+          user_id: studentId,
+          title: 'Interview Scheduled!',
+          message: `Your technical interview for ${courses.find(c => c.id === selectedCourseId)?.title || 'Course'} has been scheduled for ${new Date(scheduledAt).toLocaleString()}.`,
+          type: 'info'
+        });
+
         setStudentId(""); setScheduledAt(""); setSelectedCourseId(""); setCourseStudents([]); setSelectedSlot("");
         setShowScheduleModal(false);
         fetchInitialData();

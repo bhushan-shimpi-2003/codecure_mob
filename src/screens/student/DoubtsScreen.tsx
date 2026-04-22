@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Modal, useWindowDimensions, Image, ActivityIndicator } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
-import { doubtsApi, enrollmentsApi } from "../../api/endpoints";
+import { doubtsApi, enrollmentsApi, notificationsApi } from "../../api/endpoints";
 import { 
     MessageSquare, 
     Plus, 
@@ -95,6 +95,14 @@ export default function DoubtsScreen({ route, navigation }: any) {
         setDescription("");
         setSelectedCourse(null);
         fetchDoubts();
+
+        // Notify Teacher
+        notificationsApi.send({
+           role: 'teacher',
+           title: 'New Student Doubt',
+           message: `${user?.name || 'A student'} asked a question: ${description.substring(0, 50)}...`,
+           type: 'doubt'
+        });
       }
     } catch (e) {
       console.log("Post doubt error", e);

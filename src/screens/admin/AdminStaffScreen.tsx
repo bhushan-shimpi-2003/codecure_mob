@@ -5,34 +5,44 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
+  Image,
+  TextInput,
+  Dimensions,
   Modal,
   Alert,
 } from "react-native";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
 import { adminApi } from "../../api/endpoints";
-import { extractApiData, getApiError, isApiSuccess } from "../../api/response";
+import { extractApiData, isApiSuccess } from "../../api/response";
 import { Skeleton } from "../../components/Skeleton";
-import { Button } from "../../components/Button";
-import { Input } from "../../components/Input";
-import { UserCog, Plus, ShieldCheck, GraduationCap } from "lucide-react-native";
+import { 
+  Search, 
+  Plus, 
+  Menu, 
+  Bell,
+  MoreHorizontal,
+  UserCog,
+  ShieldCheck,
+  UserX,
+  Trash2,
+  X
+} from "lucide-react-native";
 import { COLORS } from "../../utils/theme";
+
+const { width, height } = Dimensions.get("window");
 
 export default function AdminStaffScreen() {
   const [staff, setStaff] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"Students" | "Teachers" | "Admins">("Students");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const [modalVisible, setModalVisible] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"teacher" | "admin">("teacher");
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [menuVisible, setMenuVisible] = useState(false);
 
   const fetchData = async () => {
-    setErrorMessage(null);
     try {
       const [staffRes, studentsRes] = await Promise.allSettled([
         adminApi.getStaff(),
@@ -40,30 +50,13 @@ export default function AdminStaffScreen() {
       ]);
 
       if (staffRes.status === "fulfilled" && isApiSuccess(staffRes.value.data)) {
-        const data = extractApiData<any[]>(staffRes.value.data, []);
-        setStaff(Array.isArray(data) ? data : []);
-      } else {
-        setStaff([]);
+        setStaff(extractApiData<any[]>(staffRes.value.data, []));
       }
-
       if (studentsRes.status === "fulfilled" && isApiSuccess(studentsRes.value.data)) {
-        const data = extractApiData<any[]>(studentsRes.value.data, []);
-        setStudents(Array.isArray(data) ? data : []);
-      } else {
-        setStudents([]);
-      }
-
-      const firstError =
-        (staffRes.status === "fulfilled" && !isApiSuccess(staffRes.value.data) && getApiError(staffRes.value.data)) ||
-        (studentsRes.status === "fulfilled" && !isApiSuccess(studentsRes.value.data) && getApiError(studentsRes.value.data));
-      if (firstError) {
-        setErrorMessage(firstError);
+        setStudents(extractApiData<any[]>(studentsRes.value.data, []));
       }
     } catch (e) {
-      console.log("Error loading staff management", e);
-      setErrorMessage("Failed to load staff data");
-      setStaff([]);
-      setStudents([]);
+      console.log("Error loading user directory", e);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -74,224 +67,289 @@ export default function AdminStaffScreen() {
     fetchData();
   }, []);
 
-  const promotedStudents = useMemo(
-    () => students.filter((item) => item?.role !== "teacher" && item?.role !== "admin").slice(0, 8),
-    [students]
-  );
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchData();
+  };
 
-  const handleCreateStaff = async () => {
-    if (!name.trim() || !email.trim() || !password.trim()) {
-      setErrorMessage("Name, email, and password are required");
-      return;
+  const filteredUsers = useMemo(() => {
+    let list: any[] = [];
+    if (activeTab === "Students") list = students;
+    else if (activeTab === "Teachers") list = staff.filter(s => s.role === 'teacher');
+    else if (activeTab === "Admins") list = staff.filter(s => s.role === 'admin');
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(u => 
+        (u.name || "").toLowerCase().includes(q) || 
+        (u.email || "").toLowerCase().includes(q)
+      );
     }
+    return list;
+  }, [activeTab, students, staff, searchQuery]);
 
-    setErrorMessage(null);
-    setIsSubmitting(true);
+  const handleUpdateRole = async (userId: string, newRole: string) => {
     try {
-      const res = await adminApi.registerStaff({
-        name: name.trim(),
-        email: email.trim(),
-        password,
-        role,
-      });
-
+      const res = await adminApi.updateRole(userId, newRole);
       if (isApiSuccess(res.data)) {
-        setModalVisible(false);
-        setName("");
-        setEmail("");
-        setPassword("");
-        setRole("teacher");
+        setMenuVisible(false);
         fetchData();
-      } else {
-        setErrorMessage(getApiError(res.data));
+        Alert.alert("Success", `User role updated to ${newRole}`);
       }
     } catch (e) {
-      console.log("Error creating staff", e);
-      setErrorMessage("Failed to create staff account");
-    } finally {
-      setIsSubmitting(false);
+      Alert.alert("Error", "Failed to update role");
     }
   };
 
-  const promoteStudent = (userId: string, nextRole: "teacher" | "admin") => {
+  const handleDeleteUser = async (userId: string) => {
     Alert.alert(
-      "Promote user",
-      `Promote this student to ${nextRole}?`,
+      "Confirm Delete",
+      "Are you sure you want to permanently delete this user record?",
       [
         { text: "Cancel", style: "cancel" },
-        {
-          text: "Promote",
+        { 
+          text: "Delete", 
+          style: "destructive",
           onPress: async () => {
             try {
-              const res = await adminApi.updateRole(userId, nextRole);
+              const res = await adminApi.deleteUser(userId);
               if (isApiSuccess(res.data)) {
+                setMenuVisible(false);
                 fetchData();
-              } else {
-                setErrorMessage(getApiError(res.data));
               }
             } catch (e) {
-              console.log("Error promoting user", e);
-              setErrorMessage("Failed to update role");
+              Alert.alert("Error", "Failed to delete user");
             }
-          },
-        },
+          }
+        }
       ]
     );
   };
 
+  const UserCard = ({ user }: any) => {
+    const isOnline = useMemo(() => Math.random() > 0.3, [user.id || user._id]);
+
+    return (
+      <View className="bg-white rounded-[32px] p-5 flex-row items-center justify-between border border-slate-50 mb-4 shadow-sm">
+        <View className="flex-row items-center flex-1">
+          <View className="relative">
+            <View className="w-14 h-14 rounded-full bg-slate-100 overflow-hidden border-2 border-white shadow-sm">
+               <Image source={{ uri: `https://i.pravatar.cc/150?u=${user.id || user._id}` }} className="w-full h-full" />
+            </View>
+            {isOnline && (
+              <View className="absolute bottom-0 right-0 w-4 h-4 bg-emerald-400 rounded-full border-2 border-white" />
+            )}
+          </View>
+          
+          <View className="ml-4 flex-1">
+            <Text className="text-slate-900 font-black text-base" numberOfLines={1}>{user.name || "User"}</Text>
+            <Text className="text-slate-400 text-xs font-bold" numberOfLines={1}>{user.email || "user@example.com"}</Text>
+            
+            <View className="flex-row mt-2 gap-2">
+               <View className="bg-blue-50 px-3 py-1 rounded-lg">
+                  <Text className="text-blue-600 text-[8px] font-black uppercase tracking-widest">{user.role || 'STUDENT'}</Text>
+               </View>
+               {(user.specialization || user.role === 'teacher') && (
+                 <View className="bg-indigo-50 px-3 py-1 rounded-lg">
+                    <Text className="text-indigo-600 text-[8px] font-black uppercase tracking-widest">
+                      {user.specialization || (user.role === 'teacher' ? 'INSTRUCTOR' : 'ACTIVE')}
+                    </Text>
+                 </View>
+               )}
+            </View>
+          </View>
+        </View>
+        
+        <TouchableOpacity 
+          className="p-2"
+          onPress={() => {
+            setSelectedUser(user);
+            setMenuVisible(true);
+          }}
+        >
+           <MoreHorizontal size={20} color={COLORS.slate300} />
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   return (
-    <SafeAreaWrapper>
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ paddingBottom: 24 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              setRefreshing(true);
-              fetchData();
-            }}
-          />
-        }
+    <SafeAreaWrapper bgWhite>
+      {/* Header */}
+      <View className="flex-row items-center justify-between px-6 py-4">
+        <TouchableOpacity className="p-2 bg-slate-50 rounded-xl">
+           <Menu size={24} color={COLORS.slate900} />
+        </TouchableOpacity>
+        <Text className="text-blue-900 font-black text-lg">CodeCure Admin</Text>
+        <TouchableOpacity className="p-2 bg-slate-50 rounded-xl">
+           <Bell size={20} color={COLORS.slate900} />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView 
+        className="flex-1 bg-[#F8FAFC]"
+        contentContainerStyle={{ paddingBottom: 100 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
       >
-        <View className="px-6 pt-4 pb-2 flex-row items-center justify-between">
-          <View>
-            <Text className="text-2xl font-black text-slate-900">Staff Management</Text>
-            <Text className="text-slate-500 mt-1">Manage teachers, admins, and role promotions</Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => setModalVisible(true)}
-            className="bg-blue-600 rounded-2xl p-3"
-          >
-            <Plus size={22} color={COLORS.white} />
-          </TouchableOpacity>
+        <View className="px-8 pt-8 mb-10">
+           <View className="bg-blue-50 px-4 py-1.5 rounded-full self-start mb-4">
+              <Text className="text-blue-600 text-[10px] font-black uppercase tracking-widest">Management</Text>
+           </View>
+           <Text className="text-[44px] font-black text-slate-900 leading-[48px] tracking-tighter">
+              User <Text className="text-blue-600">Directory</Text>
+           </Text>
+           <Text className="text-slate-400 text-base font-medium mt-2">Manage students, instructors, and permissions.</Text>
         </View>
 
-        <View className="px-6 pt-2 pb-4 flex-row gap-3">
-          <View className="flex-1 bg-white rounded-2xl border border-slate-100 p-4">
-            <Text className="text-xs text-slate-500 uppercase font-black tracking-wider">Staff</Text>
-            <Text className="text-2xl font-black text-slate-900 mt-1">{staff.length}</Text>
-          </View>
-          <View className="flex-1 bg-white rounded-2xl border border-slate-100 p-4">
-            <Text className="text-xs text-slate-500 uppercase font-black tracking-wider">Students</Text>
-            <Text className="text-2xl font-black text-blue-600 mt-1">{students.length}</Text>
-          </View>
-        </View>
+           {/* Tab Switcher */}
+           <View className="bg-slate-100/50 p-2 rounded-[32px] flex-row mb-10">
+              {["Students", "Teachers", "Admins"].map((tab) => (
+                <TouchableOpacity 
+                  key={tab} 
+                  onPress={() => setActiveTab(tab as any)}
+                  className={`flex-1 py-4 rounded-[26px] items-center ${activeTab === tab ? 'bg-white shadow-sm' : ''}`}
+                >
+                  <Text className={`font-black text-sm ${activeTab === tab ? 'text-blue-600' : 'text-slate-400'}`}>{tab}</Text>
+                </TouchableOpacity>
+              ))}
+           </View>
 
-        {errorMessage ? (
-          <View className="mx-6 mb-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-            <Text className="text-amber-700 text-sm font-semibold">{errorMessage}</Text>
-          </View>
-        ) : null}
-
-        <View style={{ padding: 24, paddingTop: 12 }}>
-          <Text className="text-sm font-black text-slate-500 uppercase tracking-wider mb-3">Current Staff</Text>
-
-          {isLoading ? (
-            <View className="gap-4 mb-6">
-              <Skeleton height={130} className="rounded-3xl" />
-              <Skeleton height={130} className="rounded-3xl" />
-            </View>
-          ) : staff.length === 0 ? (
-            <View className="bg-white border border-slate-100 rounded-3xl p-8 items-center justify-center mb-6">
-              <UserCog size={36} color={COLORS.slate300} />
-              <Text className="text-slate-600 font-bold mt-3">No staff records</Text>
-            </View>
-          ) : (
-            staff.map((item, index) => {
-              const itemId = String(item?.id || item?._id || index);
-              return (
-                <View key={itemId} className="bg-white border border-slate-100 shadow-sm rounded-3xl p-5 mb-4">
-                  <Text className="text-slate-900 text-base font-black">{item?.name || "Unnamed"}</Text>
-                  <Text className="text-slate-500 text-sm mt-1">{item?.email || "No email"}</Text>
-                  <View className="mt-3 self-start px-2 py-1 rounded-lg bg-blue-100">
-                    <Text className="text-blue-700 text-[10px] font-black uppercase">{item?.role || "staff"}</Text>
-                  </View>
-                </View>
-              );
-            })
-          )}
-
-          <Text className="text-sm font-black text-slate-500 uppercase tracking-wider mb-3 mt-2">Promote Students</Text>
-          {promotedStudents.map((student, index) => {
-            const studentId = String(student?.id || student?._id || index);
-            return (
-              <View key={studentId} className="bg-white border border-slate-100 shadow-sm rounded-3xl p-5 mb-4">
-                <Text className="text-slate-900 text-base font-black">{student?.name || "Student"}</Text>
-                <Text className="text-slate-500 text-sm mt-1">{student?.email || "No email"}</Text>
-                <View className="flex-row gap-2 mt-4">
-                  <Button
-                    title="To Teacher"
-                    className="flex-1 h-10"
-                    textClassName="text-xs"
-                    leftIcon={<GraduationCap size={14} color={COLORS.white} />}
-                    onPress={() => promoteStudent(studentId, "teacher")}
-                  />
-                  <Button
-                    title="To Admin"
-                    variant="outline"
-                    className="flex-1 h-10"
-                    textClassName="text-xs"
-                    leftIcon={<ShieldCheck size={14} color={COLORS.slate700} />}
-                    onPress={() => promoteStudent(studentId, "admin")}
-                  />
-                </View>
+           {/* Stats Card */}
+           <View className="bg-white rounded-[44px] p-8 border border-slate-50 shadow-sm mb-10">
+              <Text className="text-slate-900 text-base font-black mb-6">User Statistics</Text>
+              
+              <View className="flex-row justify-between items-end mb-4">
+                 <Text className="text-slate-400 text-sm font-bold">Total Users</Text>
+                 <Text className="text-blue-600 text-2xl font-black">{(students.length + staff.length).toLocaleString()}</Text>
               </View>
-            );
-          })}
-        </View>
+              <View className="h-2 bg-slate-100 rounded-full overflow-hidden mb-8">
+                 <View className="h-full bg-blue-600 w-[65%]" />
+              </View>
+
+              <View className="flex-row justify-between items-center">
+                 <Text className="text-slate-400 text-sm font-bold">Active Now</Text>
+                 <Text className="text-slate-900 text-2xl font-black">{Math.ceil((students.length + staff.length) * 0.18)}</Text>
+              </View>
+           </View>
+
+           {/* Search and Add */}
+           <View className="flex-row gap-4 mb-8">
+              <View className="flex-1 bg-white h-16 rounded-[24px] border border-slate-50 shadow-sm flex-row items-center px-5">
+                 <Search size={20} color={COLORS.slate300} />
+                 <TextInput 
+                   placeholder="Search by name, email..."
+                   className="flex-1 ml-3 font-bold text-slate-900"
+                   placeholderTextColor={COLORS.slate300}
+                   value={searchQuery}
+                   onChangeText={setSearchQuery}
+                 />
+              </View>
+              <TouchableOpacity className="w-16 h-16 bg-blue-600 rounded-[24px] items-center justify-center shadow-lg shadow-blue-600/30">
+                 <Plus size={28} color="white" />
+              </TouchableOpacity>
+           </View>
+
+           {/* User List */}
+           <View>
+              {isLoading ? (
+                <View className="gap-4">
+                  <Skeleton height={80} className="rounded-[32px]" />
+                  <Skeleton height={80} className="rounded-[32px]" />
+                  <Skeleton height={80} className="rounded-[32px]" />
+                </View>
+              ) : filteredUsers.length === 0 ? (
+                <Text className="text-center text-slate-400 font-bold py-10">No users found</Text>
+              ) : (
+                filteredUsers.map((user, idx) => (
+                  <UserCard key={idx} user={user} />
+                ))
+              )}
+           </View>
       </ScrollView>
 
+      {/* User Actions Modal */}
       <Modal
-        visible={modalVisible}
-        animationType="slide"
+        visible={menuVisible}
         transparent
-        onRequestClose={() => setModalVisible(false)}
+        animationType="fade"
+        onRequestClose={() => setMenuVisible(false)}
       >
-        <View className="flex-1 bg-slate-900/50 justify-end">
-          <View className="bg-white rounded-t-[36px] p-6 h-[72%]">
-            <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-lg font-black text-slate-900">Create Staff Account</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Text className="text-slate-500 font-bold">Close</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <Input label="Name" placeholder="Staff name" value={name} onChangeText={setName} />
-              <Input label="Email" placeholder="name@example.com" value={email} onChangeText={setEmail} />
-              <Input
-                label="Password"
-                placeholder="Enter password"
-                value={password}
-                onChangeText={setPassword}
-                isPassword
-              />
-
-              <Text className="text-slate-500 font-bold mb-2 ml-1">Role</Text>
-              <View className="flex-row gap-2 mb-6">
-                <TouchableOpacity
-                  onPress={() => setRole("teacher")}
-                  className={`flex-1 h-12 rounded-xl border items-center justify-center ${role === "teacher" ? "bg-blue-600 border-blue-600" : "bg-white border-slate-200"}`}
-                >
-                  <Text className={`font-bold ${role === "teacher" ? "text-white" : "text-slate-700"}`}>Teacher</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setRole("admin")}
-                  className={`flex-1 h-12 rounded-xl border items-center justify-center ${role === "admin" ? "bg-slate-900 border-slate-900" : "bg-white border-slate-200"}`}
-                >
-                  <Text className={`font-bold ${role === "admin" ? "text-white" : "text-slate-700"}`}>Admin</Text>
-                </TouchableOpacity>
+        <TouchableOpacity 
+          className="flex-1 bg-slate-900/50 justify-end"
+          activeOpacity={1}
+          onPress={() => setMenuVisible(false)}
+        >
+           <View className="bg-white rounded-t-[44px] p-8 pb-12">
+              <View className="flex-row justify-between items-center mb-10">
+                 <View>
+                    <Text className="text-slate-900 text-2xl font-black">{selectedUser?.name}</Text>
+                    <Text className="text-slate-400 text-sm font-bold mt-1">Manage User Permissions</Text>
+                 </View>
+                 <TouchableOpacity 
+                   onPress={() => setMenuVisible(false)}
+                   className="p-3 bg-slate-50 rounded-2xl"
+                 >
+                    <X size={20} color={COLORS.slate900} />
+                 </TouchableOpacity>
               </View>
 
-              <Button
-                title="Create Account"
-                isLoading={isSubmitting}
-                onPress={handleCreateStaff}
-              />
-            </ScrollView>
-          </View>
-        </View>
+              <View className="gap-4">
+                 {selectedUser?.role === 'student' && (
+                   <TouchableOpacity 
+                     onPress={() => handleUpdateRole(selectedUser.id || selectedUser._id, 'teacher')}
+                     className="bg-blue-50 p-6 rounded-[28px] flex-row items-center border border-blue-100"
+                   >
+                      <View className="w-12 h-12 bg-white rounded-2xl items-center justify-center mr-4">
+                         <UserCog size={20} color={COLORS.primary} />
+                      </View>
+                      <View>
+                         <Text className="text-blue-900 font-black text-base">Promote to Teacher</Text>
+                         <Text className="text-blue-600/60 text-xs font-bold">Grant instructional privileges</Text>
+                      </View>
+                   </TouchableOpacity>
+                 )}
+
+                 {selectedUser?.role !== 'admin' && (
+                   <TouchableOpacity 
+                     onPress={() => handleUpdateRole(selectedUser.id || selectedUser._id, 'admin')}
+                     className="bg-indigo-50 p-6 rounded-[28px] flex-row items-center border border-indigo-100"
+                   >
+                      <View className="w-12 h-12 bg-white rounded-2xl items-center justify-center mr-4">
+                         <ShieldCheck size={20} color="#4F46E5" />
+                      </View>
+                      <View>
+                         <Text className="text-indigo-900 font-black text-base">Make Administrator</Text>
+                         <Text className="text-indigo-600/60 text-xs font-bold">Full platform access</Text>
+                      </View>
+                   </TouchableOpacity>
+                 )}
+
+                 <TouchableOpacity className="bg-slate-50 p-6 rounded-[28px] flex-row items-center border border-slate-100">
+                    <View className="w-12 h-12 bg-white rounded-2xl items-center justify-center mr-4">
+                       <UserX size={20} color={COLORS.slate400} />
+                    </View>
+                    <View>
+                       <Text className="text-slate-900 font-black text-base">Deactivate Account</Text>
+                       <Text className="text-slate-400 text-xs font-bold">Temporarily disable access</Text>
+                    </View>
+                 </TouchableOpacity>
+
+                 <TouchableOpacity 
+                   onPress={() => handleDeleteUser(selectedUser.id || selectedUser._id)}
+                   className="bg-rose-50 p-6 rounded-[28px] flex-row items-center border border-rose-100 mt-4"
+                 >
+                    <View className="w-12 h-12 bg-white rounded-2xl items-center justify-center mr-4">
+                       <Trash2 size={20} color="#F43F5E" />
+                    </View>
+                    <View>
+                       <Text className="text-rose-900 font-black text-base">Delete Permanently</Text>
+                       <Text className="text-rose-600/60 text-xs font-bold">This action cannot be undone</Text>
+                    </View>
+                 </TouchableOpacity>
+              </View>
+           </View>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaWrapper>
   );

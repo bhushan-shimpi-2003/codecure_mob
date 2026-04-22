@@ -14,6 +14,10 @@ import MockInterviewsScreen from "../screens/student/MockInterviewsScreen";
 import TeacherDoubtsScreen from "../screens/teacher/TeacherDoubtsScreen";
 import TeacherAssignmentsScreen from "../screens/teacher/TeacherAssignmentsScreen";
 import EditProfileScreen from "../screens/shared/EditProfileScreen";
+import AdminEnrollmentsScreen from "../screens/admin/AdminEnrollmentsScreen";
+import AdminPulseScreen from "../screens/admin/AdminPulseScreen";
+import NotificationsScreen from "../screens/shared/NotificationsScreen";
+import AdminSendNotificationScreen from "../screens/admin/AdminSendNotificationScreen";
 import { COLORS } from "../utils/theme";
 
 const Stack = createNativeStackNavigator();
@@ -31,7 +35,15 @@ export default function AppNavigator() {
   const { isAuthenticated, isLoading, user } = useAuth();
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator 
+      screenOptions={{ 
+        headerShown: false,
+        animation: 'slide_from_right',
+        animationDuration: 400,
+        gestureEnabled: true,
+        gestureDirection: 'horizontal'
+      }}
+    >
       {isLoading ? (
         <Stack.Screen
           name="Loading"
@@ -72,10 +84,30 @@ export default function AppNavigator() {
             component={TeacherAssignmentsScreen}
             options={{ headerShown: true, title: "Teacher Assignments" }}
           />
+          <Stack.Screen
+            name="AdminEnrollments"
+            component={AdminEnrollmentsScreen}
+            options={{ headerShown: true, title: "Enrollment Requests" }}
+          />
+          <Stack.Screen
+            name="AdminPulse"
+            component={AdminPulseScreen}
+            options={{ headerShown: true, title: "Platform Pulse" }}
+          />
           <Stack.Screen 
             name="EditProfile" 
             component={EditProfileScreen} 
-            options={{ headerShown: true, title: "Edit Your Profile" }}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen 
+            name="Notifications" 
+            component={NotificationsScreen} 
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen 
+            name="AdminSendNotification" 
+            component={AdminSendNotificationScreen} 
+            options={{ headerShown: false }}
           />
         </>
       )}

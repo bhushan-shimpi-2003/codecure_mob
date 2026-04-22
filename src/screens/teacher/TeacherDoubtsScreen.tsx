@@ -13,7 +13,7 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
-import { doubtsApi } from "../../api/endpoints";
+import { doubtsApi, notificationsApi } from "../../api/endpoints";
 import { extractApiData, isApiSuccess } from "../../api/response";
 import { 
   MessageSquare, 
@@ -64,6 +64,19 @@ export default function TeacherDoubtsScreen({ navigation }: any) {
       const res = await doubtsApi.resolve(id, activeReplyText.trim());
       if (isApiSuccess(res.data)) {
         Alert.alert("Success", "Query resolved successfully.");
+        
+        // Notify Student
+        const doubt = doubts.find(d => (d.id || d._id) === id);
+        const student = doubt?.profiles || doubt?.student;
+        if (student) {
+          notificationsApi.send({
+            user_id: student.id || student._id,
+            title: 'Doubt Resolved!',
+            message: `Your instructor responded to your query: ${activeReplyText.substring(0, 50)}...`,
+            type: 'resolution'
+          });
+        }
+
         setActiveReplyText("");
         setReplyingToId(null);
         fetchData();
@@ -104,12 +117,15 @@ export default function TeacherDoubtsScreen({ navigation }: any) {
         contentContainerStyle={{ paddingBottom: 60 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} />}
       >
-        <View className="px-6 pt-6">
-          <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px]">INTELLECTUAL SUPPORT</Text>
-            <TouchableOpacity className="bg-white p-2 rounded-full shadow-sm border border-slate-100"><Filter size={14} color="#64748B" /></TouchableOpacity>
-          </View>
-          <Text className="text-4xl font-black text-slate-900 mb-8">Doubt Hub</Text>
+        <View className="px-8 pt-8 mb-10">
+           <View className="bg-blue-50 px-4 py-1.5 rounded-full self-start mb-4">
+              <Text className="text-blue-600 text-[10px] font-black uppercase tracking-widest">Support</Text>
+           </View>
+           <Text className="text-[44px] font-black text-slate-900 leading-[48px] tracking-tighter">
+              Student <Text className="text-blue-600">Doubts</Text>
+           </Text>
+           <Text className="text-slate-400 text-base font-medium mt-2">Help your students clarify their concepts.</Text>
+        </View>
 
           {/* Stats Cards */}
           <View className="flex-row justify-between mb-10">
@@ -252,7 +268,6 @@ export default function TeacherDoubtsScreen({ navigation }: any) {
               <View className="absolute -bottom-20 -left-20 w-60 h-60 bg-blue-500/5 rounded-full" />
             </TouchableOpacity>
           </View>
-        </View>
       </ScrollView>
     </SafeAreaWrapper>
   );

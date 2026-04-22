@@ -35,7 +35,13 @@ const Stack = createNativeStackNavigator();
 
 function TeacherDashboardStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator 
+      screenOptions={{ 
+        headerShown: false,
+        animation: 'slide_from_right',
+        animationDuration: 400
+      }}
+    >
       <Stack.Screen name="TeacherDashboardHome" component={TeacherDashboardScreen} />
       <Stack.Screen name="TeacherSubmissions" component={TeacherSubmissionsScreen} />
       <Stack.Screen name="TeacherReviewSubmission" component={TeacherReviewSubmissionScreen} />
@@ -47,7 +53,13 @@ function TeacherDashboardStack() {
 
 function TeacherCoursesStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator 
+      screenOptions={{ 
+        headerShown: false,
+        animation: 'slide_from_right',
+        animationDuration: 400
+      }}
+    >
       <Stack.Screen name="TeacherCoursesHome" component={TeacherCoursesScreen} />
       <Stack.Screen name="TeacherManageLessons" component={TeacherManageLessonsScreen} />
       <Stack.Screen name="TeacherCreateLesson" component={TeacherCreateLessonScreen} />
@@ -62,7 +74,13 @@ function TeacherCoursesStack() {
 
 function TeacherAssignmentsStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator 
+      screenOptions={{ 
+        headerShown: false,
+        animation: 'slide_from_right',
+        animationDuration: 400
+      }}
+    >
       <Stack.Screen name="TeacherAssignmentsHome" component={TeacherAssignmentsScreen} />
       <Stack.Screen name="TeacherSubmissions" component={TeacherSubmissionsScreen} />
       <Stack.Screen name="TeacherReviewSubmission" component={TeacherReviewSubmissionScreen} />
@@ -72,7 +90,13 @@ function TeacherAssignmentsStack() {
 
 function TeacherCareerStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator 
+      screenOptions={{ 
+        headerShown: false,
+        animation: 'slide_from_right',
+        animationDuration: 400
+      }}
+    >
       <Stack.Screen name="TeacherInterviewsHome" component={TeacherInterviewsScreen} />
       <Stack.Screen name="TeacherJobsHome" component={TeacherJobsScreen} />
     </Stack.Navigator>
@@ -87,26 +111,24 @@ export default function TeacherMainNavigator() {
       screenOptions={{
         headerShown: false,
         tabBarHideOnKeyboard: true,
-        tabBarActiveTintColor: "#2563EB", 
+        tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.slate400,
         tabBarStyle: {
           backgroundColor: "#ffffff",
           borderTopWidth: 1,
           borderTopColor: COLORS.slate100,
-          minHeight: 85,
+          height: 85,
           paddingBottom: 20,
-          paddingTop: 10,
-          elevation: 20,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.08,
-          shadowRadius: 15,
+          paddingTop: 12,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "900",
-          marginTop: 2,
-          height: 18,
+          fontSize: 10,
+          fontWeight: "600",
+          textTransform: 'uppercase',
+          letterSpacing: 0.5,
+        },
+        tabBarIconStyle: {
+          marginBottom: 2,
         },
       }}
     >
