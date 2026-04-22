@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { View, Text, ScrollView, RefreshControl, useWindowDimensions, TouchableOpacity } from "react-native";
 import { coursesApi, enrollmentsApi } from "../../api/endpoints";
 import { CourseCard } from "../../components/CourseCard";
@@ -13,7 +13,7 @@ import { useAuth } from "../../context/AuthContext";
 import { AppHeader } from "../../components/AppHeader";
 import { Course, Enrollment } from "../../types";
 import { AppNavigationProp } from "../../types/navigation";
-import { FlatList } from "react-native-gesture-handler";
+import { FlatList } from "react-native";
 
 export default function ExploreCoursesScreen({ navigation }: { navigation: AppNavigationProp }) {
   const { width } = useWindowDimensions();
@@ -81,7 +81,7 @@ export default function ExploreCoursesScreen({ navigation }: { navigation: AppNa
       new Set(
         enrollments
           .map((enr) => {
-            const courseRef = enr?.courses || enr?.course;
+            const courseRef = enr?.course_details || (enr as any)?.course || (enr as any)?.courses;
             return String(courseRef?.id || courseRef?._id || "");
           })
           .filter(Boolean)

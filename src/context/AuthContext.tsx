@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           if (me) {
             setUser(normalizeUser(me));
           } else {
-            await AsyncStorage.removeItem("auth_token");
+            await SecureStore.deleteItemAsync("auth_token");
             setToken(null);
           }
         } else {

@@ -7,8 +7,8 @@ interface Course {
   id: string;
   slug: string;
   title: string;
-  thumbnail: string;
-  level: string;
+  thumbnail?: string;
+  level?: string;
   price: number | null;
 }
 
