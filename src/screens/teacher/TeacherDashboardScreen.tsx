@@ -18,11 +18,13 @@ import { COLORS } from "../../utils/theme";
 import { extractApiData, isApiSuccess } from "../../api/response";
 import { AppHeader } from "../../components/AppHeader";
 import { useAuth } from "../../context/AuthContext";
+import { Course, Doubt, Job } from "../../types";
+import { AppNavigationProp } from "../../types/navigation";
 
-export default function TeacherDashboardScreen({ navigation }: any) {
-  const [courses, setCourses] = useState<any[]>([]);
-  const [pendingDoubts, setPendingDoubts] = useState<any[]>([]);
-  const [upcomingInterviews, setUpcomingInterviews] = useState<any[]>([]);
+export default function TeacherDashboardScreen({ navigation }: { navigation: AppNavigationProp }) {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [pendingDoubts, setPendingDoubts] = useState<Doubt[]>([]);
+  const [upcomingInterviews, setUpcomingInterviews] = useState<any[]>([]); // Need interview type
   const [activities, setActivities] = useState<any[]>([]);
   const [dashboardStats, setDashboardStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,11 +43,11 @@ export default function TeacherDashboardScreen({ navigation }: any) {
       ]);
 
       if (coursesRes.status === "fulfilled" && isApiSuccess(coursesRes.value.data)) {
-        setCourses(extractApiData<any[]>(coursesRes.value.data, []));
+        setCourses(extractApiData<Course[]>(coursesRes.value.data, []));
       }
       if (doubtsRes.status === "fulfilled" && isApiSuccess(doubtsRes.value.data)) {
-        const doubts = extractApiData<any[]>(doubtsRes.value.data, []);
-        setPendingDoubts(doubts.filter(d => d.status !== "resolved" && d.is_resolved !== true));
+        const doubts = extractApiData<Doubt[]>(doubtsRes.value.data, []);
+        setPendingDoubts(doubts.filter(d => d.status !== "resolved"));
       }
       if (interviewsRes.status === "fulfilled" && isApiSuccess(interviewsRes.value.data)) {
         const interviews = extractApiData<any[]>(interviewsRes.value.data, []);
@@ -70,7 +72,7 @@ export default function TeacherDashboardScreen({ navigation }: any) {
   }, []);
 
   const totalStudents = useMemo(
-    () => dashboardStats?.total_students || courses.reduce((sum, item) => sum + Number(item?.students_enrolled || 0), 0),
+    () => dashboardStats?.total_students || courses.reduce((sum: number, item: Course) => sum + Number(item?.students_enrolled || 0), 0),
     [courses, dashboardStats]
   );
 

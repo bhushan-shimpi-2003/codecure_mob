@@ -10,8 +10,8 @@ import { vexo } from 'vexo-analytics';
 
 // Initialize Vexo at the root level, outside of any component
 // Recommended to wrap in production-only check
-if (__DEV__ === false) {
-  vexo('d39dcaa6-ee39-4558-891b-d1aac5bfa36e');
+if (__DEV__ === false && process.env.EXPO_PUBLIC_VEXO_API_KEY) {
+  vexo(process.env.EXPO_PUBLIC_VEXO_API_KEY);
 }
 
 export default function App() {

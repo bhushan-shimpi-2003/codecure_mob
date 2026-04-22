@@ -134,7 +134,7 @@ export const jobsApi = {
 
 // ─── 10. TEACHER SPECIFIC DASHBOARD ──────────────────────────────────────────
 export const teacherApi = {
-  stats: () => client.get("teacher/dashboard/stats"),                      // GET /api/teacher/dashboard/stats
-  activity: () => client.get("teacher/dashboard/activity"),                // GET /api/teacher/dashboard/activity
-  courseStudents: (courseId: string) => client.get(`teacher/course/${courseId}/students`), // GET /api/teacher/course/:courseId/students
+  stats: () => client.get("/teacher/dashboard/stats"),                      // GET /api/teacher/dashboard/stats
+  activity: () => client.get("/teacher/dashboard/activity"),                // GET /api/teacher/dashboard/activity
+  courseStudents: (courseId: string) => client.get(`/teacher/course/${courseId}/students`), // GET /api/teacher/course/:courseId/students
 };
