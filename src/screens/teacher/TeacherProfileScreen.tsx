@@ -7,24 +7,31 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  Pressable,
+  Alert,
+  Platform,
+  Modal,
 } from "react-native";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
 import { useAuth } from "../../context/AuthContext";
 import { authApi, coursesApi } from "../../api/endpoints";
 import { extractApiData, isApiSuccess } from "../../api/response";
 import { 
-  Mail, 
-  Phone, 
-  Link2, 
-  Code, 
-  Edit2, 
-  Star, 
-  Users, 
   LogOut,
+  ChevronRight,
+  Settings,
+  Shield,
+  HelpCircle,
+  MessageSquare,
+  BookOpen,
+  Award,
+  Users,
+  Star,
+  Bell,
+  Sparkles,
+  ArrowRight
 } from "lucide-react-native";
 import { AppHeader } from "../../components/AppHeader";
-
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function TeacherProfileScreen({ navigation }: any) {
   const { logout } = useAuth();
@@ -32,19 +39,21 @@ export default function TeacherProfileScreen({ navigation }: any) {
   const [courses, setCourses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const fetchData = async () => {
     try {
-      const [pRes, cRes] = await Promise.all([
+      const [pRes, cRes] = await Promise.allSettled([
         authApi.me(),
         coursesApi.teacherCourses()
       ]);
 
-      if (isApiSuccess(pRes.data)) {
-        setProfile(extractApiData(pRes.data, null));
+      if (pRes.status === "fulfilled" && isApiSuccess(pRes.value.data)) {
+        setProfile(extractApiData(pRes.value.data, null));
       }
-      if (isApiSuccess(cRes.data)) {
-        setCourses(extractApiData<any[]>(cRes.data, []));
+      if (cRes.status === "fulfilled" && isApiSuccess(cRes.value.data)) {
+        setCourses(extractApiData<any[]>(cRes.value.data, []));
       }
     } catch (e) {
       console.log("Error fetching profile data", e);
@@ -54,190 +63,238 @@ export default function TeacherProfileScreen({ navigation }: any) {
     }
   };
 
-  const [loggingOut, setLoggingOut] = useState(false);
-
-  const handleLogout = async () => {
-    if (loggingOut) return;
-    setLoggingOut(true);
-    await logout();
-  };
-
   useEffect(() => {
     fetchData();
   }, []);
 
+  const handleLogout = () => {
+    setShowLogoutModal(true);
+  };
+
+  const performLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      setShowLogoutModal(false);
+    } catch (e) {
+      console.log("Logout failed", e);
+      Alert.alert("Error", "Logout failed. Please try again.");
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  const LogoutModal = () => (
+    <Modal
+      visible={showLogoutModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => !isLoggingOut && setShowLogoutModal(false)}
+    >
+      <View className="flex-1 bg-slate-900/60 justify-center items-center px-6">
+        <View className="bg-white w-full rounded-[48px] overflow-hidden shadow-2xl border border-white/20">
+          {/* Header Gradient */}
+          <LinearGradient
+            colors={['#1E293B', '#0F172A']}
+            className="pt-12 pb-10 items-center justify-center"
+          >
+            <View className="w-20 h-20 bg-blue-600/20 rounded-full items-center justify-center border border-blue-500/30">
+               <LogOut size={32} color="#3B82F6" />
+            </View>
+            <Text className="text-white text-2xl font-black mt-6 tracking-tight">End Session</Text>
+            <Text className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2">Professional Portal</Text>
+          </LinearGradient>
+
+          <View className="p-10 items-center">
+            <Text className="text-slate-600 text-center leading-6 font-medium text-base">
+              Are you sure you want to logout? You will need to re-authenticate to access your instructor dashboard.
+            </Text>
+
+            <View className="w-full mt-10 gap-4">
+              <TouchableOpacity
+                onPress={performLogout}
+                disabled={isLoggingOut}
+                activeOpacity={0.8}
+                className="bg-blue-600 py-6 rounded-[32px] items-center justify-center shadow-lg shadow-blue-600/20 flex-row"
+              >
+                {isLoggingOut ? (
+                  <ActivityIndicator color="white" size="small" />
+                ) : (
+                  <>
+                    <Text className="text-white font-black text-sm uppercase tracking-widest">Logout Now</Text>
+                    <ArrowRight size={16} color="white" className="ml-3" />
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setShowLogoutModal(false)}
+                disabled={isLoggingOut}
+                activeOpacity={0.7}
+                className="py-6 rounded-[32px] items-center justify-center border border-slate-100"
+              >
+                <Text className="text-slate-400 font-black text-xs uppercase tracking-widest">Stay Logged In</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  const ProfileLink = ({ icon: Icon, title, subtitle, onPress, color = "#2563EB", isLast = false }: any) => (
+    <TouchableOpacity 
+      onPress={onPress}
+      activeOpacity={0.7}
+      className={`flex-row items-center p-6 bg-white ${!isLast ? 'border-b border-slate-50' : ''}`}
+    >
+      <View className={`w-12 h-12 rounded-2xl bg-slate-50 items-center justify-center mr-4`}>
+         <Icon size={20} color={color} />
+      </View>
+      <View className="flex-1">
+        <Text className="text-sm font-black text-slate-900">{title}</Text>
+        {subtitle && <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{subtitle}</Text>}
+      </View>
+      <ChevronRight size={18} color="#CBD5E1" />
+    </TouchableOpacity>
+  );
+
   if (isLoading && !refreshing) {
     return (
-      <SafeAreaWrapper>
-        <View className="flex-1 items-center justify-center bg-white">
-          <ActivityIndicator size="large" color="#2563EB" />
+      <SafeAreaWrapper bgWhite>
+        <View className="flex-1 items-center justify-center">
+           <ActivityIndicator size="large" color="#2563EB" />
+           <Text className="text-slate-400 font-black text-[10px] uppercase tracking-widest mt-6">Syncing Identity...</Text>
         </View>
       </SafeAreaWrapper>
     );
   }
 
   return (
-    <SafeAreaWrapper>
-      <AppHeader role="Teacher" navigation={navigation} />
+    <SafeAreaWrapper bgWhite>
+      <AppHeader navigation={navigation} role="Teacher" />
+      <LogoutModal />
       <ScrollView 
         className="flex-1 bg-[#F8FAFC]" 
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 60 }}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} tintColor="#2563EB" />
+        }
       >
-        <View className="items-center pt-8 px-6">
-          {/* Avatar Section */}
-          <View className="relative">
-            <View className="w-44 h-44 rounded-[48px] overflow-hidden border-4 border-white shadow-2xl">
-              <Image 
-                source={{ uri: profile?.avatar_url || "https://i.pravatar.cc/300?img=12" }} 
-                className="w-full h-full bg-slate-200"
-              />
-            </View>
-            <TouchableOpacity className="absolute bottom-1 right-1 w-12 h-12 bg-blue-600 rounded-2xl items-center justify-center border-4 border-white shadow-lg">
-              <Edit2 size={18} color="white" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Identity */}
-          <Text className="text-3xl font-black text-slate-900 mt-6">{profile?.name || "Professor"}</Text>
-          <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mt-1">{profile?.role || "MENTOR"}</Text>
+        <View className="px-6 pt-10">
           
-          <Text className="text-slate-500 text-center mt-5 leading-5 px-4 font-medium">
-            {profile?.bio || "Expert educator at CodeCure Academy, dedicated to building the next generation of full-stack engineers."}
-          </Text>
- 
-          {/* Stats Cards */}
-          <View className="flex-row gap-4 mt-8">
-             <View className="flex-1 bg-white rounded-[32px] p-6 items-center border border-slate-50 shadow-sm">
-                <Text className="text-2xl font-black text-blue-600">{profile?.experience_years || "5+"}</Text>
-                <Text className="text-[9px] font-black text-slate-400 uppercase tracking-wider mt-1">Exp. Years</Text>
+          {/* Profile Hero */}
+          <View className="bg-white rounded-[44px] p-10 items-center border border-white shadow-2xl shadow-slate-900/[0.04] mb-10 overflow-hidden">
+             <View className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 rounded-full -mr-16 -mt-16" />
+             <View className="relative">
+                <View className="w-32 h-32 rounded-full border-4 border-slate-50 overflow-hidden shadow-xl shadow-blue-900/10">
+                    <Image 
+                      source={{ uri: profile?.profile_picture || profile?.avatar || "https://i.pravatar.cc/300?u=instructor" }} 
+                      className="w-full h-full" 
+                    />
+                </View>
+                <View className="absolute bottom-0 right-0 w-10 h-10 bg-blue-600 rounded-full border-4 border-white items-center justify-center shadow-lg">
+                   <Award size={16} color="white" />
+                </View>
              </View>
-             <View className="flex-1 bg-white rounded-[32px] p-6 items-center border border-slate-50 shadow-sm">
-                <Text className="text-2xl font-black text-blue-600">{courses.length}</Text>
-                <Text className="text-[9px] font-black text-slate-400 uppercase tracking-wider mt-1">Total Courses</Text>
+             <Text className="text-2xl font-black text-slate-900 mt-6">{profile?.name || "Professor"}</Text>
+             <View className="bg-blue-50 px-3 py-1 rounded-full mt-2">
+                <Text className="text-blue-600 text-[10px] font-black uppercase tracking-widest">Senior Instructor</Text>
              </View>
           </View>
- 
-          {/* Rating Card */}
-          <View className="w-full bg-blue-600 rounded-[36px] p-8 mt-4 shadow-xl shadow-blue-200 items-center">
-             <Text className="text-4xl font-black text-white">{profile?.rating || "5.0"}</Text>
-             <View className="flex-row gap-1 mt-1">
-                {[1,2,3,4,5].map(i => <Star key={i} size={14} color="white" fill="white" />)}
+
+          {/* Teacher Impact Section */}
+          <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-6 ml-2">PROFESSIONAL IMPACT</Text>
+          <View className="flex-row justify-between mb-10">
+             <View className="w-[31%] bg-white p-5 rounded-[32px] items-center shadow-sm border border-slate-50">
+                <Users size={18} color="#2563EB" />
+                <Text className="text-lg font-black text-slate-900 mt-2">
+                   {courses.reduce((acc, curr) => acc + (curr.students_enrolled || curr.enrollment_count || 0), 0)}+
+                </Text>
+                <Text className="text-[8px] font-black text-slate-400 uppercase">Mentees</Text>
              </View>
-             <Text className="text-[10px] font-black text-blue-100 uppercase tracking-[1px] mt-2">Student Rating</Text>
+             <View className="w-[31%] bg-white p-5 rounded-[32px] items-center shadow-sm border border-slate-50">
+                <Star size={18} color="#F59E0B" />
+                <Text className="text-lg font-black text-slate-900 mt-2">4.9</Text>
+                <Text className="text-[8px] font-black text-slate-400 uppercase">Rating</Text>
+             </View>
+             <View className="w-[31%] bg-white p-5 rounded-[32px] items-center shadow-sm border border-slate-50">
+                <BookOpen size={18} color="#7C3AED" />
+                <Text className="text-lg font-black text-slate-900 mt-2">{courses.length}</Text>
+                <Text className="text-[8px] font-black text-slate-400 uppercase">Tracks</Text>
+             </View>
           </View>
- 
-          {/* Skills Tags */}
-          <View className="flex-row flex-wrap justify-center gap-2 mt-8">
-            {(profile?.skills || ["Programming", "Logic", "Development"]).map((skill: any) => (
-              <View key={skill} className="bg-blue-100 px-4 py-2 rounded-full">
-                <Text className="text-[10px] font-black text-blue-700 uppercase">{skill}</Text>
-              </View>
-            ))}
+
+          {/* Account Settings Group */}
+          <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-6 ml-2">IDENTITY & SECURITY</Text>
+          <View className="bg-white rounded-[40px] overflow-hidden shadow-sm border border-slate-50 mb-10">
+            <ProfileLink 
+              icon={Settings} 
+              title="Edit Profile" 
+              subtitle="Update Identity & Bio"
+              onPress={() => navigation.navigate("EditProfile")} 
+            />
+            <ProfileLink 
+              icon={Bell} 
+              title="Notifications" 
+              subtitle="Manage Alert Preferences"
+              onPress={() => navigation.navigate("Notifications")} 
+            />
+            <ProfileLink 
+              icon={Shield} 
+              title="Security" 
+              subtitle="Password & Privacy"
+              color="#10B981"
+              onPress={() => navigation.navigate("EditProfile")} 
+            />
+            <ProfileLink 
+              icon={Sparkles} 
+              title="Teacher Rewards" 
+              subtitle="Claim Instructor Perks"
+              color="#F59E0B"
+              isLast
+            />
           </View>
- 
-          {/* Schedule Button */}
-          <TouchableOpacity className="w-full bg-blue-600 rounded-[28px] py-5 items-center justify-center mt-8 shadow-lg shadow-blue-200">
-              <Text className="text-white font-black text-base">Update Status</Text>
+
+          {/* Support Group */}
+          <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-6 ml-2">RESOURCES</Text>
+          <View className="bg-white rounded-[40px] overflow-hidden shadow-sm border border-slate-50 mb-10">
+            <ProfileLink 
+              icon={HelpCircle} 
+              title="Help & FAQ" 
+              subtitle="Instructor Guidelines"
+            />
+            <ProfileLink 
+              icon={MessageSquare} 
+              title="Community Support" 
+              subtitle="Connect with other Teachers"
+              isLast
+            />
+          </View>
+
+          <TouchableOpacity 
+            onPress={() => {
+              console.log("Logout button pressed");
+              handleLogout();
+            }}
+            disabled={isLoggingOut}
+            className={`bg-rose-50 rounded-[32px] py-6 flex-row items-center justify-center border border-rose-100 mb-10 ${isLoggingOut ? 'opacity-50' : ''}`}
+          >
+            {isLoggingOut ? (
+                <ActivityIndicator color="#E11D48" size="small" />
+            ) : (
+                <>
+                    <LogOut size={18} color="#E11D48" />
+                    <Text className="text-rose-600 font-black text-xs uppercase tracking-widest ml-3">End Session</Text>
+                </>
+            )}
           </TouchableOpacity>
- 
-          {/* Connect & Inquiries */}
-          <View className="w-full bg-white rounded-[40px] p-8 mt-10 border border-slate-50 shadow-sm">
-             <Text className="text-lg font-black text-slate-900 mb-6">Connect & Inquiries</Text>
-             
-             <View className="gap-6">
-                <View className="flex-row items-center">
-                   <View className="w-10 h-10 rounded-2xl bg-blue-50 items-center justify-center">
-                      <Mail size={18} color="#2563EB" />
-                   </View>
-                   <View className="ml-4">
-                      <Text className="text-[9px] font-black text-slate-400 uppercase">Email Address</Text>
-                      <Text className="text-slate-900 font-bold text-sm">{profile?.email || "mentor@codecure.edu"}</Text>
-                   </View>
-                </View>
- 
-                <View className="flex-row items-center">
-                   <View className="w-10 h-10 rounded-2xl bg-blue-50 items-center justify-center">
-                      <Phone size={18} color="#2563EB" />
-                   </View>
-                   <View className="ml-4">
-                      <Text className="text-[9px] font-black text-slate-400 uppercase">Direct Line</Text>
-                      <Text className="text-slate-900 font-bold text-sm">{profile?.phone || "+91 (Mobile Only)"}</Text>
-                   </View>
-                </View>
- 
-                <View className="flex-row gap-3 mt-2">
-                   <TouchableOpacity className="flex-1 bg-slate-50 rounded-2xl py-4 flex-row items-center justify-center">
-                      <Link2 size={16} color="#475569" />
-                      <Text className="text-slate-700 font-bold text-xs ml-2">LinkedIn</Text>
-                   </TouchableOpacity>
-                   <TouchableOpacity className="flex-1 bg-slate-50 rounded-2xl py-4 flex-row items-center justify-center">
-                      <Code size={16} color="#475569" />
-                      <Text className="text-slate-700 font-bold text-xs ml-2">GitHub</Text>
-                   </TouchableOpacity>
-                </View>
-             </View>
+
+          <View className="items-center mb-10">
+             <Text className="text-slate-300 text-[10px] font-black uppercase tracking-widest">CodeCure Instructor Portal v1.0.4</Text>
           </View>
 
-          {/* Current Courses */}
-          <View className="w-full mt-10">
-             <View className="flex-row items-center justify-between mb-6">
-                <Text className="text-xl font-black text-slate-900">Current Courses</Text>
-                <TouchableOpacity><Text className="text-[10px] font-black text-blue-600 uppercase">View All</Text></TouchableOpacity>
-             </View>
-
-             <View className="gap-4">
-                {courses.slice(0, 2).map((course) => (
-                  <View key={course.id || course._id} className="bg-white rounded-[32px] p-4 flex-row items-center border border-slate-50 shadow-sm">
-                     <Image 
-                       source={{ uri: course.image_url || "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=200" }} 
-                       className="w-16 h-16 rounded-2xl bg-slate-100"
-                     />
-                     <View className="flex-1 ml-4 pr-4">
-                        <Text className="text-sm font-black text-slate-900" numberOfLines={1}>{course.title}</Text>
-                        <View className="flex-row items-center mt-1">
-                           <Users size={12} color="#94A3B8" />
-                           <Text className="text-[10px] font-bold text-slate-400 ml-1.5">{course.enrolled_count || 0} Students enrolled</Text>
-                        </View>
-                        {/* Progress bar style */}
-                        <View className="h-1 bg-slate-100 rounded-full mt-3 overflow-hidden">
-                           <View className="h-full bg-blue-600 w-[60%]" />
-                        </View>
-                     </View>
-                  </View>
-                ))}
-              </View>
-           </View>
-
-            {/* Pure Pressable Logout - New Architecture Friendly */}
-            <View className="px-8 pb-40 pt-10">
-                <Pressable 
-                    onPress={handleLogout}
-                    disabled={loggingOut}
-                    style={({ pressed }) => ({
-                        opacity: pressed || loggingOut ? 0.5 : 1,
-                        backgroundColor: '#FEF2F2',
-                        borderColor: '#FEE2E2',
-                        borderWidth: 2,
-                        paddingVertical: 20,
-                        borderRadius: 30,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexDirection: 'row'
-                    })}
-                >
-                    {loggingOut ? (
-                        <ActivityIndicator size="small" color="#EF4444" />
-                    ) : (
-                        <>
-                            <LogOut size={20} color="#EF4444" strokeWidth={2.5} />
-                            <Text className="text-red-500 font-black text-xs uppercase tracking-[2px] ml-3">Log Out</Text>
-                        </>
-                    )}
-                </Pressable>
-                <Text className="text-center text-slate-300 text-[10px] font-black uppercase tracking-widest mt-8">CodeCure Academy v1.2.4</Text>
-            </View>
         </View>
       </ScrollView>
     </SafeAreaWrapper>

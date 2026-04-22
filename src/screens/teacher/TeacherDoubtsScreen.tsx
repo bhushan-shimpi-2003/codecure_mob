@@ -11,6 +11,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
 import { doubtsApi, notificationsApi } from "../../api/endpoints";
@@ -21,18 +22,18 @@ import {
   Video, 
   Paperclip, 
   Play, 
-  Trash2, 
-  Edit3,
-  Search,
-  Filter,
   ArrowRight,
   Clock,
   ChevronRight,
-  User,
+  Sparkles,
+  Layers,
+  Send
 } from "lucide-react-native";
 import { AppHeader } from "../../components/AppHeader";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function TeacherDoubtsScreen({ navigation }: any) {
+  const { width } = useWindowDimensions();
   const [doubts, setDoubts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -89,185 +90,224 @@ export default function TeacherDoubtsScreen({ navigation }: any) {
   useEffect(() => { fetchData(); }, []);
 
   const filteredDoubts = useMemo(() => {
-    return doubts.filter(d => activeTab === 'pending' ? !d.is_resolved : d.is_resolved);
+    return doubts.filter(d => {
+      const isResolved = !!d.reply;
+      return activeTab === 'pending' ? !isResolved : isResolved;
+    });
   }, [doubts, activeTab]);
 
   const stats = {
-    pending: doubts.filter(d => !d.is_resolved).length,
-    resolved: doubts.filter(d => d.is_resolved).length
+    pending: doubts.filter(d => !d.reply).length,
+    resolved: doubts.filter(d => !!d.reply).length
   };
 
-  if (isLoading) {
+  if (isLoading && !refreshing) {
     return (
-      <SafeAreaWrapper>
+      <SafeAreaWrapper bgWhite>
         <AppHeader navigation={navigation} role="Teacher" />
         <View className="flex-1 items-center justify-center bg-[#F8FAFC]">
           <ActivityIndicator size="large" color="#2563EB" />
-          <Text className="text-slate-400 font-bold mt-4">Loading Queries...</Text>
+          <Text className="text-slate-400 font-black text-[10px] uppercase tracking-widest mt-6">Syncing Queries...</Text>
         </View>
       </SafeAreaWrapper>
     );
   }
 
   return (
-    <SafeAreaWrapper>
+    <SafeAreaWrapper bgWhite>
       <AppHeader navigation={navigation} role="Teacher" />
       <ScrollView 
         className="flex-1 bg-[#F8FAFC]" 
         contentContainerStyle={{ paddingBottom: 60 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} />}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} tintColor="#2563EB" />
+        }
       >
-        <View className="px-8 pt-8 mb-10">
-           <View className="bg-blue-50 px-4 py-1.5 rounded-full self-start mb-4">
-              <Text className="text-blue-600 text-[10px] font-black uppercase tracking-widest">Support</Text>
+        <View className="px-6 pt-10">
+           {/* Header Section */}
+           <View className="mb-10">
+              <View className="flex-row items-center gap-2 mb-3">
+                 <View className="bg-blue-100 px-3 py-1 rounded-full">
+                    <Text className="text-blue-700 text-[10px] font-black uppercase tracking-widest">Support Portal</Text>
+                 </View>
+                 <Sparkles size={14} color="#3B82F6" />
+              </View>
+              <Text className="text-[40px] font-black text-slate-900 leading-[44px] tracking-tight">
+                 Student <Text className="text-blue-600">Doubts</Text>
+              </Text>
+              <Text className="text-slate-400 text-base font-bold mt-2">Clarify concepts and guide student logic.</Text>
            </View>
-           <Text className="text-[44px] font-black text-slate-900 leading-[48px] tracking-tighter">
-              Student <Text className="text-blue-600">Doubts</Text>
-           </Text>
-           <Text className="text-slate-400 text-base font-medium mt-2">Help your students clarify their concepts.</Text>
-        </View>
 
-          {/* Stats Cards */}
-          <View className="flex-row justify-between mb-10">
-            <TouchableOpacity 
-              onPress={() => setActiveTab('pending')}
-              className={`w-[48%] p-6 rounded-[32px] border ${activeTab === 'pending' ? 'bg-white border-blue-100 shadow-sm' : 'bg-slate-50 border-slate-100'}`}
-            >
-              <View className={`w-10 h-10 rounded-xl items-center justify-center mb-4 ${activeTab === 'pending' ? 'bg-blue-600' : 'bg-slate-200'}`}>
-                <Clock size={18} color="white" />
-              </View>
-              <Text className={`text-2xl font-black ${activeTab === 'pending' ? 'text-slate-900' : 'text-slate-400'}`}>{stats.pending}</Text>
-              <Text className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">WAITING</Text>
-            </TouchableOpacity>
+           {/* Stats Grid */}
+           <View className="flex-row justify-between mb-10">
+              <TouchableOpacity 
+                activeOpacity={0.9}
+                onPress={() => setActiveTab('pending')}
+                className={`w-[48%] p-6 rounded-[36px] border-2 ${activeTab === 'pending' ? 'bg-white border-blue-50 shadow-2xl shadow-slate-900/[0.03]' : 'bg-slate-50/50 border-transparent'}`}
+              >
+                 <View className={`w-12 h-12 rounded-2xl items-center justify-center mb-4 ${activeTab === 'pending' ? 'bg-blue-600 shadow-lg shadow-blue-200' : 'bg-slate-200'}`}>
+                    <Clock size={20} color="white" />
+                 </View>
+                 <Text className={`text-3xl font-black ${activeTab === 'pending' ? 'text-slate-900' : 'text-slate-400'}`}>{stats.pending}</Text>
+                 <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Pending</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity 
-              onPress={() => setActiveTab('resolved')}
-              className={`w-[48%] p-6 rounded-[32px] border ${activeTab === 'resolved' ? 'bg-white border-emerald-100 shadow-sm' : 'bg-slate-50 border-slate-100'}`}
-            >
-              <View className={`w-10 h-10 rounded-xl items-center justify-center mb-4 ${activeTab === 'resolved' ? 'bg-emerald-600' : 'bg-slate-200'}`}>
-                <CheckCircle2 size={18} color="white" />
-              </View>
-              <Text className={`text-2xl font-black ${activeTab === 'resolved' ? 'text-slate-900' : 'text-slate-400'}`}>{stats.resolved}</Text>
-              <Text className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">RESOLVED</Text>
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity 
+                activeOpacity={0.9}
+                onPress={() => setActiveTab('resolved')}
+                className={`w-[48%] p-6 rounded-[36px] border-2 ${activeTab === 'resolved' ? 'bg-white border-emerald-50 shadow-2xl shadow-slate-900/[0.03]' : 'bg-slate-50/50 border-transparent'}`}
+              >
+                 <View className={`w-12 h-12 rounded-2xl items-center justify-center mb-4 ${activeTab === 'resolved' ? 'bg-emerald-600 shadow-lg shadow-emerald-200' : 'bg-slate-200'}`}>
+                    <CheckCircle2 size={20} color="white" />
+                 </View>
+                 <Text className={`text-3xl font-black ${activeTab === 'resolved' ? 'text-slate-900' : 'text-slate-400'}`}>{stats.resolved}</Text>
+                 <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Resolved</Text>
+              </TouchableOpacity>
+           </View>
 
-          {/* Doubts Feed */}
-          <View className="gap-8">
-            {filteredDoubts.length > 0 ? (
-              filteredDoubts.map((doubt) => {
-                const student = doubt.profiles || doubt.student || {};
-                const doubtId = doubt.id || doubt._id;
-                const isResolved = activeTab === 'resolved';
+           {/* Doubts Feed */}
+           <View className="gap-8">
+              {filteredDoubts.length > 0 ? (
+                filteredDoubts.map((doubt) => {
+                  const student = doubt.profiles || doubt.student || {};
+                  const doubtId = doubt.id || doubt._id;
+                  const isResolved = activeTab === 'resolved';
 
-                return (
-                  <View key={doubtId} className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-50">
-                    <View className="flex-row items-center justify-between mb-8">
-                      <View className="flex-row items-center">
-                        <View className="relative">
-                          <Image 
-                            source={{ uri: student.avatar_url || `https://ui-avatars.com/api/?name=${student.name || 'S'}` }} 
-                            className="w-14 h-14 rounded-[20px] bg-slate-50"
-                          />
-                          <View className={`absolute -bottom-1 -right-1 w-5 h-5 border-4 border-white rounded-full ${isResolved ? 'bg-emerald-500' : 'bg-blue-500'}`} />
+                  return (
+                    <View key={doubtId} className="bg-white rounded-[44px] p-8 border border-white shadow-2xl shadow-slate-900/[0.04]">
+                      <View className="flex-row items-center justify-between mb-8">
+                        <View className="flex-row items-center">
+                           <View className="relative">
+                             <Image 
+                               source={{ uri: student.avatar_url || `https://ui-avatars.com/api/?name=${student.name || 'S'}&background=random` }} 
+                               className="w-16 h-16 rounded-[24px] bg-slate-50 border-2 border-slate-50"
+                             />
+                             <View className={`absolute -bottom-1 -right-1 w-6 h-6 border-4 border-white rounded-full ${isResolved ? 'bg-emerald-500' : 'bg-blue-500'}`} />
+                           </View>
+                           <View className="ml-4">
+                             <Text className="text-lg font-black text-slate-900 tracking-tight">{student.name || "Student"}</Text>
+                             <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
+                               {doubt.courses?.title || "Python Programming"}
+                             </Text>
+                           </View>
                         </View>
-                        <View className="ml-4">
-                          <Text className="text-base font-black text-slate-900">{student.name || "Student"}</Text>
-                          <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-tight" numberOfLines={1}>
-                            {doubt.courses?.title || "Python Programming"}
+                        <View className="bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
+                           <Text className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                             {new Date(doubt.created_at || Date.now()).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                           </Text>
+                        </View>
+                      </View>
+
+                      <View className="mb-4">
+                        <Text className="text-xl font-black text-slate-900 mb-2 leading-7">{doubt.subject || "Course Query"}</Text>
+                        <View className="bg-slate-50 rounded-[32px] p-6 border border-slate-100/50">
+                          <Text className="text-sm text-slate-600 leading-6 font-bold italic">
+                            "{doubt.description || doubt.query || "No description provided."}"
                           </Text>
                         </View>
                       </View>
-                      <View className="bg-slate-50 px-3 py-1.5 rounded-xl">
-                        <Text className="text-[9px] font-black text-slate-400 uppercase">
-                          {new Date(doubt.created_at || Date.now()).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                        </Text>
-                      </View>
-                    </View>
 
-                    <View className="bg-slate-50/50 rounded-[32px] p-6 mb-8 border border-slate-100/50">
-                      <Text className="text-sm text-slate-600 leading-6 font-medium italic">
-                        "{doubt.query}"
-                      </Text>
-                    </View>
-
-                    {!isResolved ? (
-                      <View className="gap-6">
-                        <View className="bg-white border border-slate-100 rounded-[32px] p-5 shadow-inner">
-                          <TextInput 
-                            placeholder="Share your expertise..."
-                            multiline
-                            className="text-slate-900 text-sm h-32 text-start align-top"
-                            placeholderTextColor="#94A3B8"
-                            value={doubtId === replyingToId ? activeReplyText : ""}
-                            onChangeText={(txt) => {
-                              setReplyingToId(doubtId);
-                              setActiveReplyText(txt);
-                            }}
-                          />
-                          <View className="flex-row justify-end gap-2 pt-4 border-t border-slate-50">
-                             <TouchableOpacity className="w-10 h-10 bg-slate-50 rounded-xl items-center justify-center border border-slate-100">
-                                <Video size={16} color="#64748B" />
-                             </TouchableOpacity>
-                             <TouchableOpacity className="w-10 h-10 bg-slate-50 rounded-xl items-center justify-center border border-slate-100">
-                                <Paperclip size={16} color="#64748B" />
-                             </TouchableOpacity>
+                      {!isResolved ? (
+                        <View className="gap-6">
+                          <View className="bg-white border border-slate-100 rounded-[36px] p-6 shadow-inner">
+                            <TextInput 
+                              placeholder="Type your professional response..."
+                              multiline
+                              className="text-slate-900 text-sm h-32 text-start align-top font-bold"
+                              placeholderTextColor="#CBD5E1"
+                              value={doubtId === replyingToId ? activeReplyText : ""}
+                              onChangeText={(txt) => {
+                                setReplyingToId(doubtId);
+                                setActiveReplyText(txt);
+                              }}
+                            />
+                            <View className="flex-row justify-end gap-3 pt-5 border-t border-slate-50">
+                               <TouchableOpacity className="w-12 h-12 bg-slate-50 rounded-2xl items-center justify-center border border-slate-100 shadow-sm">
+                                  <Video size={18} color="#64748B" />
+                               </TouchableOpacity>
+                               <TouchableOpacity className="w-12 h-12 bg-slate-50 rounded-2xl items-center justify-center border border-slate-100 shadow-sm">
+                                  <Paperclip size={18} color="#64748B" />
+                               </TouchableOpacity>
+                            </View>
                           </View>
+
+                          <TouchableOpacity 
+                            onPress={() => handleResolve(doubtId)}
+                            disabled={!activeReplyText.trim()}
+                            activeOpacity={0.8}
+                            className="overflow-hidden rounded-[28px]"
+                          >
+                             <LinearGradient
+                               colors={activeReplyText.trim() ? ['#1E293B', '#0F172A'] : ['#F1F5F9', '#E2E8F0']}
+                               className="py-5 flex-row items-center justify-center gap-3"
+                             >
+                                <Text className={`font-black text-xs uppercase tracking-widest ${activeReplyText.trim() ? 'text-white' : 'text-slate-400'}`}>Dispatch Resolution</Text>
+                                <Send size={16} color={activeReplyText.trim() ? "white" : "#94A3B8"} />
+                             </LinearGradient>
+                          </TouchableOpacity>
                         </View>
-
-                        <TouchableOpacity 
-                          onPress={() => handleResolve(doubtId)}
-                          disabled={!activeReplyText.trim()}
-                          className={`rounded-[24px] py-6 flex-row items-center justify-center shadow-lg ${activeReplyText.trim() ? 'bg-slate-900 shadow-slate-200' : 'bg-slate-100'}`}
-                        >
-                          <Text className={`font-black text-xs uppercase tracking-widest mr-2 ${activeReplyText.trim() ? 'text-white' : 'text-slate-400'}`}>Dispatch Answer</Text>
-                          <ArrowRight size={16} color={activeReplyText.trim() ? "white" : "#94A3B8"} />
-                        </TouchableOpacity>
-                      </View>
-                    ) : (
-                      <View className="bg-emerald-50 rounded-[32px] p-6 flex-row items-center justify-between border border-emerald-100">
-                        <View className="flex-row items-center flex-1 pr-4">
-                          <View className="w-10 h-10 rounded-full bg-white items-center justify-center mr-4 shadow-sm">
-                            <CheckCircle2 size={18} color="#10B981" />
+                      ) : (
+                        <View className="bg-emerald-50 rounded-[36px] p-6 flex-row items-center justify-between border border-emerald-100">
+                          <View className="flex-row items-center flex-1 pr-4">
+                            <View className="w-12 h-12 rounded-2xl bg-white items-center justify-center mr-5 shadow-sm">
+                              <CheckCircle2 size={20} color="#10B981" />
+                            </View>
+                            <View className="flex-1">
+                              <Text className="text-[10px] font-black text-emerald-800 uppercase tracking-widest mb-0.5">Resolution Sent</Text>
+                              <Text className="text-xs text-emerald-600 font-bold" numberOfLines={1}>{doubt.reply || "No response text."}</Text>
+                            </View>
                           </View>
-                          <View className="flex-1">
-                            <Text className="text-[10px] font-black text-emerald-800 uppercase tracking-widest">RESOLUTION SENT</Text>
-                            <Text className="text-xs text-emerald-600 mt-1" numberOfLines={1}>{doubt.response || "No response text."}</Text>
-                          </View>
+                          <ChevronRight size={18} color="#10B981" />
                         </View>
-                        <ChevronRight size={16} color="#10B981" />
-                      </View>
-                    )}
+                      )}
+                    </View>
+                  );
+                })
+              ) : (
+                <View className="items-center justify-center py-24 bg-white rounded-[56px] border border-dashed border-slate-200">
+                  <View className="w-24 h-24 bg-slate-50 rounded-full items-center justify-center mb-8">
+                    <MessageSquare size={36} color="#CBD5E1" />
                   </View>
-                );
-              })
-            ) : (
-              <View className="items-center justify-center py-24 bg-white rounded-[48px] border border-dashed border-slate-200">
-                <View className="w-20 h-20 bg-slate-50 rounded-full items-center justify-center mb-6">
-                  <MessageSquare size={32} color="#CBD5E1" />
+                  <Text className="text-slate-400 font-black text-xl tracking-tight">Inbox Synchronized</Text>
+                  <Text className="text-slate-300 text-[10px] mt-2 font-black uppercase tracking-[2px]">No {activeTab} queries found</Text>
                 </View>
-                <Text className="text-slate-400 font-black text-lg">Empty Inbox</Text>
-                <Text className="text-slate-300 text-xs mt-2 font-bold uppercase tracking-widest">No {activeTab} queries</Text>
-              </View>
-            )}
+              )}
 
-            {/* Quick Draft Section */}
-            <TouchableOpacity className="mt-8 bg-[#1E293B] rounded-[40px] p-10 relative overflow-hidden shadow-2xl">
-              <View className="relative z-10">
-                <Text className="text-blue-400 text-[10px] font-black uppercase tracking-[3px] mb-4">SMART TOOLS</Text>
-                <Text className="text-white text-2xl font-black mb-2">Video Resolution</Text>
-                <Text className="text-slate-400 text-sm leading-6">Record a quick screen capture or voice note to explain complex logical concepts visually.</Text>
-                <View className="flex-row items-center mt-8">
-                  <View className="bg-blue-600 px-6 py-3 rounded-full flex-row items-center">
-                    <Play size={12} color="white" fill="white" className="mr-2" />
-                    <Text className="text-white font-black text-[10px] uppercase tracking-widest">Launch Studio</Text>
-                  </View>
-                </View>
-              </View>
-              <View className="absolute -top-10 -right-10 w-40 h-40 bg-blue-600/10 rounded-full" />
-              <View className="absolute -bottom-20 -left-20 w-60 h-60 bg-blue-500/5 rounded-full" />
-            </TouchableOpacity>
-          </View>
+              {/* Advanced Tools Banner */}
+              <TouchableOpacity 
+                activeOpacity={0.9}
+                className="mt-8 rounded-[48px] overflow-hidden shadow-2xl shadow-blue-900/10"
+              >
+                 <LinearGradient
+                   colors={['#1E293B', '#334155']}
+                   start={{ x: 0, y: 0 }}
+                   end={{ x: 1, y: 1 }}
+                   className="p-10 relative"
+                 >
+                    <View className="relative z-10">
+                       <View className="flex-row items-center gap-2 mb-4">
+                          <View className="bg-blue-500/20 px-3 py-1 rounded-full border border-blue-500/30">
+                             <Text className="text-blue-400 text-[9px] font-black uppercase tracking-widest">Advanced Tooling</Text>
+                          </View>
+                          <Layers size={14} color="#3B82F6" />
+                       </View>
+                       <Text className="text-white text-3xl font-black mb-2 tracking-tight">Video Resolution</Text>
+                       <Text className="text-slate-400 text-sm leading-6 font-bold">Record a quick screen capture or voice note to explain complex logical concepts visually.</Text>
+                       
+                       <View className="flex-row items-center mt-10">
+                          <TouchableOpacity className="bg-blue-600 px-8 py-4 rounded-[20px] flex-row items-center gap-3 shadow-lg shadow-blue-600/20">
+                             <Play size={14} color="white" fill="white" />
+                             <Text className="text-white font-black text-[11px] uppercase tracking-widest">Launch Studio</Text>
+                          </TouchableOpacity>
+                       </View>
+                    </View>
+                    <View className="absolute -top-10 -right-10 w-40 h-40 bg-blue-600/10 rounded-full" />
+                    <View className="absolute -bottom-20 -left-20 w-60 h-60 bg-blue-500/5 rounded-full" />
+                 </LinearGradient>
+              </TouchableOpacity>
+           </View>
+        </View>
       </ScrollView>
     </SafeAreaWrapper>
   );

@@ -14,13 +14,10 @@ import {
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
 import { assignmentsApi, coursesApi, notificationsApi } from "../../api/endpoints";
 import { extractApiData, isApiSuccess } from "../../api/response";
-import { COLORS } from "../../utils/theme";
 import {
-  ClipboardList,
   Plus,
   Clock,
   Trash2,
-  BookOpen,
   Calendar,
   CloudUpload,
   Edit2,
@@ -30,8 +27,15 @@ import {
   Database,
   PenTool,
   Users,
+  Sparkles,
+  ArrowRight,
+  Layers,
+  X,
+  BookOpen,
+  ArrowLeft
 } from "lucide-react-native";
 import { AppHeader } from "../../components/AppHeader";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function TeacherAssignmentsScreen({ navigation }: any) {
   const { width } = useWindowDimensions();
@@ -47,6 +51,8 @@ export default function TeacherAssignmentsScreen({ navigation }: any) {
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [coursePickerVisible, setCoursePickerVisible] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(new Date().getDate());
 
   const fetchAll = async () => {
     try {
@@ -58,7 +64,6 @@ export default function TeacherAssignmentsScreen({ navigation }: any) {
           setSelectedCourseId(String(courseList[0]?.id || courseList[0]?._id));
         }
 
-        // Fetch assignments for the first course initially or all
         const allAssignments: any[] = [];
         await Promise.all(
           courseList.map(async (c) => {
@@ -100,7 +105,6 @@ export default function TeacherAssignmentsScreen({ navigation }: any) {
       if (isApiSuccess(res.data)) {
         Alert.alert("Success", "Assignment created successfully");
         
-        // Notify Students
         notificationsApi.send({
           role: 'student',
           title: 'New Assignment Alert!',
@@ -113,11 +117,19 @@ export default function TeacherAssignmentsScreen({ navigation }: any) {
         setDueDate("");
         fetchAll();
       }
-    } catch (e) {
-      Alert.alert("Error", "Failed to create assignment");
+    } catch (e: any) { 
+      console.log("Assignment Create Error:", e.response?.data || e.message);
+      Alert.alert("Error", "Failed to create assignment. " + (e.response?.data?.message || "")); 
     } finally {
       setIsCreating(false);
     }
+  };
+
+  const handleDateSelect = (day: number) => {
+    setSelectedDay(day);
+    const dateStr = `2026-04-${day.toString().padStart(2, '0')}`;
+    setDueDate(dateStr);
+    setShowDatePicker(false);
   };
 
   const getIcon = (title: string) => {
@@ -127,212 +139,311 @@ export default function TeacherAssignmentsScreen({ navigation }: any) {
     return <PenTool size={20} color="#64748B" />;
   };
 
-  const getBorderColor = (title: string) => {
-    const t = title.toLowerCase();
-    if (t.includes("python")) return "#2563EB";
-    if (t.includes("database")) return "#0891B2";
-    return "#94A3B8";
-  };
-
   return (
-    <SafeAreaWrapper>
+    <SafeAreaWrapper bgWhite>
       <AppHeader navigation={navigation} role="Teacher" />
       <ScrollView
         className="flex-1 bg-[#F8FAFC]"
-        contentContainerStyle={{ paddingBottom: 40 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchAll(); }} />}
+        contentContainerStyle={{ paddingBottom: 60 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchAll(); }} tintColor="#2563EB" />
+        }
       >
-        <View className="px-6 pt-6">
-          <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-1">MANAGEMENT CONSOLE</Text>
-          <Text className="text-4xl font-black text-slate-900 mb-2">Assignment Lab</Text>
-          <Text className="text-slate-500 text-sm leading-5 mb-8">
-            Design, schedule, and oversee student performance through curated technical challenges.
-          </Text>
-
-          {/* Create Form Card */}
-          <View className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-50 mb-10">
-            <View className="flex-row items-center mb-6">
-              <View className="w-10 h-10 rounded-2xl bg-blue-600 items-center justify-center mr-3">
-                <Plus size={20} color="white" />
+        <View className="px-6 pt-10">
+           {/* Header Section */}
+           <View className="mb-10">
+              <View className="flex-row items-center gap-2 mb-3">
+                 <View className="bg-blue-100 px-3 py-1 rounded-full">
+                    <Text className="text-blue-700 text-[10px] font-black uppercase tracking-widest">Curriculum Control</Text>
+                 </View>
+                 <Sparkles size={14} color="#3B82F6" />
               </View>
-              <Text className="text-lg font-black text-slate-900">Create Assignment</Text>
-            </View>
+              <Text className="text-[40px] font-black text-slate-900 leading-[44px] tracking-tight">
+                 Assignment <Text className="text-blue-600">Lab</Text>
+              </Text>
+              <Text className="text-slate-400 text-base font-bold mt-2">Design, schedule, and oversee technical challenges.</Text>
+           </View>
 
-            <View className="gap-6">
-              <View>
-                <Text className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 ml-1">ASSIGNMENT TITLE</Text>
-                <TextInput
-                  placeholder="e.g. Advanced React Hooks Mastery"
-                  className="bg-slate-50 rounded-2xl px-5 py-4 text-slate-900 text-sm font-medium"
-                  placeholderTextColor="#94A3B8"
-                  value={title}
-                  onChangeText={setTitle}
-                />
+           {/* Stats Summary */}
+           <View className="flex-row justify-between mb-10">
+              <View className="w-[48%] bg-white p-6 rounded-[36px] shadow-2xl shadow-slate-900/[0.03] border border-slate-50">
+                 <View className="bg-blue-50 w-12 h-12 rounded-2xl items-center justify-center mb-4">
+                    <Layers size={20} color="#2563EB" />
+                 </View>
+                 <Text className="text-3xl font-black text-slate-900 mb-0.5">{assignments.length}</Text>
+                 <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Tasks</Text>
               </View>
-
-              <View>
-                <Text className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 ml-1">DESCRIPTION</Text>
-                <TextInput
-                  placeholder="Detail the technical requirements..."
-                  className="bg-slate-50 rounded-3xl px-5 py-4 text-slate-900 text-sm h-32"
-                  placeholderTextColor="#94A3B8"
-                  multiline
-                  textAlignVertical="top"
-                  value={description}
-                  onChangeText={setDescription}
-                />
+              <View className="w-[48%] bg-white p-6 rounded-[36px] shadow-2xl shadow-slate-900/[0.03] border border-slate-50">
+                 <View className="bg-emerald-50 w-12 h-12 rounded-2xl items-center justify-center mb-4">
+                    <Users size={20} color="#10B981" />
+                 </View>
+                 <Text className="text-3xl font-black text-slate-900 mb-0.5">{courses.length}</Text>
+                 <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Modules</Text>
               </View>
+           </View>
 
-              <View className="flex-row gap-4">
-                <View className="flex-1">
-                  <Text className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 ml-1">DUE DATE</Text>
-                  <View className="bg-slate-50 rounded-2xl px-5 py-4 flex-row items-center">
-                    <TextInput
-                      placeholder="mm/dd/yy"
-                      className="flex-1 text-slate-900 text-sm"
-                      placeholderTextColor="#94A3B8"
-                      value={dueDate}
-                      onChangeText={setDueDate}
-                    />
-                    <Calendar size={14} color="#94A3B8" />
-                  </View>
-                </View>
-                <View className="flex-1">
-                  <Text className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 ml-1">MODULE</Text>
-                  <TouchableOpacity 
-                    onPress={() => setCoursePickerVisible(true)} 
-                    className="bg-slate-50 rounded-2xl px-5 py-4 flex-row items-center justify-between"
-                  >
-                    <Text className="text-slate-900 text-xs font-medium" numberOfLines={1}>
-                      {courses.find(c => String(c.id || c._id) === selectedCourseId)?.title || "Select Module"}
-                    </Text>
-                    <ChevronDown size={14} color="#94A3B8" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <View>
-                <Text className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 ml-1">ATTACHMENTS</Text>
-                <TouchableOpacity className="border-2 border-dashed border-slate-100 rounded-3xl p-6 items-center justify-center bg-slate-50/30">
-                  <CloudUpload size={20} color="#94A3B8" />
-                  <Text className="text-slate-400 text-[11px] font-medium mt-2">Drop PDF or ZIP files here</Text>
-                </TouchableOpacity>
-              </View>
-
-              <TouchableOpacity 
-                onPress={handleCreate}
-                disabled={isCreating}
-                className="bg-blue-600 rounded-[20px] py-5 items-center justify-center shadow-lg shadow-blue-200"
-              >
-                {isCreating ? <ActivityIndicator size="small" color="white" /> : <Text className="text-white font-black text-sm">PUBLISH ASSIGNMENT</Text>}
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Active Submissions Header */}
-          <View className="flex-row items-center justify-between mb-6">
-            <View className="flex-row items-center">
-              <Text className="text-xl font-black text-slate-900">Active Submissions</Text>
-              <View className="bg-blue-100 px-2 py-0.5 rounded-full ml-3">
-                <Text className="text-[10px] font-black text-blue-600">{assignments.length}</Text>
-              </View>
-            </View>
-            <TouchableOpacity>
-              <Text className="text-blue-600 text-[11px] font-black">View Archived</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Assignment List */}
-          <View className="gap-6">
-            {assignments.map((item, idx) => {
-              const aId = String(item.id || item._id);
-              return (
-                <TouchableOpacity 
-                  key={aId} 
-                  activeOpacity={0.7}
-                  onPress={() => navigation.navigate("TeacherSubmissions", { assignmentId: aId, assignmentTitle: item.title })}
-                  className="bg-white rounded-[32px] overflow-hidden shadow-sm border border-slate-50 flex-row"
-                >
-                  <View className="w-1.5" style={{ backgroundColor: getBorderColor(item.title) }} />
-                  <View className="flex-1 p-6 flex-row items-center justify-between">
-                    <View className="flex-row items-center flex-1">
-                      <View className="w-12 h-12 rounded-2xl bg-slate-50 items-center justify-center mr-4">
-                        {getIcon(item.title)}
-                      </View>
-                      <View className="flex-1">
-                        <Text className="text-base font-black text-slate-900 leading-5 mb-1" numberOfLines={1}>{item.title}</Text>
-                        <View className="flex-row items-center">
-                          <Calendar size={12} color="#94A3B8" />
-                          <Text className="text-[10px] font-bold text-slate-400 ml-1">
-                            {item.due_date ? new Date(item.due_date).toLocaleDateString() : "No deadline"}
-                          </Text>
-                          <View className="flex-row items-center ml-4">
-                             <Users size={12} color="#2563EB" />
-                             <Text className="text-[10px] font-black text-blue-600 ml-1">Pending Reviews</Text>
-                          </View>
-                        </View>
-                      </View>
+           {/* Create Form Card */}
+           <View className="bg-white rounded-[44px] p-8 shadow-2xl shadow-slate-900/[0.04] border border-white mb-12">
+              <View className="flex-row items-center justify-between mb-8">
+                 <View className="flex-row items-center">
+                    <View className="w-12 h-12 rounded-[20px] bg-slate-900 items-center justify-center mr-4">
+                       <Plus size={24} color="white" />
                     </View>
-                    <TouchableOpacity className="w-10 h-10 rounded-full bg-slate-50 items-center justify-center">
-                       <Edit2 size={16} color="#94A3B8" />
-                    </TouchableOpacity>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
+                    <View>
+                       <Text className="text-xl font-black text-slate-900 tracking-tight">Create Challenge</Text>
+                       <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-0.5">New Assignment</Text>
+                    </View>
+                 </View>
+              </View>
 
-            {/* Empty State Illustration Placeholder */}
-            <View className="border-2 border-dashed border-slate-100 rounded-[40px] p-10 items-center justify-center mt-4">
-               <View className="w-16 h-16 rounded-full bg-slate-50 items-center justify-center mb-4">
-                  <Layout size={24} color="#CBD5E1" />
-               </View>
-               <Text className="text-slate-400 text-center text-xs font-medium leading-5 px-6">
-                 Plan your curriculum ahead.{"\n"}Submissions automatically sync here.
-               </Text>
-            </View>
-          </View>
+              <View className="gap-8">
+                 <View>
+                    <Text className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Assignment Title</Text>
+                    <TextInput
+                      placeholder="e.g. Advanced React Hooks Mastery"
+                      className="bg-slate-50/50 border border-slate-100 rounded-3xl px-6 py-5 text-slate-900 text-[14px] font-black"
+                      placeholderTextColor="#CBD5E1"
+                      value={title}
+                      onChangeText={setTitle}
+                    />
+                 </View>
+
+                 <View>
+                    <Text className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Target Module</Text>
+                    <TouchableOpacity 
+                      activeOpacity={0.8}
+                      onPress={() => setCoursePickerVisible(true)} 
+                      className="bg-slate-50/50 border border-slate-100 rounded-3xl px-6 py-5 flex-row items-center justify-between"
+                    >
+                       <Text className="text-slate-900 text-sm font-black" numberOfLines={1}>
+                          {courses.find(c => String(c.id || c._id) === selectedCourseId)?.title || "Select Module"}
+                       </Text>
+                       <ChevronDown size={18} color="#94A3B8" />
+                    </TouchableOpacity>
+                 </View>
+
+                 <View className="flex-row justify-between">
+                    <View className="w-full">
+                       <Text className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Submission Deadline</Text>
+                       <TouchableOpacity 
+                         activeOpacity={0.8}
+                         onPress={() => setShowDatePicker(true)}
+                         className="bg-slate-50/50 border border-slate-100 rounded-3xl px-6 py-5 flex-row items-center justify-between"
+                       >
+                          <Text className={`text-sm font-black ${dueDate ? "text-slate-900" : "text-slate-400"}`}>
+                             {dueDate || "Select target date"}
+                          </Text>
+                          <Calendar size={18} color="#94A3B8" />
+                       </TouchableOpacity>
+                    </View>
+                 </View>
+
+                 <View>
+                    <Text className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Challenge Brief</Text>
+                    <TextInput
+                      placeholder="Detail the technical requirements..."
+                      className="bg-slate-50/50 border border-slate-100 rounded-[36px] px-6 py-5 text-slate-900 text-sm font-black h-40"
+                      placeholderTextColor="#CBD5E1"
+                      multiline
+                      textAlignVertical="top"
+                      value={description}
+                      onChangeText={setDescription}
+                    />
+                 </View>
+
+                 <TouchableOpacity 
+                   onPress={handleCreate}
+                   disabled={isCreating}
+                   activeOpacity={0.8}
+                   className="overflow-hidden rounded-[28px] mt-4 shadow-xl shadow-blue-200"
+                 >
+                    <LinearGradient
+                      colors={['#2563EB', '#1D4ED8']}
+                      className="py-6 flex-row items-center justify-center gap-3"
+                    >
+                       {isCreating ? (
+                         <ActivityIndicator size="small" color="white" />
+                       ) : (
+                         <>
+                            <Text className="text-white font-black text-sm uppercase tracking-widest">Publish Challenge</Text>
+                            <ArrowRight size={18} color="white" />
+                         </>
+                       )}
+                    </LinearGradient>
+                 </TouchableOpacity>
+              </View>
+           </View>
+
+           {/* Active Submissions List */}
+           <View className="mb-10">
+              <View className="flex-row items-center justify-between mb-8">
+                 <View>
+                    <Text className="text-2xl font-black text-slate-900">Active Tasks</Text>
+                    <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Managed Curriculum</Text>
+                 </View>
+                 <TouchableOpacity className="bg-blue-50 px-4 py-2 rounded-full">
+                    <Text className="text-blue-600 text-[10px] font-black uppercase tracking-widest">View Archives</Text>
+                 </TouchableOpacity>
+              </View>
+
+              <View className="gap-6">
+                 {assignments.map((item, idx) => {
+                   const aId = String(item.id || item._id);
+                   return (
+                     <TouchableOpacity 
+                       key={aId} 
+                       activeOpacity={0.9}
+                       onPress={() => navigation.navigate("TeacherSubmissions", { assignmentId: aId, assignmentTitle: item.title })}
+                       className="bg-white rounded-[40px] p-8 border border-white shadow-2xl shadow-slate-900/[0.04]"
+                     >
+                        <View className="flex-row items-start justify-between mb-8">
+                           <View className="w-16 h-16 rounded-[24px] bg-slate-50 items-center justify-center border border-slate-50 shadow-sm">
+                              {getIcon(item.title)}
+                           </View>
+                           <View className="bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100">
+                              <Text className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Review Pending</Text>
+                           </View>
+                        </View>
+                        
+                        <Text className="text-2xl font-black text-slate-900 mb-1 leading-tight tracking-tight">{item.title}</Text>
+                        <Text className="text-blue-600 font-black text-sm mb-8">{item.courseTitle || "General Module"}</Text>
+                        
+                        <View className="flex-row items-center gap-6 mb-8 bg-slate-50/50 p-4 rounded-3xl">
+                           <View className="flex-row items-center">
+                              <Calendar size={14} color="#94A3B8" />
+                              <Text className="text-xs font-black text-slate-500 ml-2">
+                                 {item.due_date ? new Date(item.due_date).toLocaleDateString() : "No Deadline"}
+                              </Text>
+                           </View>
+                           <View className="flex-row items-center">
+                              <Users size={14} color="#94A3B8" />
+                              <Text className="text-xs font-black text-slate-500 ml-2">Track Submissions</Text>
+                           </View>
+                        </View>
+
+                        <TouchableOpacity 
+                          activeOpacity={0.8}
+                          onPress={() => navigation.navigate("TeacherSubmissions", { assignmentId: aId, assignmentTitle: item.title })}
+                          className="bg-slate-900 rounded-[28px] py-6 items-center justify-center shadow-xl shadow-slate-200"
+                        >
+                          <Text className="text-white font-black text-[11px] uppercase tracking-[2px]">Grade Submissions</Text>
+                        </TouchableOpacity>
+                     </TouchableOpacity>
+                   );
+                 })}
+
+                 {assignments.length === 0 && (
+                   <View className="items-center justify-center py-20 bg-slate-50 rounded-[44px] border border-dashed border-slate-200">
+                      <Layout size={40} color="#CBD5E1" />
+                      <Text className="text-slate-400 font-black text-[10px] uppercase tracking-widest mt-4">No assignments published</Text>
+                   </View>
+                 )}
+              </View>
+           </View>
         </View>
       </ScrollView>
 
       {/* Course Picker Modal */}
-      <Modal
-        visible={coursePickerVisible}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setCoursePickerVisible(false)}
-      >
-        <View className="flex-1 bg-slate-900/50 justify-end">
-          <View className="bg-white rounded-t-[40px] p-8 h-[60%]">
-            <View className="flex-row justify-between items-center mb-8">
-              <Text className="text-xl font-black text-slate-900">Select Module</Text>
-              <TouchableOpacity onPress={() => setCoursePickerVisible(false)}>
-                <Text className="text-blue-600 font-bold">Done</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {courses.map((course) => {
-                const cid = String(course.id || course._id);
-                const selected = cid === selectedCourseId;
-                return (
-                  <TouchableOpacity
-                    key={cid}
-                    onPress={() => {
-                      setSelectedCourseId(cid);
-                      setCoursePickerVisible(false);
-                    }}
-                    className={`p-5 rounded-3xl mb-3 border ${selected ? "bg-blue-50 border-blue-100" : "bg-slate-50 border-transparent"}`}
-                  >
-                    <Text className={`font-bold ${selected ? "text-blue-600" : "text-slate-700"}`}>
-                      {course.title}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
+      <Modal visible={coursePickerVisible} animationType="slide" transparent>
+        <View className="flex-1 bg-black/60 justify-end">
+           <View className="bg-[#F8FAFC] rounded-t-[56px] h-[70%] p-8">
+              <View className="flex-row items-center justify-between mb-10">
+                 <View>
+                    <Text className="text-3xl font-black text-slate-900">Select Module</Text>
+                    <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Curriculum Sync</Text>
+                 </View>
+                 <TouchableOpacity 
+                   onPress={() => setCoursePickerVisible(false)} 
+                   className="bg-white w-14 h-14 rounded-3xl items-center justify-center shadow-2xl shadow-slate-900/[0.05] border border-slate-50"
+                 >
+                    <X size={24} color="#64748B" />
+                 </TouchableOpacity>
+              </View>
+              
+              <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+                 <View className="gap-4 pb-20">
+                    {courses.map((course) => {
+                      const cid = String(course.id || course._id);
+                      const selected = cid === selectedCourseId;
+                      return (
+                        <TouchableOpacity
+                          key={cid}
+                          activeOpacity={0.8}
+                          onPress={() => {
+                            setSelectedCourseId(cid);
+                            setCoursePickerVisible(false);
+                          }}
+                          className={`p-6 rounded-[32px] border-2 flex-row items-center justify-between ${selected ? "bg-white border-blue-100 shadow-xl shadow-slate-100" : "bg-white border-transparent shadow-sm"}`}
+                        >
+                           <View className="flex-row items-center gap-4">
+                              <View className={`w-12 h-12 rounded-2xl items-center justify-center ${selected ? 'bg-blue-600' : 'bg-slate-100'}`}>
+                                 <BookOpen size={20} color={selected ? "white" : "#64748B"} />
+                              </View>
+                              <Text className={`font-black text-sm ${selected ? "text-blue-600" : "text-slate-700"}`}>
+                                {course.title}
+                              </Text>
+                           </View>
+                           {selected && (
+                             <View className="bg-blue-600 w-6 h-6 rounded-full items-center justify-center">
+                                <Plus size={14} color="white" style={{ transform: [{ rotate: '45deg' }] }} />
+                             </View>
+                           )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                 </View>
+              </ScrollView>
+           </View>
+        </View>
+      </Modal>
+
+      {/* Date Picker Modal */}
+      <Modal visible={showDatePicker} animationType="slide" transparent>
+        <View className="flex-1 bg-black/60 justify-end">
+           <View className="bg-[#F8FAFC] rounded-t-[56px] h-[70%] p-8">
+              <View className="flex-row items-center justify-between mb-10">
+                 <View>
+                    <Text className="text-3xl font-black text-slate-900">Step 3: Date</Text>
+                    <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Submission Deadline</Text>
+                 </View>
+                 <TouchableOpacity 
+                   onPress={() => setShowDatePicker(false)} 
+                   className="bg-white w-14 h-14 rounded-3xl items-center justify-center shadow-2xl shadow-slate-900/[0.05] border border-slate-50"
+                 >
+                    <X size={24} color="#64748B" />
+                 </TouchableOpacity>
+              </View>
+
+              <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+                <View className="gap-8 pb-20">
+                  <View className="bg-white p-8 rounded-[40px] shadow-sm border border-slate-50">
+                     <View className="flex-row justify-between mb-8">
+                       {["MO", "TU", "WE", "TH", "FR", "SA", "SU"].map(d => (
+                          <Text key={d} className="w-10 text-center text-[11px] font-black text-slate-300 uppercase tracking-widest">{d}</Text>
+                       ))}
+                     </View>
+                     <View className="flex-row flex-wrap justify-between gap-y-5">
+                       {[28, 29, 30, 31, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30].map((day, i) => {
+                         const isOtherMonth = i < 4;
+                         const isSelected = day === selectedDay && !isOtherMonth;
+                         return (
+                           <TouchableOpacity 
+                             key={i} 
+                             onPress={() => !isOtherMonth && handleDateSelect(day)} 
+                             className={`w-10 h-10 items-center justify-center rounded-[18px] ${isSelected ? "bg-blue-600 shadow-xl shadow-blue-200" : ""}`}
+                           >
+                             <Text className={`text-sm font-black ${isOtherMonth ? "text-slate-100" : isSelected ? "text-white" : "text-slate-600"}`}>{day}</Text>
+                           </TouchableOpacity>
+                         );
+                       })}
+                     </View>
+                  </View>
+                </View>
+              </ScrollView>
+           </View>
         </View>
       </Modal>
     </SafeAreaWrapper>
   );
 }
-

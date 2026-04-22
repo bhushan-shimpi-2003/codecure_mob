@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { 
   View, 
   Text, 
@@ -7,7 +7,7 @@ import {
   TouchableOpacity, 
   TextInput, 
   Image,
-  Dimensions,
+  useWindowDimensions,
   ActivityIndicator
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
@@ -32,17 +32,19 @@ import {
   ClipboardList,
   GraduationCap,
   Star,
-  ChevronRight
+  ChevronRight,
+  Sparkles,
+  ArrowRight,
+  Clock,
+  Layers,
+  CheckCircle2,
+  Bell
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle } from "react-native-svg";
-import { COLORS } from "../../utils/theme";
 import { extractApiData, isApiSuccess } from "../../api/response";
 import { calculateProgress, getProgressString } from "../../utils/progress";
 import { AppHeader } from "../../components/AppHeader";
-
-const { width } = Dimensions.get("window");
-const CARD_WIDTH = width * 0.8;
 
 const ProgressRing = ({ progress = 0, size = 60, strokeWidth = 5 }: { progress?: number; size?: number; strokeWidth?: number }) => {
   const radius = (size - strokeWidth) / 2;
@@ -56,7 +58,7 @@ const ProgressRing = ({ progress = 0, size = 60, strokeWidth = 5 }: { progress?:
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#E2E8F0"
+          stroke="rgba(255,255,255,0.2)"
           strokeWidth={strokeWidth}
           fill="transparent"
         />
@@ -74,36 +76,16 @@ const ProgressRing = ({ progress = 0, size = 60, strokeWidth = 5 }: { progress?:
         />
       </Svg>
       <View className="absolute">
-        <Text className="text-white font-bold text-[10px]">{progress}%</Text>
+        <Text className="text-white font-black text-[10px]">{Math.round(progress)}%</Text>
       </View>
     </View>
   );
 };
 
-interface ActivityItemProps {
-  title: string;
-  subtitle: string;
-  time: string;
-  icon: any;
-  iconColor: string;
-  iconBg: string;
-}
-
-const ActivityItem = ({ title, subtitle, time, icon: Icon, iconColor, iconBg }: ActivityItemProps) => (
-  <View className="bg-white rounded-[32px] p-5 mb-3 flex-row items-center border border-slate-50 shadow-sm">
-    <View className={`${iconBg} w-12 h-12 rounded-2xl items-center justify-center mr-4`}>
-       <Icon size={20} color={iconColor} />
-    </View>
-    <View className="flex-1">
-      <Text className="text-[15px] font-bold text-slate-800 leading-tight">{title}</Text>
-      <Text className="text-slate-400 text-xs mt-1 font-medium">{subtitle}</Text>
-    </View>
-    <Text className="text-[10px] font-extrabold text-slate-300 uppercase tracking-tighter">{time}</Text>
-  </View>
-);
-
 export default function DashboardScreen({ navigation }: any) {
   const { user, isAuthenticated } = useAuth();
+  const { width } = useWindowDimensions();
+  const CARD_WIDTH = width * 0.85;
   
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [lastAttended, setLastAttended] = useState<any>(null);
@@ -135,7 +117,6 @@ export default function DashboardScreen({ navigation }: any) {
         if (enrRes.status === "fulfilled" && isApiSuccess(enrRes.value.data)) {
           const data = extractApiData<any[]>(enrRes.value.data, []);
           
-          // Fetch lesson counts for each enrollment to fix 0 total issue
           const enrichedEnr = await Promise.all(data.map(async (enr) => {
             const courseId = enr.courses?.id || enr.course?.id || enr.course_id;
             let lessonCount = 0;
@@ -146,17 +127,10 @@ export default function DashboardScreen({ navigation }: any) {
                   const lessonsData = extractApiData<any[]>(lessonsRes.data, []);
                   lessonCount = lessonsData.length;
                 }
-              } catch (e) {
-                console.log(`Failed to fetch lessons for ${courseId}`, e);
-              }
+              } catch (e) {}
             }
             
-            const tempEnr = {
-                ...enr,
-                // Add the count directly to a known fallback field
-                lesson_count: lessonCount
-            };
-
+            const tempEnr = { ...enr, lesson_count: lessonCount };
             return {
               ...tempEnr,
               percent: calculateProgress(tempEnr),
@@ -195,13 +169,11 @@ export default function DashboardScreen({ navigation }: any) {
       if (dbtRes.status === "fulfilled" && isApiSuccess(dbtRes.value.data)) {
         const doubts = extractApiData<any[]>(dbtRes.value.data, []).slice(0, 2);
         doubts.forEach(d => combined.push({
-          title: d.is_resolved ? "Doubt Resolved" : "New Doubt Ticket",
-          subtitle: d.subject || d.description || "Question about lesson",
-          time: "RECENT",
+          title: d.reply ? "Mentor Responded" : "New Doubt Ticket",
+          description: d.subject || d.description || "Question about lesson",
+          time_ago: "RECENT",
+          type: "doubt",
           date: d.created_at,
-          icon: MessageSquare,
-          iconColor: d.is_resolved ? "#22c55e" : "#0EA5E9",
-          iconBg: "bg-blue-50"
         }));
       }
 
@@ -212,13 +184,11 @@ export default function DashboardScreen({ navigation }: any) {
 
         const assignments = assignmentsData.slice(0, 2);
         assignments.forEach(a => combined.push({
-          title: "New Assignment",
-          subtitle: a.title,
-          time: "NEW",
+          title: "Assignment Published",
+          description: a.title,
+          time_ago: "NEW",
+          type: "submission",
           date: a.created_at,
-          icon: ClipboardList,
-          iconColor: "#6366f1",
-          iconBg: "bg-indigo-50"
         }));
       }
 
@@ -262,12 +232,28 @@ export default function DashboardScreen({ navigation }: any) {
 
   const firstName = (user?.name || user?.email?.split("@")[0] || "Scholar").split(" ")[0];
 
+  const getActivityIcon = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case 'submission': return <FileText size={16} color="#2563EB" />;
+      case 'doubt': return <MessageSquare size={16} color="#E11D48" />;
+      default: return <Bell size={16} color="#64748B" />;
+    }
+  };
+
+  const getActivityColorClass = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case 'submission': return 'bg-blue-100';
+      case 'doubt': return 'bg-rose-100';
+      default: return 'bg-slate-100';
+    }
+  };
+
   if (isLoading && !refreshing) {
     return (
       <SafeAreaWrapper bgWhite>
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text className="mt-4 text-slate-400 font-bold uppercase tracking-widest text-[10px]">Refreshing Sync...</Text>
+        <View className="flex-1 items-center justify-center bg-[#F8FAFC]">
+          <ActivityIndicator size="large" color="#2563EB" />
+          <Text className="mt-6 text-slate-400 font-black text-[10px] uppercase tracking-widest">Synchronizing Academy...</Text>
         </View>
       </SafeAreaWrapper>
     );
@@ -275,187 +261,238 @@ export default function DashboardScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper bgWhite>
-      <AppHeader navigation={navigation} role={user?.role} subtitle="Learning Dashboard" />
+      <AppHeader navigation={navigation} role={user?.role} />
 
       <ScrollView 
         className="flex-1 bg-[#F8FAFC]"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#2563EB" />}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
       >
-        <View className="px-6 pt-6 pb-12">
+        <View className="px-6 pt-10">
           
-          <View className="mb-6">
-            <Text className="text-3xl font-black text-slate-900 tracking-tight">
-                Good <Text className="text-blue-600">Morning,</Text>
+          {/* Welcome Header */}
+          <View className="mb-10">
+            <View className="flex-row items-center gap-2 mb-3">
+              <View className="bg-blue-100 px-3 py-1 rounded-full">
+                <Text className="text-blue-700 text-[10px] font-black uppercase tracking-widest">Scholar Dashboard</Text>
+              </View>
+              <Sparkles size={14} color="#3B82F6" />
+            </View>
+            <Text className="text-[40px] font-black text-slate-900 leading-[44px] tracking-tight">
+                Good Morning,
             </Text>
-            <Text className="text-3xl font-black text-slate-900 tracking-tight">
-                {firstName} <Text className="text-blue-600">👋</Text>
+            <Text className="text-[40px] font-black text-blue-600 leading-[44px] tracking-tight">
+                {firstName} <Text className="text-slate-900">👋</Text>
             </Text>
-            <Text className="text-slate-500 font-medium text-base mt-2">Ready to tackle some code today?</Text>
+            <Text className="text-slate-400 text-base font-bold mt-3">Level up your technical mastery today.</Text>
           </View>
 
-          <View className="flex-row items-center bg-slate-100/80 px-4 py-3 rounded-2xl mb-8 border border-slate-200/50">
-            <Search size={20} color="#94A3B8" className="mr-3" />
+          {/* Search Bar */}
+          <View className="flex-row items-center bg-white px-6 py-5 rounded-[28px] mb-10 border border-slate-100 shadow-2xl shadow-slate-900/[0.03]">
+            <Search size={20} color="#94A3B8" className="mr-4" />
             <TextInput 
-              placeholder="Search for courses, mentors, or topics"
-              className="flex-1 text-slate-800 font-medium text-sm"
-              placeholderTextColor="#94A3B8"
+              placeholder="Explore courses, mentors, or topics..."
+              className="flex-1 text-slate-900 font-black text-[14px]"
+              placeholderTextColor="#CBD5E1"
             />
           </View>
 
+          {/* Last Attended / Hero */}
           {lastAttended ? (
             <TouchableOpacity 
               activeOpacity={0.9} 
-              className="mb-10"
+              className="mb-12"
               onPress={() => handlePlayLesson(lastAttended)}
             >
               <LinearGradient
-                colors={["#0052D4", "#6FB1FC"]}
+                colors={["#1E293B", "#0F172A"]}
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                className="p-8 rounded-[40px] h-60 relative overflow-hidden shadow-2xl shadow-blue-400/30"
+                className="p-10 rounded-[48px] h-72 relative overflow-hidden shadow-2xl shadow-slate-900/20"
               >
-                <View className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-white/10" />
-                <View className="bg-white/20 self-start px-3 py-1 rounded-full mb-4 border border-white/30">
-                  <Text className="text-white text-[10px] font-black uppercase tracking-widest">Resume Learning</Text>
+                <View className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-blue-600/10" />
+                <View className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-white/5" />
+                
+                <View className="bg-blue-600 self-start px-4 py-1.5 rounded-full mb-6 border border-blue-500/30">
+                  <Text className="text-white text-[9px] font-black uppercase tracking-widest">Resume Track</Text>
                 </View>
-                <Text className="text-white text-2xl font-black leading-tight w-2/3 mb-6" numberOfLines={2}>
-                  {lastAttended.courses?.title || lastAttended.course?.title || "Enrolled Course"}
+                
+                <Text className="text-white text-3xl font-black leading-tight w-3/4 mb-4" numberOfLines={2}>
+                  {lastAttended.courses?.title || lastAttended.course?.title || "Mastery Track"}
                 </Text>
+                
                 <View className="flex-row items-center justify-between mt-auto">
-                    <View className="bg-white px-6 py-3 rounded-full shadow-xl shadow-blue-900/20">
-                        <Text className="text-blue-700 font-black text-sm">Play Next Lesson</Text>
+                    <View className="bg-white px-8 py-4 rounded-[20px] shadow-xl shadow-blue-900/20">
+                        <Text className="text-slate-900 font-black text-xs uppercase tracking-widest">Play Lesson</Text>
                     </View>
-                    <ProgressRing progress={lastAttended.percent || 0} size={50} strokeWidth={4} />
+                    <ProgressRing progress={lastAttended.percent || 0} size={64} strokeWidth={5} />
                 </View>
               </LinearGradient>
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity onPress={() => navigation.navigate("Courses")} className="mb-10 bg-blue-600 p-8 rounded-[40px] items-center">
-                <BookOpen size={40} color="white" />
-                <Text className="text-white font-bold mt-4">Browse Our Courses</Text>
+            <TouchableOpacity 
+              onPress={() => navigation.navigate("Courses")} 
+              activeOpacity={0.9}
+              className="mb-12 bg-blue-600 p-10 rounded-[48px] items-center shadow-2xl shadow-blue-200"
+            >
+                <BookOpen size={48} color="white" />
+                <Text className="text-white font-black text-xl mt-6 uppercase tracking-widest">Explore Academy</Text>
             </TouchableOpacity>
           )}
 
-          <View className="mb-10">
-            <Text className="text-lg font-black text-slate-900 mb-4 px-1">Enrolled Courses</Text>
+          {/* Enrolled Courses */}
+          <View className="mb-12">
+            <View className="flex-row items-center justify-between mb-8 px-1">
+               <View>
+                  <Text className="text-2xl font-black text-slate-900">Your Tracks</Text>
+                  <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Active Enrollments</Text>
+               </View>
+               <TouchableOpacity className="bg-blue-50 px-4 py-2 rounded-full" onPress={() => navigation.navigate("Assignments")}>
+                  <Text className="text-blue-600 text-[10px] font-black uppercase tracking-widest">See All</Text>
+               </TouchableOpacity>
+            </View>
+
             {enrollments.length > 0 ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 4, paddingRight: 20 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 20 }}>
                 {enrollments.map((enr, i) => (
                   <TouchableOpacity 
                     key={i}
                     activeOpacity={0.9}
                     onPress={() => handlePlayLesson(enr)}
-                    className="bg-white rounded-[40px] p-6 mr-4 border border-slate-100 shadow-xl shadow-slate-200/40"
+                    className="bg-white rounded-[44px] p-8 mr-6 border border-white shadow-2xl shadow-slate-900/[0.04]"
                     style={{ width: CARD_WIDTH }}
                   >
-                    <View className="flex-row items-center justify-between mb-4">
-                        <View className="bg-blue-50 p-3 rounded-2xl"><BookOpen size={20} color="#2563EB" /></View>
-                        <Text className="text-blue-600 font-black text-sm">{enr.percent}%</Text>
+                    <View className="flex-row items-center justify-between mb-8">
+                        <View className="w-14 h-14 rounded-2xl bg-slate-50 items-center justify-center border border-slate-50 shadow-sm">
+                           <BookOpen size={24} color="#2563EB" />
+                        </View>
+                        <View className="bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100">
+                           <Text className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{Math.round(enr.percent)}%</Text>
+                        </View>
                     </View>
                     
-                    <Text className="text-lg font-black text-slate-900 mb-1 h-14" numberOfLines={2}>{enr.courses?.title || enr.course?.title || "Course Track"}</Text>
-                    <Text className="text-[10px] text-slate-400 font-bold uppercase mb-3">{enr.displayStr}</Text>
+                    <Text className="text-2xl font-black text-slate-900 mb-2 h-16 leading-tight tracking-tight" numberOfLines={2}>
+                       {enr.courses?.title || enr.course?.title || "Academy Track"}
+                    </Text>
+                    <Text className="text-[10px] text-slate-400 font-black uppercase mb-6 tracking-widest">{enr.displayStr}</Text>
 
-                    <View className="w-full bg-slate-100 h-[6px] rounded-full overflow-hidden mb-6">
-                      <View className="bg-blue-600 h-full" style={{ width: `${enr.percent}%` }} />
+                    <View className="w-full bg-slate-50 h-2 rounded-full overflow-hidden mb-8">
+                      <View className="bg-blue-600 h-full rounded-full" style={{ width: `${enr.percent}%` }} />
                     </View>
-                    <View className="flex-row items-center">
-                        <View className="bg-slate-50 w-10 h-10 rounded-full items-center justify-center mr-3">
-                           <Play size={16} color="#2563EB" fill="#2563EB" />
+
+                    <View className="flex-row items-center justify-between">
+                        <View className="flex-row items-center">
+                           <View className="bg-slate-900 w-10 h-10 rounded-2xl items-center justify-center mr-3 shadow-lg shadow-slate-200">
+                              <Play size={14} color="white" fill="white" />
+                           </View>
+                           <Text className="text-slate-900 font-black text-[11px] uppercase tracking-widest">Continue</Text>
                         </View>
-                        <Text className="text-slate-400 font-bold text-xs uppercase tracking-wider">Play Next</Text>
+                        <ArrowRight size={18} color="#CBD5E1" />
                     </View>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
             ) : (
-                <View className="px-1"><Text className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">No active enrollments</Text></View>
+                <View className="items-center py-16 bg-slate-50 rounded-[44px] border border-dashed border-slate-200">
+                   <Layers size={40} color="#CBD5E1" />
+                   <Text className="text-slate-400 font-black text-[10px] uppercase tracking-widest mt-4">No active tracks</Text>
+                </View>
             )}
           </View>
 
+          {/* Upcoming Event */}
           {upcomingEvent && (
-            <View className="mb-10">
-              <View className="flex-row items-center justify-between mb-4 px-1">
-                <Text className="text-lg font-black text-slate-900">Upcoming Mock Interview</Text>
+            <View className="mb-12">
+              <View className="flex-row items-center justify-between mb-8 px-1">
+                <Text className="text-2xl font-black text-slate-900">Upcoming Session</Text>
                 <TouchableOpacity onPress={() => navigation.navigate("MockInterviews")}>
-                   <Text className="text-blue-600 font-bold text-xs uppercase">View All</Text>
+                   <Text className="text-blue-600 text-[10px] font-black uppercase tracking-widest">Calendar</Text>
                 </TouchableOpacity>
               </View>
               <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate("MockInterviews")}>
                 <LinearGradient 
-                   colors={["#004AC6", "#2563EB"]} 
-                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                   className="p-8 rounded-[40px] relative overflow-hidden shadow-xl shadow-blue-500/20"
+                   colors={["#2563EB", "#1D4ED8"]} 
+                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                   className="p-10 rounded-[48px] relative overflow-hidden shadow-2xl shadow-blue-200"
                 >
                   <View className="absolute -right-10 -bottom-10 opacity-10">
                     <Calendar size={180} color="white" />
                   </View>
-                  <View className="flex-row items-center mb-4">
-                    <View className="bg-white/20 p-2 rounded-xl mr-3">
-                        <Calendar size={16} color="white" />
+                  <View className="flex-row items-center mb-6">
+                    <View className="bg-white/20 px-3 py-1.5 rounded-xl mr-4 border border-white/30">
+                        <Text className="text-white text-[9px] font-black uppercase tracking-widest">
+                            {new Date(upcomingEvent.scheduled_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </Text>
                     </View>
-                    <Text className="text-white text-[10px] font-black uppercase tracking-[2px]">
-                        {new Date(upcomingEvent.scheduled_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </Text>
                   </View>
-                  <Text className="text-white text-xl font-black mb-10 leading-tight w-2/3">{upcomingEvent.title}</Text>
-                  <View className="bg-white rounded-2xl py-4 items-center shadow-lg">
-                    <Text className="text-blue-700 font-black text-sm uppercase tracking-widest">Join Meeting</Text>
+                  <Text className="text-white text-3xl font-black mb-10 leading-tight w-2/3 tracking-tight">{upcomingEvent.title}</Text>
+                  <View className="bg-white rounded-[24px] py-5 items-center shadow-xl">
+                    <Text className="text-slate-900 font-black text-xs uppercase tracking-widest">Join Studio</Text>
                   </View>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
           )}
 
+          {/* Pending Assignments */}
           {pendingAssignments.length > 0 && (
-            <View className="mb-10">
-               <View className="flex-row items-center justify-between mb-4 px-1">
-                  <Text className="text-lg font-black text-slate-900">Pending Assignments</Text>
+            <View className="mb-12">
+               <View className="flex-row items-center justify-between mb-8 px-1">
+                  <Text className="text-2xl font-black text-slate-900">Challenges</Text>
                   <TouchableOpacity onPress={() => navigation.navigate("Assignments")}>
-                    <Text className="text-blue-600 font-bold text-xs uppercase">All Tasks</Text>
+                    <Text className="text-blue-600 text-[10px] font-black uppercase tracking-widest">View Lab</Text>
                   </TouchableOpacity>
                </View>
-               {pendingAssignments.map((asg, i) => (
-                  <TouchableOpacity 
-                    key={i} 
-                    onPress={() => navigation.navigate("Assignments")}
-                    className="bg-white p-6 rounded-[32px] mb-4 flex-row items-center border border-slate-50 shadow-sm"
-                  >
-                     <View className="w-12 h-12 bg-indigo-50 rounded-2xl items-center justify-center mr-4">
-                        <ClipboardList size={22} color="#4F46E5" />
-                     </View>
-                     <View className="flex-1">
-                        <Text className="font-black text-slate-800 text-[15px]" numberOfLines={1}>{asg.title}</Text>
-                        <Text className="text-slate-400 text-xs font-bold mt-1 uppercase">Due: {asg.due_date ? new Date(asg.due_date).toLocaleDateString() : 'Next Week'}</Text>
-                     </View>
-                     <ChevronRight size={18} color="#CBD5E1" />
-                  </TouchableOpacity>
-               ))}
+               <View className="gap-4">
+                  {pendingAssignments.map((asg, i) => (
+                    <TouchableOpacity 
+                      key={i} 
+                      onPress={() => navigation.navigate("Assignments")}
+                      className="bg-white p-8 rounded-[40px] flex-row items-center border border-white shadow-2xl shadow-slate-900/[0.04]"
+                    >
+                       <View className="w-14 h-14 bg-indigo-50 rounded-2xl items-center justify-center mr-6">
+                          <ClipboardList size={24} color="#4F46E5" />
+                       </View>
+                       <View className="flex-1">
+                          <Text className="font-black text-slate-900 text-lg tracking-tight" numberOfLines={1}>{asg.title}</Text>
+                          <Text className="text-slate-400 text-[10px] font-black uppercase mt-1 tracking-widest">Due: {asg.due_date ? new Date(asg.due_date).toLocaleDateString() : 'Next Week'}</Text>
+                       </View>
+                       <View className="w-10 h-10 rounded-full bg-slate-50 items-center justify-center border border-slate-100 shadow-sm">
+                          <ChevronRight size={18} color="#CBD5E1" />
+                       </View>
+                    </TouchableOpacity>
+                  ))}
+               </View>
             </View>
           )}
 
+          {/* Jobs */}
           {jobs.length > 0 && (
-            <View className="mb-10">
-               <Text className="text-lg font-black text-slate-900 mb-4 px-1">Career Opportunities</Text>
-               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 4, paddingRight: 20 }}>
+            <View className="mb-12">
+               <View className="flex-row items-center justify-between mb-8 px-1">
+                  <Text className="text-2xl font-black text-slate-900">Career Radar</Text>
+                  <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Partner Openings</Text>
+               </View>
+               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 20 }}>
                   {jobs.map((job, i) => (
                     <TouchableOpacity 
                         key={i}
-                        className="bg-white rounded-[40px] p-8 mr-4 border border-slate-100 shadow-xl shadow-slate-200/40"
+                        activeOpacity={0.9}
+                        className="bg-white rounded-[48px] p-10 mr-6 border border-white shadow-2xl shadow-slate-900/[0.04]"
                         style={{ width: CARD_WIDTH }}
                     >
-                        <View className="flex-row justify-between items-start mb-6">
-                            <View className="w-14 h-14 bg-slate-50 rounded-2xl items-center justify-center border border-slate-100">
-                                <Star size={24} color="#F59E0B" fill="#F59E0B" />
+                        <View className="flex-row justify-between items-start mb-8">
+                            <View className="w-16 h-16 bg-amber-50 rounded-[24px] items-center justify-center border border-amber-100 shadow-sm">
+                                <Star size={28} color="#F59E0B" fill="#F59E0B" />
                             </View>
-                            <View className="bg-emerald-50 px-3 py-1 rounded-full">
-                                <Text className="text-emerald-600 text-[10px] font-black uppercase tracking-widest">New</Text>
+                            <View className="bg-emerald-50 px-4 py-2 rounded-full border border-emerald-100">
+                                <Text className="text-emerald-600 text-[9px] font-black uppercase tracking-widest">Hiring</Text>
                             </View>
                         </View>
-                        <Text className="text-xl font-black text-slate-900 mb-2 h-14" numberOfLines={2}>{job.title}</Text>
-                        <Text className="text-slate-400 font-bold text-xs mb-8 uppercase tracking-wider">{job.company || 'Tech Solutions'} • {job.location || 'Remote'}</Text>
-                        <TouchableOpacity className="bg-slate-900 py-4 rounded-2xl items-center">
-                            <Text className="text-white font-black text-xs uppercase tracking-widest">Apply Now</Text>
+                        <Text className="text-2xl font-black text-slate-900 mb-2 h-16 leading-tight tracking-tight" numberOfLines={2}>{job.title}</Text>
+                        <Text className="text-slate-400 font-black text-[10px] mb-10 uppercase tracking-[2px]">{job.company || 'Tech Solutions'} • {job.location || 'Remote'}</Text>
+                        <TouchableOpacity className="bg-slate-900 py-6 rounded-[24px] items-center shadow-xl shadow-slate-200">
+                            <Text className="text-white font-black text-[11px] uppercase tracking-widest">Quick Apply</Text>
                         </TouchableOpacity>
                     </TouchableOpacity>
                   ))}
@@ -463,44 +500,81 @@ export default function DashboardScreen({ navigation }: any) {
             </View>
           )}
 
-          <View className="mb-10">
-            <Text className="text-lg font-black text-slate-900 mb-4 px-1">Recent Activity</Text>
-            {activities.length > 0 ? activities.map((act, i) => (
-              <ActivityItem key={i} {...act} />
-            )) : (
-              <View className="bg-white p-8 rounded-[32px] items-center justify-center border border-slate-50">
-                <Text className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Quiet for now</Text>
+          {/* Activity Feed */}
+          <View className="mb-12">
+            <View className="flex-row items-center justify-between mb-10 px-1">
+               <View>
+                  <Text className="text-2xl font-black text-slate-900">Pulse Feed</Text>
+                  <Text className="text-slate-400 text-[11px] font-bold mt-0.5">Real-time academy updates</Text>
+               </View>
+               <Bell size={20} color="#CBD5E1" />
+            </View>
+            
+            {activities.length > 0 ? (
+              activities.map((item, idx) => (
+                <View key={idx} className="flex-row mb-8">
+                   <View className="items-center mr-5">
+                      <View className={`w-12 h-12 rounded-2xl ${getActivityColorClass(item.type)} items-center justify-center z-10 border-4 border-white shadow-sm`}>
+                         {getActivityIcon(item.type)}
+                      </View>
+                      {idx < activities.length - 1 && <View className="w-[2px] flex-1 bg-slate-100 my-2" />}
+                   </View>
+                   <View className="flex-1 pt-1">
+                      <View className="flex-row justify-between items-start mb-2">
+                         <Text className="text-sm font-black text-slate-900 flex-1 mr-2 leading-tight" numberOfLines={2}>
+                            {item.title}
+                         </Text>
+                         <Text className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mt-1">
+                            {item.time_ago}
+                         </Text>
+                      </View>
+                      <Text className="text-xs text-slate-500 font-medium leading-4 mb-4">{item.description}</Text>
+                   </View>
+                </View>
+              ))
+            ) : (
+              <View className="bg-slate-50 rounded-[44px] p-12 items-center justify-center border border-slate-100 border-dashed">
+                 <Bell size={32} color="#E2E8F0" />
+                 <Text className="text-slate-400 text-[10px] font-black mt-4 uppercase tracking-widest text-center">Nothing new to report</Text>
               </View>
             )}
           </View>
 
+          {/* Recommended */}
           {recommendedCourses.length > 0 && (
             <View className="mb-6">
-              <Text className="text-lg font-black text-slate-900 mb-4 px-1">Recommended for You</Text>
+              <View className="flex-row items-center justify-between mb-8 px-1">
+                 <Text className="text-2xl font-black text-slate-900">Next Mastery</Text>
+                 <TouchableOpacity onPress={() => navigation.navigate("ExploreCourses")}>
+                    <Text className="text-blue-600 text-[10px] font-black uppercase tracking-widest">Explore</Text>
+                 </TouchableOpacity>
+              </View>
               {recommendedCourses.map((course, idx) => (
                 <TouchableOpacity 
                    key={idx}
                    activeOpacity={0.8}
-                   onPress={() => navigation.navigate("CourseDetail", { idOrSlug: course.slug })}
-                   className="bg-white p-4 rounded-[32px] mb-4 flex-row items-center border border-slate-50 shadow-sm"
+                   onPress={() => navigation.navigate("CourseDetail", { idOrSlug: course.slug || course.id || course._id })}
+                   className="bg-white p-6 rounded-[36px] mb-4 flex-row items-center border border-white shadow-2xl shadow-slate-900/[0.04]"
                 >
-                   <View className="w-16 h-16 bg-blue-50 rounded-2xl overflow-hidden mr-4">
+                   <View className="w-20 h-20 bg-slate-50 rounded-[24px] overflow-hidden mr-5 border border-slate-50">
                       {course.thumbnail ? (
                         <Image source={{ uri: course.thumbnail }} className="w-full h-full" />
                       ) : (
                         <View className="flex-1 items-center justify-center">
-                          <BookOpen size={24} color="#2563EB" />
+                          <BookOpen size={28} color="#2563EB" />
                         </View>
                       )}
                    </View>
                    <View className="flex-1">
-                      <Text className="font-bold text-slate-800 text-[15px]" numberOfLines={1}>{course.title}</Text>
-                      <View className="flex-row items-center mt-1">
+                      <Text className="font-black text-slate-900 text-[15px] leading-tight mb-2" numberOfLines={2}>{course.title}</Text>
+                      <View className="flex-row items-center">
                          <Star size={12} color="#f59e0b" fill="#f59e0b" />
-                         <Text className="text-slate-400 text-[11px] font-bold ml-1 uppercase">4.8 • {course.category || "Design"}</Text>
+                         <Text className="text-slate-400 text-[10px] font-black ml-1 uppercase tracking-widest">4.9 • {course.category || "General"}</Text>
                       </View>
                    </View>
-                   <ChevronRight size={20} color="#CBD5E1" />
+                   <View className="w-10 h-10 rounded-full bg-slate-50 items-center justify-center border border-slate-100 shadow-sm">
+                      <ChevronRight size={20} color="#CBD5E1" />
+                   </View>
                 </TouchableOpacity>
               ))}
             </View>

@@ -148,6 +148,6 @@ export const notificationsApi = {
   markAsRead: (id: string) => client.put(`/notifications/${id}/read`, {}),   // PUT /notifications/:id/read
   markAllAsRead: () => client.put("/notifications/read-all", {}),            // PUT /notifications/read-all
   send: (data: { user_id?: string; role?: string; title: string; message: string; type?: string }) => 
-    client.post("/notifications/send", data),                                // POST /notifications/send (admin)
+    client.post("/notifications/send", data).catch(err => console.log("Notification suppressed:", err.message)),
   delete: (id: string) => client.delete(`/notifications/${id}`),             // DELETE /notifications/:id
 };

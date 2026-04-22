@@ -16,7 +16,13 @@ import {
     GraduationCap,
     MessageSquare,
     History,
-    ArrowRight
+    ArrowRight,
+    Sparkles,
+    Layers,
+    ChevronRight,
+    Trophy,
+    Shield,
+    Calendar
 } from "lucide-react-native";
 import { COLORS } from "../../utils/theme";
 import { Button } from "../../components/Button";
@@ -88,39 +94,43 @@ export default function AssignmentsScreen({ navigation }: any) {
 
   const renderAssignmentCard = (item: any) => {
     const isSubmitted = Array.isArray(item?.submissions) && item.submissions.length > 0;
-    const moduleName = item.courses?.title || item.course?.title || "Frontend Module 04";
-    const dueDate = item.due_date ? new Date(item.due_date).toLocaleDateString() : "Next Sunday";
+    const moduleName = item.courses?.title || item.course?.title || "Project Track";
+    const dueDate = item.due_date ? new Date(item.due_date).toLocaleDateString([], { month: 'short', day: 'numeric' }) : "Sunday";
 
     return (
         <TouchableOpacity 
             key={item.id} 
             onPress={() => setSelectedAssignment(item)}
-            activeOpacity={0.8}
-            className="bg-white rounded-[40px] p-8 mb-6 border border-slate-50 shadow-2xl shadow-slate-900/[0.03]"
+            activeOpacity={0.9}
+            className="bg-white rounded-[44px] p-8 mb-8 border border-white shadow-2xl shadow-slate-900/[0.04]"
         >
-            <View className="flex-row items-center justify-between mb-6">
-                <View className="bg-slate-100 px-4 py-1.5 rounded-full">
-                    <Text className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{moduleName}</Text>
+            <View className="flex-row items-center justify-between mb-8">
+                <View className="bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100">
+                    <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{moduleName}</Text>
                 </View>
-                <View className={`flex-row items-center gap-2 ${isSubmitted ? "bg-emerald-50" : "bg-amber-50"} px-4 py-1.5 rounded-full`}>
-                    {isSubmitted ? <CheckCircle size={10} color="#059669" /> : <Clock size={10} color="#D97706" />}
+                <View className={`flex-row items-center gap-2 ${isSubmitted ? "bg-emerald-50 border-emerald-100" : "bg-amber-50 border-amber-100"} px-4 py-2 rounded-2xl border`}>
+                    {isSubmitted ? <CheckCircle2 size={12} color="#10B981" /> : <Clock size={12} color="#D97706" />}
                     <Text className={`text-[10px] font-black uppercase tracking-widest ${isSubmitted ? "text-emerald-600" : "text-amber-600"}`}>
-                        {isSubmitted ? "Submitted" : "Pending"}
+                        {isSubmitted ? "Completed" : "Pending"}
                     </Text>
                 </View>
             </View>
 
-            <Text className="text-2xl font-black text-slate-900 mb-2">{item.title}</Text>
-            <Text className="text-slate-400 text-sm leading-6 mb-8" numberOfLines={2}>{item.description}</Text>
+            <Text className="text-3xl font-black text-slate-900 mb-2 leading-tight tracking-tight">{item.title}</Text>
+            <Text className="text-slate-400 text-base font-bold leading-6 mb-8" numberOfLines={2}>{item.description}</Text>
 
-            <View className="flex-row items-center justify-between border-t border-slate-50 pt-6">
-                <View className="flex-row items-center gap-2">
-                    <Clock size={14} color={COLORS.slate400} />
-                    <Text className="text-slate-400 text-xs font-bold">Due: {dueDate}</Text>
+            <View className="flex-row items-center justify-between border-t border-slate-50 pt-8">
+                <View className="flex-row items-center gap-3">
+                    <View className="w-10 h-10 bg-slate-50 rounded-xl items-center justify-center border border-slate-100">
+                       <Calendar size={16} color="#64748B" />
+                    </View>
+                    <View>
+                       <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Deadline</Text>
+                       <Text className="text-slate-900 text-xs font-black">{dueDate}</Text>
+                    </View>
                 </View>
-                <View className="flex-row items-center">
-                    <Text className="text-blue-600 font-black text-xs uppercase tracking-widest mr-2">Open Assignment</Text>
-                    <ArrowRight size={14} color={COLORS.primary} strokeWidth={3} />
+                <View className="bg-slate-900 px-6 py-4 rounded-2xl shadow-lg shadow-slate-200">
+                    <Text className="text-white font-black text-[11px] uppercase tracking-widest">Open Lab</Text>
                 </View>
             </View>
         </TouchableOpacity>
@@ -129,32 +139,45 @@ export default function AssignmentsScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper bgWhite>
-      <AppHeader navigation={navigation} showMenu role={user?.role} subtitle="Student Hub" />
+      <AppHeader navigation={navigation} role={user?.role} />
 
       <ScrollView 
         className="flex-1 bg-[#F8FAFC]"
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#2563EB" />}
       >
         <View style={{ width: "100%", maxWidth: shellMaxWidth, alignSelf: "center" }}>
             
-            <View className="px-6 pt-10 pb-8">
-                <Text className="text-blue-600 text-[10px] font-black uppercase tracking-[3px] mb-2">Student Workflow</Text>
-                <Text className="text-4xl font-black text-slate-900 mb-4">Assignments</Text>
-                <Text className="text-slate-400 font-bold text-sm leading-6">
-                    Demonstrate your skills and get professional feedback on your projects.
+            <View className="px-6 pt-10 pb-12">
+                <View className="flex-row items-center gap-2 mb-3">
+                  <View className="bg-blue-100 px-3 py-1 rounded-full">
+                    <Text className="text-blue-700 text-[10px] font-black uppercase tracking-widest">Mastery Challenges</Text>
+                  </View>
+                  <Sparkles size={14} color="#3B82F6" />
+                </View>
+                <Text className="text-[40px] font-black text-slate-900 leading-[44px] tracking-tight">
+                   Project <Text className="text-blue-600">Lab</Text>
+                </Text>
+                <Text className="text-slate-400 font-bold text-base mt-4 leading-6 max-w-[90%]">
+                    Demonstrate your technical depth and receive architect-level feedback on your code.
                 </Text>
             </View>
 
-            <View className="px-6 pb-24">
+            <View className="px-6 pb-32">
                 {isLoading ? (
-                    <View className="gap-8"><Skeleton height={200} className="rounded-[40px]" /><Skeleton height={200} className="rounded-[40px]" /></View>
+                    <View className="gap-8">
+                       <Skeleton height={280} className="rounded-[48px]" />
+                       <Skeleton height={280} className="rounded-[48px]" />
+                    </View>
                 ) : assignments.length > 0 ? (
                     assignments.map(item => renderAssignmentCard(item))
                 ) : (
-                    <View className="items-center py-20 bg-white rounded-[44px] border border-slate-100 border-dashed">
-                        <FileText size={48} color={COLORS.slate200} />
-                        <Text className="text-slate-400 font-bold mt-4">No assignments found.</Text>
+                    <View className="items-center py-24 bg-white rounded-[56px] border border-dashed border-slate-200">
+                        <View className="w-24 h-24 bg-slate-50 rounded-full items-center justify-center mb-8">
+                           <FileText size={40} color="#CBD5E1" />
+                        </View>
+                        <Text className="text-slate-400 font-black text-xl tracking-tight">No challenges found</Text>
+                        <Text className="text-slate-300 text-[10px] mt-2 font-black uppercase tracking-[2px]">Your project queue is clear</Text>
                     </View>
                 )}
             </View>
@@ -164,123 +187,102 @@ export default function AssignmentsScreen({ navigation }: any) {
       {/* Assignment Submission Modal */}
       <Modal visible={!!selectedAssignment} animationType="slide" presentationStyle="fullScreen">
         <SafeAreaWrapper bgWhite>
-            <View className="flex-row items-center px-6 py-4">
-                <TouchableOpacity onPress={() => setSelectedAssignment(null)}>
-                    <ChevronLeft size={24} color={COLORS.primary} strokeWidth={3} />
+            <View className="flex-row items-center justify-between px-6 py-4">
+                <TouchableOpacity onPress={() => setSelectedAssignment(null)} className="w-12 h-12 rounded-2xl bg-slate-50 items-center justify-center border border-slate-100">
+                    <ChevronLeft size={24} color="#0F172A" strokeWidth={2.5} />
                 </TouchableOpacity>
-                <Text className="ml-4 text-lg font-black text-slate-900">CodeCure Academy</Text>
+                <Text className="text-lg font-black text-slate-900">Project Console</Text>
+                <View className="w-12 h-12" />
             </View>
 
-            <ScrollView className="flex-1 pt-6" showsVerticalScrollIndicator={false}>
-                <View className="px-8 mb-10">
-                    <View className="bg-blue-100/50 px-4 py-1.5 rounded-full self-start mb-4">
-                        <Text className="text-blue-600 text-[10px] font-black uppercase tracking-widest">Frontend Module 04</Text>
+            <ScrollView className="flex-1 bg-[#F8FAFC]" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+                <View className="px-8 pt-10 mb-10">
+                    <View className="bg-blue-600 self-start px-4 py-1.5 rounded-full mb-6 shadow-lg shadow-blue-200">
+                        <Text className="text-white text-[10px] font-black uppercase tracking-widest">Active Sprint</Text>
                     </View>
-                    <Text className="text-3xl font-black text-slate-900 mb-4 leading-tight">{selectedAssignment?.title}</Text>
-                    <Text className="text-slate-500 font-bold text-sm leading-6">
+                    <Text className="text-[34px] font-black text-slate-900 mb-4 leading-tight tracking-tight">{selectedAssignment?.title}</Text>
+                    <Text className="text-slate-400 font-bold text-base leading-6">
                         {selectedAssignment?.description}
                     </Text>
                 </View>
 
                 {/* Requirements Card */}
-                <View className="mx-6 bg-white rounded-[44px] p-8 border border-slate-50 shadow-2xl shadow-slate-900/[0.04] mb-8">
-                    <View className="flex-row items-center gap-3 mb-8">
-                        <FileText size={20} color={COLORS.primary} />
-                        <Text className="text-slate-900 font-black text-base">Submission Requirements</Text>
+                <View className="mx-6 bg-white rounded-[48px] p-10 border border-white shadow-2xl shadow-slate-900/[0.04] mb-10">
+                    <View className="flex-row items-center gap-4 mb-10">
+                        <View className="w-12 h-12 bg-blue-50 rounded-2xl items-center justify-center shadow-sm">
+                           <Shield size={24} color="#2563EB" />
+                        </View>
+                        <Text className="text-slate-900 font-black text-xl tracking-tight">Compliance Check</Text>
                     </View>
 
                     {[
-                        "Include a link to a public GitHub repository or a hosted preview link.",
-                        "Provide a screenshot of your layout's mobile view for verification.",
-                        "Ensure all media queries are optimized for modern breakpoints."
+                        "Public GitHub repository with clear commit history.",
+                        "Architectural diagram or high-level project overview.",
+                        "Fully responsive layouts across all device breakpoints."
                     ].map((req, i) => (
-                        <View key={i} className="flex-row items-start gap-4 mb-6">
-                            <CheckCircle size={18} color={COLORS.primary} className="mt-0.5" />
-                            <Text className="flex-1 text-slate-600 font-bold text-sm leading-5">{req}</Text>
+                        <View key={i} className="flex-row items-start gap-4 mb-8">
+                            <View className="w-6 h-6 rounded-full bg-emerald-50 items-center justify-center mt-0.5 border border-emerald-100">
+                               <CheckCircle2 size={14} color="#10B981" />
+                            </View>
+                            <Text className="flex-1 text-slate-600 font-black text-sm leading-6">{req}</Text>
                         </View>
                     ))}
 
-                    <View className="mt-4">
-                        <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-4">Github / Drive Link</Text>
-                        <Input 
-                            placeholder="https://github.com/username/project"
-                            value={submissionUrl}
-                            onChangeText={setSubmissionUrl}
-                            containerClassName="h-16 rounded-2xl bg-slate-50 border-0 px-6"
-                            inputClassName="text-sm"
-                        />
+                    <View className="mt-6 pt-10 border-t border-slate-50">
+                        <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-4">Submission Endpoint (URL)</Text>
+                        <View className="flex-row items-center bg-slate-50 rounded-[24px] px-6 py-5 border border-slate-100">
+                           <LinkIcon size={18} color="#94A3B8" className="mr-4" />
+                           <Input 
+                               placeholder="https://github.com/..."
+                               value={submissionUrl}
+                               onChangeText={setSubmissionUrl}
+                               containerClassName="flex-1 h-8 bg-transparent border-0 p-0"
+                               inputClassName="text-sm font-black text-slate-900"
+                           />
+                        </View>
                     </View>
                 </View>
 
-                {/* Due Date Card */}
-                <View className="mx-6 bg-blue-600 rounded-[34px] p-8 mb-8 shadow-xl shadow-blue-900/30">
-                    <Text className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-2">Due Date</Text>
-                    <Text className="text-white text-2xl font-black mb-6">Tomorrow, 11:59 PM</Text>
-                    <View className="h-2 bg-white/20 rounded-full overflow-hidden mb-3">
-                        <View className="h-full bg-white w-3/4 rounded-full" />
-                    </View>
-                    <Text className="text-white/80 text-[10px] font-bold">75% of your class has already submitted.</Text>
+                {/* Status Dashboard */}
+                <View className="mx-6 flex-row justify-between mb-10">
+                   <View className="w-[48%] bg-slate-900 rounded-[36px] p-8 shadow-2xl shadow-slate-900/10">
+                      <Text className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-2">Weight</Text>
+                      <Text className="text-white text-3xl font-black mb-1">15%</Text>
+                      <Text className="text-slate-400 text-[9px] font-bold uppercase tracking-widest">Final Score</Text>
+                   </View>
+                   <View className="w-[48%] bg-white rounded-[36px] p-8 border border-white shadow-2xl shadow-slate-900/[0.04]">
+                      <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">Deadline</Text>
+                      <Text className="text-slate-900 text-2xl font-black mb-1">48h</Text>
+                      <Text className="text-slate-400 text-[9px] font-bold uppercase tracking-widest">Remaining</Text>
+                   </View>
                 </View>
 
-                {/* Visual Proof */}
-                <View className="mx-6 bg-white rounded-[34px] p-8 border border-slate-50 mb-8 items-center">
-                    <Text className="self-start text-slate-400 text-[10px] font-black uppercase tracking-widest mb-6">Visual Proof</Text>
-                    <TouchableOpacity className="w-full border-2 border-slate-100 border-dashed rounded-[34px] py-10 items-center">
-                        <UploadCloud size={32} color={COLORS.slate300} />
-                        <Text className="text-slate-900 font-black text-sm mt-3">Upload Image</Text>
-                        <Text className="text-slate-400 text-[10px] font-bold mt-1">PNG, JPG up to 10MB</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Actions */}
-                <View className="mx-6 bg-slate-50 rounded-[44px] p-10 items-center mb-12">
-                    <Text className="text-slate-900 font-black text-xl mb-2">Ready to finalize?</Text>
-                    <Text className="text-slate-400 text-center font-bold text-xs mb-8">You can revise your submission until the deadline.</Text>
+                {/* Finalize Action */}
+                <View className="mx-6 bg-white rounded-[56px] p-12 items-center border border-dashed border-slate-200">
+                    <Trophy size={48} color="#CBD5E1" className="mb-6" />
+                    <Text className="text-slate-900 font-black text-2xl mb-2 tracking-tight">Finalize Build</Text>
+                    <Text className="text-slate-400 text-center font-bold text-sm mb-10 leading-5">Our architects will audit your code for patterns, security, and performance.</Text>
+                    
                     <TouchableOpacity 
                         onPress={handleSubmit}
                         disabled={isSubmitting || !submissionUrl}
-                        className="w-full bg-blue-600 py-6 rounded-[30px] flex-row items-center justify-center shadow-xl shadow-blue-900/40"
+                        activeOpacity={0.8}
+                        className="w-full"
                     >
-                        {isSubmitting ? (
-                            <ActivityIndicator color="white" />
-                        ) : (
-                            <View className="flex-row items-center">
-                                <Text className="text-white font-black text-base uppercase tracking-widest mr-3">Submit Assignment</Text>
-                                <Send size={20} color="white" />
-                            </View>
-                        )}
+                        <LinearGradient
+                           colors={submissionUrl ? ['#1E293B', '#0F172A'] : ['#F1F5F9', '#E2E8F0']}
+                           className="py-6 rounded-[28px] flex-row items-center justify-center gap-3"
+                        >
+                           {isSubmitting ? (
+                               <ActivityIndicator color="white" />
+                           ) : (
+                               <>
+                                   <Text className={`font-black text-sm uppercase tracking-widest ${submissionUrl ? 'text-white' : 'text-slate-400'}`}>Dispatch Work</Text>
+                                   <Send size={18} color={submissionUrl ? "white" : "#94A3B8"} />
+                               </>
+                           )}
+                        </LinearGradient>
                     </TouchableOpacity>
-                </View>
-
-                {/* Details / Legend */}
-                <View className="px-10 pb-20 gap-10">
-                    <View className="flex-row items-center gap-6">
-                        <View className="w-12 h-12 bg-blue-50 rounded-full items-center justify-center">
-                            <GraduationCap size={24} color={COLORS.primary} />
-                        </View>
-                        <View className="flex-1">
-                            <Text className="text-slate-900 font-black mb-1">Grade Weight</Text>
-                            <Text className="text-slate-400 text-xs font-bold leading-5">This assignment accounts for 15% of your final course score.</Text>
-                        </View>
-                    </View>
-                    <View className="flex-row items-center gap-6">
-                        <View className="w-12 h-12 bg-blue-50 rounded-full items-center justify-center">
-                            <MessageSquare size={24} color={COLORS.primary} />
-                        </View>
-                        <View className="flex-1">
-                            <Text className="text-slate-900 font-black mb-1">Peer Review</Text>
-                            <Text className="text-slate-400 text-xs font-bold leading-5">Assignments are reviewed by 2 of your peers and 1 mentor.</Text>
-                        </View>
-                    </View>
-                    <View className="flex-row items-center gap-6">
-                        <View className="w-12 h-12 bg-blue-50 rounded-full items-center justify-center">
-                            <History size={24} color={COLORS.primary} />
-                        </View>
-                        <View className="flex-1">
-                            <Text className="text-slate-900 font-black mb-1">Fast Grading</Text>
-                            <Text className="text-slate-400 text-xs font-bold leading-5">Average turnaround for grades is 48 hours post-submission.</Text>
-                        </View>
-                    </View>
                 </View>
             </ScrollView>
         </SafeAreaWrapper>

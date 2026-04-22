@@ -1,24 +1,20 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { View, Text, ScrollView, RefreshControl, useWindowDimensions, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView, RefreshControl, useWindowDimensions, TouchableOpacity, TextInput, FlatList } from "react-native";
 import { coursesApi, enrollmentsApi } from "../../api/endpoints";
 import { CourseCard } from "../../components/CourseCard";
-import { Input } from "../../components/Input";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
-import { Search, BookOpen, Layers } from "lucide-react-native";
+import { Search, BookOpen, Layers, Sparkles, Filter, ChevronRight } from "lucide-react-native";
 import { Skeleton } from "../../components/Skeleton";
 import { COLORS } from "../../utils/theme";
 import { extractApiData, isApiSuccess } from "../../api/response";
-import { StudentStatCard } from "../../components/StudentStatCard";
 import { useAuth } from "../../context/AuthContext";
 import { AppHeader } from "../../components/AppHeader";
 import { Course, Enrollment } from "../../types";
 import { AppNavigationProp } from "../../types/navigation";
-import { FlatList } from "react-native";
 
 export default function ExploreCoursesScreen({ navigation }: { navigation: AppNavigationProp }) {
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
-  const horizontalPadding = isTablet ? 30 : 24;
   const shellMaxWidth = isTablet ? 980 : undefined;
 
   const [courses, setCourses] = useState<Course[]>([]);
@@ -26,6 +22,9 @@ export default function ExploreCoursesScreen({ navigation }: { navigation: AppNa
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("All Courses");
+
+  const CATEGORIES = ["All Courses", "Beginner", "Intermediate", "Advanced"];
 
   const fetchCourses = async () => {
     try {
@@ -34,33 +33,15 @@ export default function ExploreCoursesScreen({ navigation }: { navigation: AppNa
         enrollmentsApi.myEnrollments(),
       ]);
 
-      if (coursesRes.status === "fulfilled") {
-        const payload = coursesRes.value.data;
-        if (isApiSuccess(payload)) {
-          const data = extractApiData<any[]>(payload, []);
-          setCourses(Array.isArray(data) ? data : []);
-        } else {
-          setCourses([]);
-        }
-      } else {
-        setCourses([]);
+      if (coursesRes.status === "fulfilled" && isApiSuccess(coursesRes.value.data)) {
+        setCourses(extractApiData<any[]>(coursesRes.value.data, []));
       }
 
-      if (enrollmentsRes.status === "fulfilled") {
-        const payload = enrollmentsRes.value.data;
-        if (isApiSuccess(payload)) {
-          const data = extractApiData<any[]>(payload, []);
-          setEnrollments(Array.isArray(data) ? data : []);
-        } else {
-          setEnrollments([]);
-        }
-      } else {
-        setEnrollments([]);
+      if (enrollmentsRes.status === "fulfilled" && isApiSuccess(enrollmentsRes.value.data)) {
+        setEnrollments(extractApiData<any[]>(enrollmentsRes.value.data, []));
       }
     } catch (e) {
       console.log("Failed to load explore courses", e);
-      setCourses([]);
-      setEnrollments([]);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -89,76 +70,63 @@ export default function ExploreCoursesScreen({ navigation }: { navigation: AppNa
     [enrollments]
   );
 
-  const notEnrolledCourses = useMemo(
-    () =>
-      courses.filter((course) => {
-        const courseId = String(course?.id || course?._id || "");
-        return courseId ? !enrolledCourseIds.has(courseId) : true;
-      }),
-    [courses, enrolledCourseIds]
-  );
-
-  const filteredCourses = useMemo(
-    () =>
-      notEnrolledCourses.filter((course) =>
-        String(course?.title || "")
-          .toLowerCase()
-          .includes(search.toLowerCase())
-      ),
-    [notEnrolledCourses, search]
-  );
-
-  const CATEGORIES = ["All Courses", "Beginner", "Intermediate", "Advanced"];
-  const [activeCategory, setActiveCategory] = useState("All Courses");
-
-  const filteredByCategory = useMemo(() => {
-    if (activeCategory === "All Courses") return notEnrolledCourses;
-    return notEnrolledCourses.filter(c => (c.level || "").toLowerCase() === activeCategory.toLowerCase());
-  }, [notEnrolledCourses, activeCategory]);
-
-  const finalFiltered = useMemo(
-    () =>
-      filteredByCategory.filter((course) =>
-        String(course?.title || "")
-          .toLowerCase()
-          .includes(search.toLowerCase())
-      ),
-    [filteredByCategory, search]
-  );
-
-  const featuredCourse = useMemo(() => finalFiltered[0], [finalFiltered]);
-  const otherCourses = useMemo(() => finalFiltered.slice(1), [finalFiltered]);
+  const filteredCourses = useMemo(() => {
+    return courses.filter((course) => {
+      const matchesSearch = String(course?.title || "").toLowerCase().includes(search.toLowerCase());
+      const matchesCategory = activeCategory === "All Courses" || (course.level || "").toLowerCase() === activeCategory.toLowerCase();
+      return matchesSearch && matchesCategory;
+    });
+  }, [courses, search, activeCategory]);
 
   const { user } = useAuth();
 
   const renderHeader = useCallback(() => (
     <View style={{ width: "100%", maxWidth: shellMaxWidth, alignSelf: "center" }}>
-      <View className="px-6 pt-8 mb-8">
-        <View className="bg-blue-50 px-3 py-1 rounded-lg self-start mb-4">
-          <Text className="text-blue-600 font-extrabold text-[10px] uppercase tracking-widest">Learning Catalog</Text>
+      <View className="px-6 pt-10 mb-10">
+        <View className="flex-row items-center gap-2 mb-4">
+          <View className="bg-blue-100 px-4 py-1.5 rounded-full">
+            <Text className="text-blue-700 text-[10px] font-black uppercase tracking-widest">Academy Catalog</Text>
+          </View>
+          <Sparkles size={14} color="#3B82F6" />
         </View>
-        <Text className="text-[34px] font-black text-slate-900 leading-tight">
-            Elevate your{"\n"}
-            <Text className="text-blue-600">Engineering</Text> craft.
+        <Text className="text-[40px] font-black text-slate-900 leading-[44px] tracking-tight">
+            Elevate Your{"\n"}
+            <Text className="text-blue-600">Engineering</Text> Craft.
         </Text>
-        <Text className="text-slate-500 mt-4 text-[15px] leading-6 max-w-[90%]">
+        <Text className="text-slate-400 mt-4 text-base font-bold leading-6 max-w-[90%]">
             Curated paths designed for the modern scholar. From foundational logic to distributed systems.
         </Text>
+      </View>
+
+      {/* Search & Filter Bar */}
+      <View className="px-6 mb-10">
+         <View className="flex-row items-center bg-white px-6 py-5 rounded-[28px] border border-slate-100 shadow-2xl shadow-slate-900/[0.03]">
+            <Search size={20} color="#94A3B8" className="mr-4" />
+            <TextInput 
+              placeholder="Search for your next mastery..."
+              className="flex-1 text-slate-900 font-black text-[14px]"
+              placeholderTextColor="#CBD5E1"
+              value={search}
+              onChangeText={setSearch}
+            />
+            <View className="w-[1px] h-6 bg-slate-100 mx-4" />
+            <Filter size={20} color="#64748B" />
+         </View>
       </View>
 
       <ScrollView 
         horizontal 
         showsHorizontalScrollIndicator={false}
-        className="mb-8"
+        className="mb-10"
         contentContainerStyle={{ paddingHorizontal: 24 }}
       >
         {CATEGORIES.map((cat: string) => (
           <TouchableOpacity
             key={cat}
             onPress={() => setActiveCategory(cat)}
-            className={`mr-3 px-6 py-3 rounded-2xl border ${activeCategory === cat ? 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-200' : 'bg-slate-100 border-slate-100'}`}
+            className={`mr-4 px-8 py-4 rounded-[20px] border-2 ${activeCategory === cat ? 'bg-slate-900 border-slate-900 shadow-xl shadow-slate-200' : 'bg-white border-slate-50'}`}
           >
-            <Text className={`font-black text-xs ${activeCategory === cat ? 'text-white' : 'text-slate-500'}`}>
+            <Text className={`font-black text-xs uppercase tracking-widest ${activeCategory === cat ? 'text-white' : 'text-slate-400'}`}>
                 {cat}
             </Text>
           </TouchableOpacity>
@@ -166,46 +134,53 @@ export default function ExploreCoursesScreen({ navigation }: { navigation: AppNa
       </ScrollView>
 
       {isLoading && (
-        <View className="px-6 gap-6">
-          <Skeleton height={350} className="rounded-[40px]" />
-          <Skeleton height={250} className="rounded-[40px]" />
+        <View className="px-6 gap-8 pb-10">
+          <Skeleton height={400} className="rounded-[48px]" />
+          <Skeleton height={400} className="rounded-[48px]" />
         </View>
       )}
 
-      {!isLoading && finalFiltered.length === 0 && (
-        <View className="mx-6 items-center justify-center py-20 bg-white border border-slate-100 rounded-[40px]">
-          <Layers size={48} color={COLORS.slate200} />
-          <Text className="text-slate-400 font-bold mt-4">No content matches this criteria</Text>
+      {!isLoading && filteredCourses.length === 0 && (
+        <View className="mx-6 items-center justify-center py-24 bg-white border border-dashed border-slate-200 rounded-[56px]">
+          <View className="w-24 h-24 bg-slate-50 rounded-full items-center justify-center mb-8">
+            <Layers size={40} color="#CBD5E1" />
+          </View>
+          <Text className="text-slate-400 font-black text-xl tracking-tight">No content discovered</Text>
+          <Text className="text-slate-300 text-[10px] mt-2 font-black uppercase tracking-[2px]">Refine your search parameters</Text>
         </View>
       )}
     </View>
-  ), [shellMaxWidth, activeCategory, isLoading, finalFiltered]);
+  ), [shellMaxWidth, activeCategory, isLoading, filteredCourses, search]);
 
-  const renderCourseItem = useCallback(({ item }: { item: Course }) => (
-    <View style={{ paddingHorizontal: 24, paddingBottom: 16 }}>
-      <CourseCard
-        course={item}
-        onPress={() => {
-          const idOrSlug = item?.slug || item?.id || item?._id;
-          if (idOrSlug) navigation.navigate("CourseDetail", { idOrSlug, isEnrolled: false });
-        }}
-      />
-    </View>
-  ), [navigation]);
+  const renderCourseItem = useCallback(({ item }: { item: Course }) => {
+    const isEnrolled = enrolledCourseIds.has(String(item?.id || item?._id || ""));
+    return (
+      <View style={{ paddingHorizontal: 24, paddingBottom: 20 }}>
+        <CourseCard
+          course={item}
+          isEnrolled={isEnrolled}
+          onPress={() => {
+            const idOrSlug = item?.slug || item?.id || item?._id;
+            if (idOrSlug) navigation.navigate("CourseDetail", { idOrSlug, isEnrolled });
+          }}
+        />
+      </View>
+    );
+  }, [navigation, enrolledCourseIds]);
 
   return (
     <SafeAreaWrapper bgWhite>
-      <AppHeader navigation={navigation} role={user?.role} subtitle="Catalog" />
+      <AppHeader navigation={navigation} role={user?.role} />
       <FlatList
-        data={isLoading ? [] : finalFiltered}
+        data={isLoading ? [] : filteredCourses}
         renderItem={renderCourseItem}
         keyExtractor={(item) => String(item?.id || item?._id || item?.slug)}
         ListHeaderComponent={renderHeader}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        contentContainerStyle={{ paddingBottom: isTablet ? 34 : 24 }}
-        className="flex-1"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#2563EB" />}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        className="flex-1 bg-[#F8FAFC]"
+        showsVerticalScrollIndicator={false}
       />
     </SafeAreaWrapper>
   );
 }
-

@@ -9,7 +9,8 @@ import {
   Modal, 
   Alert, 
   ActivityIndicator,
-  Image
+  Image,
+  TextInput
 } from "react-native";
 import { WebView } from "react-native-webview";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
@@ -29,7 +30,13 @@ import {
   Zap,
   Info,
   CheckCircle,
-  HelpCircle
+  HelpCircle,
+  Sparkles,
+  Layers,
+  Video,
+  Paperclip,
+  Send,
+  MoreVertical
 } from "lucide-react-native";
 import { COLORS } from "../../utils/theme";
 import { Button } from "../../components/Button";
@@ -46,7 +53,6 @@ export default function LessonScreen({ route, navigation }: any) {
   const { user } = useAuth();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
-  const horizontalPadding = isTablet ? 30 : 24;
   const shellMaxWidth = isTablet ? 980 : undefined;
 
   const { lessonId, lesson: lessonFromRoute, courseId, courseTitle, lessonTitle, videoUrl } = route.params || {};
@@ -80,7 +86,6 @@ export default function LessonScreen({ route, navigation }: any) {
     const raw = normalizeVideoUrl(value);
     if (!raw) return "";
 
-    // If it's already an embed link (from any source), we keep it but ensure inline params are present
     if (raw.includes("/embed/")) {
         try {
             const url = new URL(raw);
@@ -90,13 +95,11 @@ export default function LessonScreen({ route, navigation }: any) {
             url.searchParams.set("enablejsapi", "1");
             return url.toString();
         } catch (e) {
-            // Fallback for malformed URLs that still contain /embed/
             const separator = raw.includes("?") ? "&" : "?";
             return `${raw}${separator}rel=0&modestbranding=1&playsinline=1&enablejsapi=1`;
         }
     }
     
-    // Convert standard YouTube links to nocookie embed
     const youtubeMatch = raw.match(/^.*(?:youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?"']{11}).*/i);
     if (youtubeMatch?.[1]) {
         return `https://www.youtube-nocookie.com/embed/${youtubeMatch[1]}?rel=0&modestbranding=1&playsinline=1&enablejsapi=1&origin=http://localhost:19006`;
@@ -261,16 +264,16 @@ export default function LessonScreen({ route, navigation }: any) {
     }
   };
 
-  if (isLoading) return <SafeAreaWrapper><AppHeader navigation={navigation} showBack /><Skeleton height={250} /><View className="p-6"><Skeleton height={30} width="60%" className="mb-4"/><Skeleton height={150}/></View></SafeAreaWrapper>;
+  if (isLoading) return <SafeAreaWrapper bgWhite><AppHeader navigation={navigation} showBack /><View className="p-10"><Skeleton height={280} className="rounded-[48px] mb-10"/><Skeleton height={40} width="80%" className="mb-6"/><Skeleton height={150} className="rounded-[32px]"/></View></SafeAreaWrapper>;
 
   return (
     <SafeAreaWrapper bgWhite>
-      <AppHeader navigation={navigation} showBack role={user?.role} subtitle="Active Lesson" />
+      <AppHeader navigation={navigation} showBack role={user?.role} />
       
-      <ScrollView className="bg-[#F8FAFC]" showsVerticalScrollIndicator={false}>
-        {/* Premium Video Player Container */}
-        <View className="px-5 pt-4 pb-6">
-            <View className="bg-slate-900 rounded-[40px] overflow-hidden aspect-video shadow-2xl shadow-slate-900/40 relative">
+      <ScrollView className="bg-[#F8FAFC]" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+        {/* Cinematic Video Container */}
+        <View className="px-5 pt-8 pb-10">
+            <View className="bg-slate-900 rounded-[56px] overflow-hidden aspect-video shadow-2xl shadow-slate-900/30 relative border-8 border-slate-900">
                 {activeEmbedUrl ? (
                     (Platform.OS === 'web') ? (
                         <View className="flex-1">
@@ -287,115 +290,128 @@ export default function LessonScreen({ route, navigation }: any) {
                             className="flex-1" 
                             allowsFullscreenVideo 
                             javaScriptEnabled 
+                            scrollEnabled={false}
                         />
                     )
                 ) : (
-                    <View className="flex-1 justify-center items-center">
-                        <Play size={48} color="white" fill="rgba(255,255,255,0.2)" />
-                        <Text className="text-white/40 text-[10px] font-black uppercase tracking-[3px] mt-4">Video Processing</Text>
+                    <View className="flex-1 justify-center items-center bg-slate-900">
+                        <View className="w-20 h-20 bg-white/5 rounded-full items-center justify-center border border-white/5">
+                           <Play size={40} color="white" fill="rgba(255,255,255,0.1)" />
+                        </View>
+                        <Text className="text-white/40 text-[10px] font-black uppercase tracking-[4px] mt-6">Ready to stream</Text>
                     </View>
                 )}
                 
-                {/* Custom Overlay Decorations */}
-                <View className="absolute top-4 right-4 bg-black/40 px-3 py-1 rounded-full border border-white/10">
-                    <Text className="text-white text-[10px] font-black">1080p HD</Text>
+                {/* Visual Overlays */}
+                <View className="absolute top-6 right-6 flex-row gap-3">
+                    <View className="bg-black/60 px-4 py-2 rounded-2xl border border-white/10 backdrop-blur-md">
+                        <Text className="text-white text-[9px] font-black uppercase tracking-widest">1080p</Text>
+                    </View>
                 </View>
-                
-                <View className="absolute bottom-4 left-0 right-0 px-6 flex-row items-center justify-between pointer-events-none">
-                   <View className="flex-row items-center gap-4">
-                       <Play size={18} color="white" fill="white" />
-                       <Volume2 size={18} color="white" />
-                       <Text className="text-white/80 text-[11px] font-bold">04:12 / 12:45</Text>
-                   </View>
-                   <View className="flex-row items-center gap-4">
-                       <Settings size={18} color="white" />
-                       <Maximize2 size={18} color="white" />
-                   </View>
+
+                <View className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/10">
+                    <View className="h-full bg-blue-600 w-1/3 shadow-2xl shadow-blue-500" />
                 </View>
             </View>
         </View>
 
-        <View className="px-6">
-            {/* Badges & Title */}
-            <View className="flex-row items-center gap-2 mb-4">
-                <View className="bg-blue-600/10 px-4 py-1.5 rounded-full border border-blue-600/5">
-                    <Text className="text-blue-600 text-[10px] font-black uppercase tracking-widest">Lesson {currentLessonIndex + 1}</Text>
+        <View className="px-8">
+            {/* Contextual Header */}
+            <View className="flex-row items-center gap-2 mb-6">
+                <View className="bg-blue-600 self-start px-4 py-2 rounded-2xl shadow-lg shadow-blue-200">
+                    <Text className="text-white text-[10px] font-black uppercase tracking-widest">Phase {currentLessonIndex + 1}</Text>
                 </View>
                 {lesson?.is_free_preview && (
-                    <View className="bg-emerald-500/10 px-4 py-1.5 rounded-full border border-emerald-500/5 flex-row items-center">
-                        <CheckCircle size={10} color={COLORS.success} className="mr-2" />
-                        <Text className="text-emerald-600 text-[10px] font-black uppercase tracking-widest">Free Preview</Text>
+                    <View className="bg-white px-4 py-2 rounded-2xl border border-slate-100 shadow-sm flex-row items-center">
+                        <Sparkles size={12} color="#3B82F6" className="mr-2" />
+                        <Text className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Preview Mode</Text>
                     </View>
                 )}
             </View>
 
-            <Text className="text-3xl font-black text-slate-900 leading-[40px] mb-4">{activeTitle}</Text>
-            <Text className="text-slate-500 text-[15px] leading-7 mb-8">{activeDescription.substring(0, 150)}...</Text>
+            <Text className="text-[34px] font-black text-slate-900 leading-[40px] tracking-tight mb-4">{activeTitle}</Text>
+            <Text className="text-slate-400 font-bold text-base leading-7 mb-10">{activeDescription.substring(0, 150)}...</Text>
 
-            {/* Module Progress Card */}
-            <View className="bg-white p-7 rounded-[40px] border border-slate-100 shadow-sm mb-6">
-                <View className="flex-row justify-between items-center mb-4">
-                    <Text className="text-slate-900 font-black text-base">Module Progress</Text>
-                    <Text className="text-blue-600 font-black text-lg">{moduleProgress ? (moduleProgress as any).percent : 0}%</Text>
-                </View>
-                <View className="h-3 bg-slate-100 rounded-full overflow-hidden mb-3">
-                    <View className="h-full bg-blue-600 rounded-full" style={{ width: `${moduleProgress ? (moduleProgress as any).percent : 0}%` }} />
-                </View>
-                <Text className="text-slate-400 text-xs font-bold">
-                    {moduleProgress ? (moduleProgress as any).count : 0} of {moduleProgress ? (moduleProgress as any).total : 0} lessons completed
-                </Text>
-            </View>
-
-            {/* Mark as Complete Button */}
+            {/* Completion Terminal */}
             <TouchableOpacity 
                 onPress={toggleComplete}
                 disabled={isSyncing}
-                activeOpacity={0.8}
-                className={`py-5 rounded-3xl items-center shadow-xl mb-10 shadow-blue-900/20 ${completed ? 'bg-emerald-500' : 'bg-blue-600'}`}
+                activeOpacity={0.9}
+                className="mb-12"
             >
-                {isSyncing ? (
-                    <ActivityIndicator color="white" size="small" />
-                ) : (
-                    <View className="flex-row items-center">
-                        {completed && <CheckCircle size={20} color="white" className="mr-2" />}
-                        <Text className="text-white font-black text-base uppercase tracking-widest">
-                            {completed ? "Completed" : "Mark as Complete"}
-                        </Text>
-                    </View>
-                )}
+                <LinearGradient
+                   colors={completed ? ['#10B981', '#059669'] : ['#1E293B', '#0F172A']}
+                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                   className="p-8 rounded-[40px] flex-row items-center justify-between shadow-2xl shadow-slate-900/20"
+                >
+                   <View className="flex-row items-center gap-4">
+                       <View className="w-14 h-14 bg-white/10 rounded-2xl items-center justify-center border border-white/10">
+                          {isSyncing ? <ActivityIndicator color="white" /> : (completed ? <CheckCircle2 size={28} color="white" /> : <Award size={28} color="white" />)}
+                       </View>
+                       <View>
+                          <Text className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-1">Status Protocol</Text>
+                          <Text className="text-white text-xl font-black">{completed ? "Goal Achieved" : "Mark as Mastered"}</Text>
+                       </View>
+                   </View>
+                   <ChevronRight size={24} color="white" />
+                </LinearGradient>
             </TouchableOpacity>
 
-            {/* Accordion: About this Lesson */}
-            <View className="bg-slate-50 rounded-[44px] overflow-hidden mb-12 border border-slate-100">
+            {/* Curriculum Progress */}
+            <View className="bg-white p-10 rounded-[48px] border border-white shadow-2xl shadow-slate-900/[0.04] mb-12">
+                <View className="flex-row justify-between items-center mb-6">
+                    <View>
+                       <Text className="text-slate-900 font-black text-xl tracking-tight">Phase Mastery</Text>
+                       <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Current Module</Text>
+                    </View>
+                    <Text className="text-blue-600 font-black text-3xl">{moduleProgress ? (moduleProgress as any).percent : 0}%</Text>
+                </View>
+                <View className="h-2.5 bg-slate-50 rounded-full overflow-hidden mb-4">
+                    <View className="h-full bg-blue-600 rounded-full" style={{ width: `${moduleProgress ? (moduleProgress as any).percent : 0}%` }} />
+                </View>
+                <Text className="text-slate-400 text-xs font-bold">
+                    Successfully decoded {moduleProgress ? (moduleProgress as any).count : 0} of {moduleProgress ? (moduleProgress as any).total : 0} core lessons.
+                </Text>
+            </View>
+
+            {/* Curriculum Intel Accordion */}
+            <View className="bg-white rounded-[48px] overflow-hidden border border-white shadow-2xl shadow-slate-900/[0.04]">
                 <TouchableOpacity 
                     onPress={() => setIsAboutExpanded(!isAboutExpanded)}
-                    className="p-7 flex-row justify-between items-center"
+                    className="p-8 flex-row justify-between items-center"
                 >
-                    <Text className="text-xl font-black text-slate-900">About this Lesson</Text>
-                    {isAboutExpanded ? <ChevronUp size={24} color={COLORS.slate900} /> : <ChevronDown size={24} color={COLORS.slate900} />}
+                    <View className="flex-row items-center gap-4">
+                       <View className="w-12 h-12 bg-slate-50 rounded-2xl items-center justify-center">
+                          <Info size={24} color="#0F172A" />
+                       </View>
+                       <Text className="text-xl font-black text-slate-900">Module Intel</Text>
+                    </View>
+                    {isAboutExpanded ? <ChevronUp size={20} color="#94A3B8" /> : <ChevronDown size={20} color="#94A3B8" />}
                 </TouchableOpacity>
                 
                 {isAboutExpanded && (
-                    <View className="px-7 pb-8">
-                        <Text className="text-slate-500 leading-7 mb-8">{activeDescription}</Text>
+                    <View className="px-10 pb-10">
+                        <Text className="text-slate-500 font-bold text-base leading-7 mb-10">{activeDescription}</Text>
                         
-                        <View className="gap-5 mb-8">
-                            {["Core technical foundations", "Practical implementation guides", "Optimized workflow patterns"].map((dot, i) => (
-                                <View key={i} className="flex-row items-start gap-4">
-                                    <View className="mt-1.5"><CheckCircle size={16} color={COLORS.primary} /></View>
-                                    <Text className="text-slate-700 font-bold text-[15px]">{dot}</Text>
+                        <View className="gap-6 mb-10">
+                            {["Industry-standard design patterns", "Performance optimization guides", "Scalable architectural blueprints"].map((dot, i) => (
+                                <View key={i} className="flex-row items-start gap-5">
+                                    <View className="w-6 h-6 rounded-full bg-blue-50 items-center justify-center mt-0.5">
+                                       <CheckCircle size={14} color="#2563EB" />
+                                    </View>
+                                    <Text className="text-slate-700 font-black text-sm leading-6 flex-1">{dot}</Text>
                                 </View>
                             ))}
                         </View>
 
-                        <View className="flex-row gap-3">
-                            <View className="flex-1 bg-white p-5 rounded-3xl border border-slate-100 items-center">
-                                <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Duration</Text>
+                        <View className="flex-row gap-4">
+                            <View className="flex-1 bg-slate-50 p-6 rounded-[32px] items-center border border-slate-100">
+                                <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Air Time</Text>
                                 <Text className="text-slate-900 font-black text-sm">{lesson?.duration || "12m 45s"}</Text>
                             </View>
-                            <View className="flex-1 bg-white p-5 rounded-3xl border border-slate-100 items-center">
-                                <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Difficulty</Text>
-                                <Text className="text-slate-900 font-black text-sm">{lesson?.difficulty || "Intermediate"}</Text>
+                            <View className="flex-1 bg-slate-50 p-6 rounded-[32px] items-center border border-slate-100">
+                                <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Complexity</Text>
+                                <Text className="text-slate-900 font-black text-sm">{lesson?.difficulty || "L4 Advanced"}</Text>
                             </View>
                         </View>
                     </View>
@@ -404,54 +420,96 @@ export default function LessonScreen({ route, navigation }: any) {
         </View>
       </ScrollView>
 
-      {/* Ask Doubt Floating Button */}
+      {/* Floating Inquiry Trigger */}
       <TouchableOpacity 
         onPress={() => {
             setDoubtTitle(`Doubt in: ${activeTitle}`);
             setDoubtModalVisible(true);
         }}
-        className="absolute bottom-24 right-6 w-14 h-14 bg-blue-600 rounded-2xl items-center justify-center shadow-2xl shadow-blue-900/50"
+        activeOpacity={0.9}
+        className="absolute bottom-28 right-8 w-16 h-16 bg-blue-600 rounded-2xl items-center justify-center shadow-2xl shadow-blue-900/40"
       >
-        <HelpCircle size={28} color="white" />
+        <MessageSquare size={28} color="white" />
       </TouchableOpacity>
 
-      {/* Prev/Next Navigation */}
-      <View className="border-t border-slate-100 bg-white py-4 px-6 flex-row justify-between items-center">
+      {/* Persistent Navigation Interface */}
+      <View className="absolute bottom-0 left-0 right-0 border-t border-slate-100 bg-white/95 px-8 pt-4 pb-10 flex-row justify-between items-center backdrop-blur-md">
           <TouchableOpacity onPress={() => goToLesson(currentLessonIndex - 1)} disabled={!canGoPrev}>
              <View className="flex-row items-center">
-                <ChevronLeft size={20} color={canGoPrev ? COLORS.slate400 : COLORS.slate200} />
-                <Text className={`${canGoPrev ? "text-slate-400" : "text-slate-200"} font-bold ml-2 uppercase text-[11px] tracking-widest`}>Previous Lesson</Text>
+                <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${canGoPrev ? "bg-slate-50" : "bg-transparent"}`}>
+                   <ChevronLeft size={20} color={canGoPrev ? "#0F172A" : "#E2E8F0"} />
+                </View>
+                <Text className={`${canGoPrev ? "text-slate-900" : "text-slate-200"} font-black uppercase text-[10px] tracking-widest`}>Previous</Text>
              </View>
           </TouchableOpacity>
           
           <TouchableOpacity onPress={() => goToLesson(currentLessonIndex + 1)} disabled={!canGoNext}>
              <View className="flex-row items-center">
-                <Text className={`${canGoNext ? "text-blue-600" : "text-slate-200"} font-black mr-2 uppercase text-[11px] tracking-widest`}>
-                    {nextLesson ? `Next: ${nextLesson.title.substring(0, 10)}` : "Next Lesson"}
+                <Text className={`${canGoNext ? "text-blue-600" : "text-slate-200"} font-black mr-3 uppercase text-[10px] tracking-widest`}>
+                    {nextLesson ? `Next: ${nextLesson.title.substring(0, 10)}...` : "Terminal"}
                 </Text>
-                <ChevronRight size={20} color={canGoNext ? COLORS.primary : COLORS.slate200} />
+                <View className={`w-10 h-10 rounded-xl items-center justify-center ${canGoNext ? "bg-blue-50" : "bg-transparent"}`}>
+                   <ChevronRight size={20} color={canGoNext ? "#2563EB" : "#E2E8F0"} />
+                </View>
              </View>
           </TouchableOpacity>
       </View>
 
-      {/* Doubt Modal */}
+      {/* Support Console Modal */}
       <Modal visible={doubtModalVisible} animationType="slide" transparent>
         <View className="flex-1 bg-slate-900/60 justify-end">
-          <View className="bg-white rounded-t-[44px] p-8 shadow-2xl">
-            <View className="flex-row justify-between items-center mb-8">
+          <View className="bg-white rounded-t-[56px] p-10 shadow-2xl">
+            <View className="flex-row justify-between items-center mb-10">
               <View>
-                  <Text className="text-2xl font-black text-slate-900">Ask Doubt</Text>
-                  <Text className="text-slate-400 text-xs font-bold mt-1">Our instructors typically reply within 24h</Text>
+                  <Text className="text-3xl font-black text-slate-900 tracking-tight">Support Console</Text>
+                  <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Instructor Direct Access</Text>
               </View>
-              <TouchableOpacity onPress={() => setDoubtModalVisible(false)} className="bg-slate-100 p-2 rounded-full">
-                  <ChevronDown size={20} color={COLORS.slate600} />
+              <TouchableOpacity onPress={() => setDoubtModalVisible(false)} className="w-12 h-12 bg-slate-50 rounded-2xl items-center justify-center">
+                  <ChevronDown size={24} color="#0F172A" />
               </TouchableOpacity>
             </View>
-            <ScrollView showsVerticalScrollIndicator={false} className="mb-6">
-              <Input placeholder="What is your question about?" value={doubtTitle} onChangeText={setDoubtTitle} className="mb-4" />
-              <Input placeholder="Describe your issue in detail..." value={doubtDescription} onChangeText={setDoubtDescription} multiline numberOfLines={6} className="mb-6" />
-              {doubtError && <Text className="text-red-500 text-xs font-bold mb-4">{doubtError}</Text>}
-              <Button title="Submit Question" onPress={submitDoubt} isLoading={isSubmittingDoubt} className="py-5" />
+            <ScrollView showsVerticalScrollIndicator={false} className="mb-8">
+              <View className="mb-6">
+                 <Text className="text-slate-900 font-black text-sm mb-4">Query Protocol</Text>
+                 <Input 
+                    placeholder="Briefly state your hurdle..." 
+                    value={doubtTitle} 
+                    onChangeText={setDoubtTitle} 
+                    containerClassName="h-16 rounded-2xl bg-slate-50 border-0 px-6"
+                    inputClassName="text-sm font-black text-slate-900"
+                 />
+              </View>
+              <View className="mb-8">
+                 <Text className="text-slate-900 font-black text-sm mb-4">Technical Details</Text>
+                 <Input 
+                    placeholder="Describe the logic issue in detail..." 
+                    value={doubtDescription} 
+                    onChangeText={setDoubtDescription} 
+                    multiline 
+                    numberOfLines={6} 
+                    containerClassName="h-44 rounded-3xl bg-slate-50 border-0 p-6"
+                    inputClassName="text-sm font-black text-slate-900 leading-6"
+                 />
+              </View>
+              {doubtError && <Text className="text-rose-500 text-[10px] font-black uppercase tracking-widest mb-6">{doubtError}</Text>}
+              
+              <TouchableOpacity 
+                onPress={submitDoubt}
+                disabled={isSubmittingDoubt || !doubtDescription}
+                activeOpacity={0.9}
+              >
+                <LinearGradient
+                    colors={['#1E293B', '#0F172A']}
+                    className="py-6 rounded-[28px] flex-row items-center justify-center gap-3"
+                >
+                    {isSubmittingDoubt ? <ActivityIndicator color="white" /> : (
+                        <>
+                           <Text className="text-white font-black text-sm uppercase tracking-widest">Dispatch Inquiry</Text>
+                           <Send size={18} color="white" />
+                        </>
+                    )}
+                </LinearGradient>
+              </TouchableOpacity>
             </ScrollView>
           </View>
         </View>

@@ -1,5 +1,5 @@
 import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Storage } from "../utils/storage";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 export const API_BASE_URL = "https://codecure-acedamy.onrender.com";
@@ -16,7 +16,7 @@ const client = axios.create({
 // ─── Request Interceptor – Attach Bearer Token ────────────────────────────────
 client.interceptors.request.use(
   async (config) => {
-    const token = await AsyncStorage.getItem("auth_token");
+    const token = await Storage.getItem("auth_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -39,7 +39,7 @@ client.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      await AsyncStorage.removeItem("auth_token");
+      await Storage.deleteItem("auth_token");
       logoutListener?.();
     }
     return Promise.reject(error);

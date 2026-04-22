@@ -40,8 +40,10 @@ const normalizeUser = (raw: any): User => {
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [authState, setAuthState] = useState<{ user: User | null; token: string | null }>({
+    user: null,
+    token: null,
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   // ── Hydrate session from storage on app start ──────────────────────
@@ -54,27 +56,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           return;
         }
 
-        setToken(storedToken);
-
         // Validate token by hitting /auth/me
         const res = await authApi.me();
         const payload = res.data;
         if (isApiSuccess(payload)) {
           const me = extractApiData<User | null>(payload, null);
           if (me) {
-            setUser(normalizeUser(me));
+            setAuthState({ token: storedToken, user: normalizeUser(me) });
           } else {
             await Storage.deleteItem("auth_token");
-            setToken(null);
+            setAuthState({ token: null, user: null });
           }
         } else {
           await Storage.deleteItem("auth_token");
-          setToken(null);
+          setAuthState({ token: null, user: null });
         }
       } catch {
         // Token invalid – clear it silently
         await Storage.deleteItem("auth_token");
-        setToken(null);
+        setAuthState({ token: null, user: null });
       } finally {
         setIsLoading(false);
       }
@@ -84,10 +84,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
     // Register the global 401 logout listener for the axios interceptor
     setLogoutListener(async () => {
-      // Set React state FIRST for immediate UI transition
-      setToken(null);
-      setUser(null);
-      // Then clean up storage
+      setAuthState({ token: null, user: null });
       Storage.deleteItem("auth_token").catch(() => {});
     });
   }, []);
@@ -95,14 +92,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   // ── Actions ──────────────────────────────────────────────────────────────
   const login = async (newToken: string, userData: User) => {
     await Storage.setItem("auth_token", newToken);
-    setToken(newToken);
-    setUser(normalizeUser(userData));
+    setAuthState({ token: newToken, user: normalizeUser(userData) });
   };
 
   const logout = async () => {
-    // Set React state FIRST for immediate UI transition
-    setToken(null);
-    setUser(null);
+    // Atomic state update ensures no race conditions during navigation transitions
+    setAuthState({ token: null, user: null });
+    
     // Then clean up persistent storage (non-blocking)
     try {
       await Storage.deleteItem("auth_token");
@@ -111,14 +107,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  const updateUser = (userData: User) => setUser(normalizeUser(userData));
+  const updateUser = (userData: User) => setAuthState(prev => ({ ...prev, user: normalizeUser(userData) }));
 
   return (
     <AuthContext.Provider
       value={{
-        user,
-        token,
-        isAuthenticated: !!user,
+        user: authState.user,
+        token: authState.token,
+        isAuthenticated: !!authState.token && !!authState.user,
         isLoading,
         login,
         logout,

@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
 import { AppHeader } from "../../components/AppHeader";
-import { COLORS } from "../../utils/theme";
 import {
   PlayCircle,
   Hourglass,
@@ -27,10 +26,15 @@ import {
   FileText,
   Link as LinkIcon,
   Edit3,
+  Sparkles,
+  ArrowLeft,
+  Layers,
+  ArrowRight,
+  BookOpen
 } from "lucide-react-native";
 import { coursesApi, lessonsApi, notificationsApi } from "../../api/endpoints";
 import { extractApiData, isApiSuccess } from "../../api/response";
-
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function TeacherManageLessonsScreen({ navigation, route }: any) {
   const { courseId, courseTitle: initialTitle } = route.params || {};
@@ -59,14 +63,12 @@ export default function TeacherManageLessonsScreen({ navigation, route }: any) {
     if (!courseId) return;
     setIsLoading(true);
     try {
-      // First try fetching by ID (might be slug in route but usually we pass ID)
       const res = await coursesApi.detail(courseId);
       if (isApiSuccess(res.data)) {
         const data = extractApiData<any>(res.data, null);
         setCourse(data);
         if (data.modules && data.modules.length > 0) {
           setModules(data.modules);
-          // Expand first module by default
           setExpandedModules({ [data.modules[0].id || data.modules[0]._id]: true });
         }
       }
@@ -117,7 +119,6 @@ export default function TeacherManageLessonsScreen({ navigation, route }: any) {
       if (isApiSuccess(res.data)) {
         Alert.alert("Success", "Lesson published successfully");
         
-        // Notify Students
         notificationsApi.send({
           role: 'student',
           title: 'New Lesson Published!',
@@ -129,7 +130,7 @@ export default function TeacherManageLessonsScreen({ navigation, route }: any) {
         setNewLessonVideoUrl("");
         setNewLessonDuration("");
         setNewLessonNotes("");
-        fetchCourseData(); // Refresh
+        fetchCourseData();
       } else {
         Alert.alert("Error", "Failed to publish lesson");
       }
@@ -153,7 +154,6 @@ export default function TeacherManageLessonsScreen({ navigation, route }: any) {
       if (isApiSuccess(res.data)) {
         Alert.alert("Success", "Module added successfully");
 
-        // Notify Students
         notificationsApi.send({
           role: 'student',
           title: 'Curriculum Expansion!',
@@ -177,334 +177,282 @@ export default function TeacherManageLessonsScreen({ navigation, route }: any) {
 
   if (isLoading) {
     return (
-      <SafeAreaWrapper>
+      <SafeAreaWrapper bgWhite>
         <AppHeader role="Teacher" navigation={navigation} />
         <View className="flex-1 items-center justify-center bg-[#F8FAFC]">
           <ActivityIndicator size="large" color="#2563EB" />
-          <Text className="mt-4 text-slate-500 font-bold">Loading curriculum...</Text>
+          <Text className="mt-6 text-slate-400 font-black text-[10px] uppercase tracking-widest">Loading curriculum...</Text>
         </View>
       </SafeAreaWrapper>
     );
   }
 
-  // Stats derived from data
-  const stats = [
-    { label: "Total Lessons", value: lessons.length || 0, icon: PlayCircle, color: "#1D4ED8" },
-    { label: "Course Modules", value: modules.length || 0, icon: Hourglass, color: "#1D4ED8" },
-    { label: "Active Students", value: course?.students_enrolled || 0, icon: Users, color: "#1D4ED8" },
-  ];
-
   return (
-    <SafeAreaWrapper>
+    <SafeAreaWrapper bgWhite>
       <AppHeader role="Teacher" navigation={navigation} />
-      <ScrollView className="flex-1 bg-[#F8FAFC]" contentContainerStyle={{ paddingBottom: 40 }}>
-        <View className="px-6 pt-6">
-          <Text className="text-[10px] font-black text-blue-600 uppercase tracking-[2px] mb-1">
-            CURRICULUM MANAGEMENT
-          </Text>
-          <Text className="text-4xl font-black text-slate-900 mb-2">{course?.title || "Manage"}</Text>
-          <Text className="text-4xl font-black text-slate-900 mb-4">Lessons</Text>
-          <Text className="text-slate-500 text-sm leading-5 mb-8">
-            Organize your teaching path. Add new modules, upload high-quality video content, and manage your students' learning journey.
-          </Text>
-
-          {/* Stats Cards */}
-          <View className="gap-4 mb-10">
-            {stats.map((stat, idx) => (
-              <View 
-                key={idx} 
-                className="bg-white p-6 rounded-[32px] flex-row items-center shadow-sm border border-slate-50"
-                style={idx === 1 ? { backgroundColor: '#EFF6FF', borderColor: '#DBEAFE' } : {}}
-              >
-                <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${idx === 1 ? 'bg-white' : 'bg-slate-50'}`}>
-                  <stat.icon size={20} color={stat.color} />
-                </View>
-                <View>
-                  <Text className="text-2xl font-black text-slate-900">{stat.value}</Text>
-                  <Text className="text-slate-500 text-xs font-bold">{stat.label}</Text>
-                </View>
+      <ScrollView 
+        className="flex-1 bg-[#F8FAFC]" 
+        contentContainerStyle={{ paddingBottom: 60 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View className="px-6 pt-10">
+           {/* Back Action */}
+           <TouchableOpacity 
+             onPress={() => navigation.goBack()} 
+             className="flex-row items-center mb-10"
+           >
+              <View className="w-12 h-12 bg-white rounded-2xl items-center justify-center shadow-sm border border-slate-50 mr-4">
+                 <ArrowLeft size={18} color="#64748B" />
               </View>
-            ))}
-          </View>
-
-          {/* Modules List */}
-          <View className="mb-6">
-            {modules.length === 0 && (
-              <View className="bg-white rounded-[32px] p-8 items-center border border-dashed border-slate-200">
-                <Text className="text-slate-500 font-bold mb-4">No modules found for this course.</Text>
-                <TouchableOpacity 
-                   className="bg-blue-600 px-6 py-3 rounded-2xl"
-                   onPress={() => navigation.navigate("TeacherCreateLesson", { courseId })}
-                >
-                   <Text className="text-white font-black">Add First Lesson</Text>
-                </TouchableOpacity>
+              <View>
+                 <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Back to Dashboard</Text>
+                 <Text className="text-slate-900 text-sm font-black tracking-tight">Curriculum Control</Text>
               </View>
-            )}
+           </TouchableOpacity>
 
-            {modules.map((module) => {
-              const moduleId = module.id || module._id;
-              const moduleLessons = lessons.filter(l => l.module_id === moduleId || l.module === moduleId);
-              const isExpanded = expandedModules[moduleId];
+           {/* Header Section */}
+           <View className="mb-10">
+              <View className="flex-row items-center gap-2 mb-3">
+                 <View className="bg-blue-100 px-3 py-1 rounded-full">
+                    <Text className="text-blue-700 text-[10px] font-black uppercase tracking-widest">Mastery Tracking</Text>
+                 </View>
+                 <Sparkles size={14} color="#3B82F6" />
+              </View>
+              <Text className="text-[40px] font-black text-slate-900 leading-[44px] tracking-tight">
+                 Manage <Text className="text-blue-600">Lessons</Text>
+              </Text>
+              <Text className="text-slate-400 text-base font-bold mt-2">{course?.title || "Course Curriculum"}</Text>
+           </View>
 
-              return (
-                <View key={moduleId} className="bg-white rounded-[32px] overflow-hidden mb-4 shadow-sm border border-slate-50">
-                  <TouchableOpacity 
-                    activeOpacity={0.7}
-                    onPress={() => toggleModule(moduleId)}
-                    className="p-5 flex-row items-center justify-between"
-                  >
-                    <View className="flex-row items-center flex-1">
-                      <View className="w-12 h-12 rounded-2xl bg-blue-600 items-center justify-center mr-4">
-                        <PlayCircle size={24} color="white" />
-                      </View>
-                      <View className="flex-1">
-                        <Text className="text-base font-black text-slate-900">{module.title}</Text>
-                        <Text className="text-slate-400 text-[10px] font-bold uppercase mt-0.5">
-                           {moduleLessons.length} Lessons • {module.duration || "N/A"}
-                        </Text>
-                      </View>
-                    </View>
-                    {isExpanded ? <ChevronUp size={20} color="#94A3B8" /> : <ChevronDown size={20} color="#94A3B8" />}
-                  </TouchableOpacity>
+           {/* Stats Summary Grid */}
+           <View className="flex-row justify-between mb-12">
+              <View className="w-[31%] bg-white p-5 rounded-[32px] shadow-2xl shadow-slate-900/[0.03] border border-slate-50 items-center">
+                 <View className="bg-blue-50 w-10 h-10 rounded-2xl items-center justify-center mb-3">
+                    <PlayCircle size={18} color="#2563EB" />
+                 </View>
+                 <Text className="text-xl font-black text-slate-900">{lessons.length}</Text>
+                 <Text className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Lessons</Text>
+              </View>
+              <View className="w-[31%] bg-white p-5 rounded-[32px] shadow-2xl shadow-slate-900/[0.03] border border-slate-50 items-center">
+                 <View className="bg-emerald-50 w-10 h-10 rounded-2xl items-center justify-center mb-3">
+                    <Layers size={18} color="#10B981" />
+                 </View>
+                 <Text className="text-xl font-black text-slate-900">{modules.length}</Text>
+                 <Text className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Modules</Text>
+              </View>
+              <View className="w-[31%] bg-white p-5 rounded-[32px] shadow-2xl shadow-slate-900/[0.03] border border-slate-50 items-center">
+                 <View className="bg-amber-50 w-10 h-10 rounded-2xl items-center justify-center mb-3">
+                    <Users size={18} color="#F59E0B" />
+                 </View>
+                 <Text className="text-xl font-black text-slate-900">{course?.students_enrolled || 0}</Text>
+                 <Text className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Enrolled</Text>
+              </View>
+           </View>
 
-                  {isExpanded && (
-                    <View className="px-5 pb-5">
-                      {moduleLessons.map((lesson, lIdx) => {
-                        const isUploading = lesson.status === "uploading" || lesson.isUploading;
-                        const videoLink = lesson.video_url || lesson.youtube_url || "";
-                        
-                        return (
-                          <View key={lesson.id || lesson._id} className={`rounded-3xl p-4 mb-3 border ${isUploading ? 'bg-[#F0F7FF] border-blue-50' : 'bg-[#F8FAFC] border-transparent'}`}>
-                            <View className="flex-row items-center justify-between mb-2">
-                              <View className="flex-row items-center flex-1">
-                                <View className={`w-10 h-10 rounded-full items-center justify-center mr-3 border ${isUploading ? 'bg-blue-100 border-blue-200' : 'bg-white border-slate-100'}`}>
-                                  {isUploading ? <UploadCloud size={14} color="#2563EB" /> : <Text className="text-[10px] font-black text-slate-400">{String(lIdx + 1).padStart(2, '0')}</Text>}
-                                </View>
-                                <View className="flex-1">
-                                  <Text className="text-sm font-black text-slate-900" numberOfLines={1}>{lesson.title}</Text>
-                                  {isUploading ? (
-                                    <Text className="text-blue-600 text-[9px] font-black uppercase">UPLOADING... {lesson.progress || uploadingProgress}%</Text>
-                                  ) : (
-                                    <View className="flex-row items-center mt-1">
-                                      <PlayCircle size={12} color="#94A3B8" />
-                                      <Text className="text-slate-400 text-[10px] font-bold ml-1">{lesson.duration || "00:00"}</Text>
-                                      {videoLink ? (
-                                        <>
-                                          <View className="w-1 h-1 rounded-full bg-slate-300 mx-2" />
-                                          <LinkIcon size={10} color="#94A3B8" />
-                                          <Text className="text-slate-400 text-[10px] font-medium ml-1" numberOfLines={1}>{videoLink}</Text>
-                                        </>
-                                      ) : null}
-                                    </View>
-                                  )}
-                                </View>
-                              </View>
-                              {!isUploading && (
-                                <TouchableOpacity 
-                                  onPress={() => navigation.navigate("TeacherEditLesson", { lesson, courseId })}
-                                  className="w-8 h-8 rounded-full bg-blue-50 items-center justify-center"
-                                >
-                                  <Edit3 size={14} color="#2563EB" />
-                                </TouchableOpacity>
-                              )}
-                              {isUploading && (
-                                <TouchableOpacity>
-                                  <X size={16} color="#94A3B8" />
-                                </TouchableOpacity>
-                              )}
-                            </View>
-                            
-                            {isUploading && (
-                              <View className="h-1.5 bg-slate-200 rounded-full overflow-hidden mt-1">
-                                 <View className="h-full bg-blue-600" style={{ width: `${lesson.progress || uploadingProgress}%` }} />
-                              </View>
-                            )}
-
-                            {/* Option to add/edit link even while uploading or if missing */}
-                            {(!videoLink || isUploading) && (
-                               <View className="mt-3 flex-row items-center bg-white/50 rounded-xl px-3 py-2 border border-slate-100">
-                                  <LinkIcon size={12} color="#94A3B8" className="mr-2" />
-                                  <TextInput 
-                                    placeholder="Add/Edit Video Link"
-                                    className="flex-1 text-[11px] text-slate-600 h-6 p-0"
-                                    placeholderTextColor="#94A3B8"
-                                    defaultValue={videoLink}
-                                    onSubmitEditing={(e) => {
-                                       // In a real app, you'd call an update lesson API here
-                                       Alert.alert("Link Updated", "Lesson video link has been saved.");
-                                    }}
-                                  />
-                                </View>
-                            )}
-                          </View>
-                        );
-                      })}
-
-                      {/* New Video Lesson Form */}
-                      <View className="border-2 border-dashed border-slate-200 rounded-[32px] p-6 items-center mt-4">
-                         <View className="w-14 h-14 rounded-full bg-blue-50 items-center justify-center mb-4">
-                            <UploadCloud size={24} color="#2563EB" />
-                         </View>
-                         <Text className="text-base font-black text-slate-900 mb-1">New Video Lesson</Text>
-                         <Text className="text-slate-400 text-[11px] font-medium text-center mb-6">
-                           Provide video details for this module
-                         </Text>
-
-                         <View className="w-full gap-3">
-                            <View>
-                              <Text className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 ml-1">LESSON TITLE</Text>
-                              <TextInput 
-                                placeholder="e.g. Master the Debugger"
-                                className="bg-slate-50 rounded-xl px-4 py-3 text-slate-900 text-sm"
-                                placeholderTextColor="#94A3B8"
-                                value={newLessonTitle}
-                                onChangeText={setNewLessonTitle}
-                              />
-                            </View>
-
-                            <View>
-                              <Text className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 ml-1">VIDEO URL / LINK</Text>
-                              <View className="bg-slate-50 rounded-xl px-4 py-3 flex-row items-center">
-                                 <LinkIcon size={16} color="#94A3B8" className="mr-2" />
-                                 <TextInput 
-                                   placeholder="YouTube/Vimeo or Video URL"
-                                   className="flex-1 text-slate-900 text-sm"
-                                   placeholderTextColor="#94A3B8"
-                                   value={newLessonVideoUrl}
-                                   onChangeText={setNewLessonVideoUrl}
-                                 />
-                              </View>
-                            </View>
-                            
-                            <View className="flex-row gap-3">
-                               <View className="flex-1">
-                                  <Text className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 ml-1">DURATION</Text>
-                                  <TextInput 
-                                    placeholder="MM:SS"
-                                    className="bg-slate-50 rounded-xl px-4 py-3 text-slate-900 text-sm text-center"
-                                    placeholderTextColor="#94A3B8"
-                                    value={newLessonDuration}
-                                    onChangeText={setNewLessonDuration}
-                                  />
-                               </View>
-                               <View className="flex-1">
-                                  <Text className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 ml-1">ACCESS TYPE</Text>
-                                  <View className="bg-slate-50 rounded-xl px-4 py-3 flex-row items-center justify-between">
-                                     <Text className="text-slate-900 text-sm">Public</Text>
-                                     <Lock size={14} color="#94A3B8" />
-                                  </View>
-                               </View>
-                            </View>
-
-                            <View>
-                              <Text className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 ml-1">TEACHER NOTES</Text>
-                              <TextInput 
-                                placeholder="Add key takeaways or resource links..."
-                                className="bg-slate-50 rounded-xl px-4 py-4 text-slate-900 text-sm h-24"
-                                placeholderTextColor="#94A3B8"
-                                multiline
-                                textAlignVertical="top"
-                                value={newLessonNotes}
-                                onChangeText={setNewLessonNotes}
-                              />
-                            </View>
-
-                            <View className="flex-row gap-3 mt-2">
-                               <TouchableOpacity 
-                                 className="flex-1 bg-blue-600 rounded-2xl py-4 items-center shadow-md shadow-blue-200"
-                                 onPress={() => handlePublishLesson(moduleId)}
-                                 disabled={isSubmitting}
-                               >
-                                  {isSubmitting ? <ActivityIndicator size="small" color="white" /> : <Text className="text-white font-black text-sm">Publish Lesson</Text>}
-                               </TouchableOpacity>
-                               <TouchableOpacity className="flex-1 bg-slate-200 rounded-2xl py-4 items-center shadow-sm">
-                                  <Text className="text-slate-700 font-black text-sm">Save Draft</Text>
-                               </TouchableOpacity>
-                            </View>
-                         </View>
-                      </View>
-                    </View>
-                  )}
+           {/* Modules Accordion */}
+           <View className="mb-10">
+              {modules.length === 0 && (
+                <View className="bg-white rounded-[44px] p-10 items-center border border-dashed border-slate-200">
+                   <BookOpen size={40} color="#CBD5E1" />
+                   <Text className="text-slate-400 font-black text-[10px] uppercase tracking-widest mt-4 text-center">No curriculum paths defined yet</Text>
+                   <TouchableOpacity 
+                      className="mt-8 bg-blue-600 px-8 py-4 rounded-2xl shadow-xl shadow-blue-200"
+                      onPress={() => navigation.navigate("TeacherCreateLesson", { courseId })}
+                   >
+                      <Text className="text-white font-black text-xs uppercase tracking-widest">Add First Lesson</Text>
+                   </TouchableOpacity>
                 </View>
-              );
-            })}
+              )}
 
-            {/* Fallback lessons without modules */}
-            {lessons.filter(l => !l.module_id && !l.module).length > 0 && (
-               <View className="bg-white rounded-[32px] overflow-hidden mb-4 shadow-sm border border-slate-50">
-                  <View className="p-5 flex-row items-center justify-between">
-                    <View className="flex-row items-center flex-1">
-                      <View className="w-12 h-12 rounded-2xl bg-slate-100 items-center justify-center mr-4">
-                        <FileText size={24} color="#94A3B8" />
-                      </View>
-                      <View className="flex-1">
-                        <Text className="text-base font-black text-slate-900">Uncategorized Lessons</Text>
-                        <Text className="text-slate-400 text-[10px] font-bold uppercase mt-0.5">
-                           {lessons.filter(l => !l.module_id && !l.module).length} Lessons
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                  <View className="px-5 pb-5">
-                     {lessons.filter(l => !l.module_id && !l.module).map((lesson, lIdx) => (
-                        <View key={lesson.id || lesson._id} className="bg-[#F8FAFC] rounded-3xl p-4 flex-row items-center justify-between mb-3">
-                           <View className="flex-row items-center flex-1">
-                             <View className="w-10 h-10 rounded-full bg-white items-center justify-center mr-3 border border-slate-100">
-                               <Text className="text-[10px] font-black text-slate-400">{String(lIdx + 1).padStart(2, '0')}</Text>
-                             </View>
-                             <View className="flex-1">
-                               <Text className="text-sm font-black text-slate-900">{lesson.title}</Text>
-                             </View>
-                           </View>
-                           <TouchableOpacity 
-                              onPress={() => navigation.navigate("TeacherEditLesson", { lesson, courseId })}
-                              className="w-8 h-8 rounded-full bg-blue-50 items-center justify-center"
-                           >
-                              <Edit3 size={14} color="#2563EB" />
-                           </TouchableOpacity>
+              {modules.map((module) => {
+                const moduleId = module.id || module._id;
+                const moduleLessons = lessons.filter(l => l.module_id === moduleId || l.module === moduleId);
+                const isExpanded = expandedModules[moduleId];
+
+                return (
+                  <View key={moduleId} className="bg-white rounded-[44px] overflow-hidden mb-6 shadow-2xl shadow-slate-900/[0.04] border border-white">
+                    <TouchableOpacity 
+                      activeOpacity={0.9}
+                      onPress={() => toggleModule(moduleId)}
+                      className={`p-8 flex-row items-center justify-between ${isExpanded ? 'bg-slate-50/50' : 'bg-white'}`}
+                    >
+                      <View className="flex-row items-center flex-1 pr-4">
+                        <View className="w-14 h-14 rounded-[20px] bg-slate-900 items-center justify-center mr-5 shadow-lg shadow-slate-200">
+                          <Layers size={24} color="white" />
                         </View>
-                     ))}
+                        <View className="flex-1">
+                          <Text className="text-xl font-black text-slate-900 tracking-tight">{module.title}</Text>
+                          <Text className="text-slate-400 text-[10px] font-black uppercase mt-1 tracking-widest">
+                             {moduleLessons.length} Modules • {module.duration || "Self-Paced"}
+                          </Text>
+                        </View>
+                      </View>
+                      <View className="w-10 h-10 rounded-full bg-white items-center justify-center shadow-sm border border-slate-50">
+                        {isExpanded ? <ChevronUp size={18} color="#64748B" /> : <ChevronDown size={18} color="#64748B" />}
+                      </View>
+                    </TouchableOpacity>
+
+                    {isExpanded && (
+                      <View className="px-8 pb-8 pt-4">
+                        <View className="gap-4">
+                          {moduleLessons.map((lesson, lIdx) => {
+                            const isUploading = lesson.status === "uploading" || lesson.isUploading;
+                            const videoLink = lesson.video_url || lesson.youtube_url || "";
+                            
+                            return (
+                              <View key={lesson.id || lesson._id} className="bg-white rounded-[32px] p-6 border border-slate-100 shadow-sm">
+                                <View className="flex-row items-start justify-between">
+                                  <View className="flex-row items-center flex-1 pr-4">
+                                    <View className="w-12 h-12 rounded-2xl bg-slate-50 items-center justify-center mr-4 border border-slate-100 shadow-sm">
+                                       <Text className="text-slate-400 font-black text-xs">{String(lIdx + 1).padStart(2, '0')}</Text>
+                                    </View>
+                                    <View className="flex-1">
+                                      <Text className="text-base font-black text-slate-900 tracking-tight" numberOfLines={1}>{lesson.title}</Text>
+                                      <View className="flex-row items-center mt-1">
+                                         <Clock size={12} color="#94A3B8" />
+                                         <Text className="text-slate-400 text-[10px] font-black uppercase ml-1 tracking-tight">{lesson.duration || "15:00"}</Text>
+                                         <View className="w-1 h-1 bg-slate-200 rounded-full mx-3" />
+                                         <LinkIcon size={12} color="#2563EB" />
+                                         <Text className="text-blue-600 text-[10px] font-black uppercase ml-1 tracking-tight">Video Linked</Text>
+                                      </View>
+                                    </View>
+                                  </View>
+                                  <TouchableOpacity 
+                                    onPress={() => navigation.navigate("TeacherEditLesson", { lesson, courseId })}
+                                    className="w-10 h-10 rounded-2xl bg-slate-50 items-center justify-center border border-slate-100 shadow-sm"
+                                  >
+                                    <Edit3 size={16} color="#64748B" />
+                                  </TouchableOpacity>
+                                </View>
+                              </View>
+                            );
+                          })}
+
+                          {/* Inline Lesson Publisher */}
+                          <View className="bg-slate-50/50 rounded-[40px] p-8 mt-6 border border-slate-100 border-dashed">
+                             <View className="flex-row items-center gap-4 mb-8">
+                                <View className="w-12 h-12 rounded-2xl bg-blue-600 items-center justify-center shadow-lg shadow-blue-200">
+                                   <Plus size={24} color="white" />
+                                </View>
+                                <View>
+                                   <Text className="text-lg font-black text-slate-900">Publish New Lesson</Text>
+                                   <Text className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Streamline Education</Text>
+                                </View>
+                             </View>
+
+                             <View className="gap-6">
+                                <View>
+                                   <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Lesson Title</Text>
+                                   <TextInput 
+                                     placeholder="e.g. Advanced State Management"
+                                     className="bg-white border border-slate-100 rounded-2xl px-6 py-4 text-slate-900 text-sm font-black shadow-sm"
+                                     placeholderTextColor="#CBD5E1"
+                                     value={newLessonTitle}
+                                     onChangeText={setNewLessonTitle}
+                                   />
+                                </View>
+
+                                <View className="flex-row justify-between gap-4">
+                                   <View className="flex-1">
+                                      <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Video Resource</Text>
+                                      <View className="bg-white border border-slate-100 rounded-2xl px-6 py-4 flex-row items-center shadow-sm">
+                                         <LinkIcon size={14} color="#94A3B8" />
+                                         <TextInput 
+                                           placeholder="URL"
+                                           className="flex-1 text-slate-900 text-xs font-black ml-3"
+                                           placeholderTextColor="#CBD5E1"
+                                           value={newLessonVideoUrl}
+                                           onChangeText={setNewLessonVideoUrl}
+                                         />
+                                      </View>
+                                   </View>
+                                   <View className="w-[35%]">
+                                      <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Length</Text>
+                                      <TextInput 
+                                        placeholder="MM:SS"
+                                        className="bg-white border border-slate-100 rounded-2xl px-4 py-4 text-slate-900 text-xs font-black text-center shadow-sm"
+                                        placeholderTextColor="#CBD5E1"
+                                        value={newLessonDuration}
+                                        onChangeText={setNewLessonDuration}
+                                      />
+                                   </View>
+                                </View>
+
+                                <TouchableOpacity 
+                                  activeOpacity={0.8}
+                                  onPress={() => handlePublishLesson(moduleId)}
+                                  disabled={isSubmitting}
+                                  className="overflow-hidden rounded-[24px] mt-2 shadow-xl shadow-blue-200"
+                                >
+                                   <LinearGradient
+                                     colors={['#2563EB', '#1D4ED8']}
+                                     className="py-5 flex-row items-center justify-center gap-3"
+                                   >
+                                      {isSubmitting ? (
+                                        <ActivityIndicator size="small" color="white" />
+                                      ) : (
+                                        <>
+                                           <Text className="text-white font-black text-xs uppercase tracking-widest">Publish Resource</Text>
+                                           <ArrowRight size={16} color="white" />
+                                        </>
+                                      )}
+                                   </LinearGradient>
+                                </TouchableOpacity>
+                             </View>
+                          </View>
+                        </View>
+                      </View>
+                    )}
                   </View>
-               </View>
-            )}
-            
-            {showModuleInput ? (
-               <View className="bg-white rounded-[32px] p-6 shadow-sm border border-slate-50 mt-4">
-                  <Text className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 ml-1">NEW MODULE TITLE</Text>
-                  <TextInput 
-                    placeholder="e.g. Intermediate Concepts"
-                    className="bg-slate-50 rounded-xl px-4 py-3 text-slate-900 text-sm mb-4"
-                    placeholderTextColor="#94A3B8"
-                    value={newModuleTitle}
-                    onChangeText={setNewModuleTitle}
-                    autoFocus
-                  />
-                  <View className="flex-row gap-3">
-                     <TouchableOpacity 
-                        className="flex-1 bg-blue-600 rounded-2xl py-3 items-center"
-                        onPress={handleAddModule}
-                        disabled={isAddingModule}
-                     >
-                        {isAddingModule ? <ActivityIndicator size="small" color="white" /> : <Text className="text-white font-black text-sm">Add Module</Text>}
-                     </TouchableOpacity>
-                     <TouchableOpacity 
-                        className="flex-1 bg-slate-100 rounded-2xl py-3 items-center"
-                        onPress={() => setShowModuleInput(false)}
-                     >
-                        <Text className="text-slate-500 font-black text-sm">Cancel</Text>
-                     </TouchableOpacity>
-                  </View>
-               </View>
-            ) : (
-               <TouchableOpacity 
-                  className="border border-slate-200 rounded-3xl py-4 items-center mt-4 flex-row justify-center bg-slate-50/50"
-                  onPress={() => setShowModuleInput(true)}
-               >
-                  <Plus size={18} color="#94A3B8" className="mr-2" />
-                  <Text className="text-slate-500 font-black text-sm">Add New Module Track</Text>
-               </TouchableOpacity>
-            )}
-          </View>
+                );
+              })}
+
+              {/* Module Creator */}
+              {showModuleInput ? (
+                <View className="bg-white rounded-[44px] p-8 shadow-2xl shadow-slate-900/[0.05] border border-white mt-4">
+                   <Text className="text-xl font-black text-slate-900 mb-6">Create New Module Track</Text>
+                   <View className="mb-8">
+                      <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Module Identity</Text>
+                      <TextInput 
+                        placeholder="e.g. Intermediate Algorithms"
+                        className="bg-slate-50 border border-slate-100 rounded-3xl px-6 py-5 text-slate-900 text-sm font-black"
+                        placeholderTextColor="#CBD5E1"
+                        value={newModuleTitle}
+                        onChangeText={setNewModuleTitle}
+                        autoFocus
+                      />
+                   </View>
+                   <View className="flex-row gap-4">
+                      <TouchableOpacity 
+                         activeOpacity={0.8}
+                         className="flex-1 overflow-hidden rounded-[24px]"
+                         onPress={handleAddModule}
+                         disabled={isAddingModule}
+                      >
+                         <LinearGradient colors={['#1E293B', '#0F172A']} className="py-5 items-center">
+                            {isAddingModule ? <ActivityIndicator size="small" color="white" /> : <Text className="text-white font-black text-xs uppercase tracking-widest">Confirm Module</Text>}
+                         </LinearGradient>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                         activeOpacity={0.8}
+                         className="flex-1 bg-slate-100 rounded-[24px] py-5 items-center"
+                         onPress={() => setShowModuleInput(false)}
+                      >
+                         <Text className="text-slate-500 font-black text-xs uppercase tracking-widest">Cancel</Text>
+                      </TouchableOpacity>
+                   </View>
+                </View>
+              ) : (
+                <TouchableOpacity 
+                   activeOpacity={0.9}
+                   onPress={() => setShowModuleInput(true)}
+                   className="bg-white rounded-[32px] p-8 items-center border border-dashed border-slate-200 mt-4 flex-row justify-center"
+                >
+                   <Plus size={20} color="#94A3B8" />
+                   <Text className="text-slate-400 font-black text-xs uppercase tracking-widest ml-3">Add New Curriculum Track</Text>
+                </TouchableOpacity>
+              )}
+           </View>
         </View>
       </ScrollView>
     </SafeAreaWrapper>

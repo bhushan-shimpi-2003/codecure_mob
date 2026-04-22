@@ -20,7 +20,12 @@ import {
     Image as ImageIcon,
     Lightbulb,
     ChevronRight,
-    ChevronLeft
+    ChevronLeft,
+    Sparkles,
+    Layers,
+    Play,
+    Video,
+    Paperclip
 } from "lucide-react-native";
 import { COLORS } from "../../utils/theme";
 import { Button } from "../../components/Button";
@@ -112,46 +117,51 @@ export default function DoubtsScreen({ route, navigation }: any) {
   };
 
   const renderDoubtCard = (doubt: any) => {
-    const isResolved = String(doubt.status).toLowerCase() === "resolved";
-    const courseTitle = doubt.courses?.title || doubt.course?.title || "General";
+    const isResolved = !!doubt.reply || String(doubt.status).toLowerCase() === "resolved";
+    const courseTitle = doubt.courses?.title || doubt.course?.title || "Project Track";
     
     return (
-        <View key={doubt.id} className="bg-white rounded-[40px] p-8 mb-6 border border-slate-100 shadow-2xl shadow-slate-900/[0.02]">
-            <View className="flex-row items-center justify-between mb-6">
-                <View className="bg-blue-50 px-4 py-1.5 rounded-full">
-                    <Text className="text-blue-600 text-[10px] font-black uppercase tracking-widest">{courseTitle}</Text>
+        <View key={doubt.id} className="bg-white rounded-[44px] p-8 mb-8 border border-white shadow-2xl shadow-slate-900/[0.04]">
+            <View className="flex-row items-center justify-between mb-8">
+                <View className="bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100">
+                    <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{courseTitle}</Text>
                 </View>
-                <View className={`flex-row items-center gap-2 ${isResolved ? "bg-emerald-50" : "bg-amber-50"} px-4 py-1.5 rounded-full`}>
-                    {isResolved ? <CheckCircle size={10} color="#059669" /> : <View className="w-2 h-2 rounded-full bg-amber-500" />}
+                <View className={`flex-row items-center gap-2 ${isResolved ? "bg-emerald-50 border-emerald-100" : "bg-amber-50 border-amber-100"} px-4 py-2 rounded-2xl border`}>
+                    {isResolved ? <CheckCircle2 size={12} color="#10B981" /> : <Clock size={12} color="#D97706" />}
                     <Text className={`text-[10px] font-black uppercase tracking-widest ${isResolved ? "text-emerald-600" : "text-amber-600"}`}>
-                        {isResolved ? "Resolved" : "Pending"}
+                        {isResolved ? "Resolved" : "Awaiting"}
                     </Text>
                 </View>
             </View>
 
-            <Text className="text-xl font-black text-slate-900 mb-4 leading-7">{doubt.subject}</Text>
-            <Text className="text-slate-500 text-sm leading-6 mb-8">{doubt.description}</Text>
+            <Text className="text-2xl font-black text-slate-900 mb-2 leading-tight tracking-tight">{doubt.subject || "Question"}</Text>
+            <Text className="text-slate-400 text-base font-bold leading-6 mb-8">{doubt.description}</Text>
 
             {doubt.reply ? (
-                <View className="bg-slate-50 rounded-[34px] p-6 border border-slate-50 relative">
-                    <View className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-600 rounded-l-full" />
-                    <View className="flex-row items-center gap-3 mb-4">
-                        <View className="w-10 h-10 rounded-full bg-blue-100 items-center justify-center border-2 border-white shadow-sm overflow-hidden">
-                            <Image source={{ uri: "https://i.pravatar.cc/100?u=mentor" }} className="w-full h-full" />
+                <View className="bg-slate-900 rounded-[36px] p-8 relative overflow-hidden">
+                    <View className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full -mr-12 -mt-12" />
+                    <View className="flex-row items-center gap-4 mb-6">
+                        <View className="w-12 h-12 rounded-2xl bg-white/10 items-center justify-center border border-white/10">
+                            <Image source={{ uri: "https://i.pravatar.cc/100?u=mentor" }} className="w-full h-full rounded-2xl" />
                         </View>
                         <View>
-                            <Text className="text-slate-900 font-black text-xs uppercase tracking-widest">Mentor Response</Text>
-                            <Text className="text-slate-400 text-[10px] font-bold">12:30 PM Yesterday</Text>
+                            <Text className="text-white font-black text-xs uppercase tracking-widest">Mentor Response</Text>
+                            <Text className="text-slate-400 text-[10px] font-bold uppercase">Technical Expert</Text>
                         </View>
                     </View>
-                    <Text className="text-slate-600 italic leading-6 text-sm">
+                    <Text className="text-slate-300 italic leading-6 text-sm font-medium">
                         "{doubt.reply}"
                     </Text>
                 </View>
             ) : (
-                <View className="flex-row items-center gap-2 mt-2">
-                    <Clock size={14} color={COLORS.slate400} />
-                    <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Awaiting Instructor</Text>
+                <View className="flex-row items-center gap-3 mt-2 pt-6 border-t border-slate-50">
+                    <View className="w-10 h-10 bg-slate-50 rounded-xl items-center justify-center">
+                       <Clock size={16} color="#94A3B8" />
+                    </View>
+                    <View>
+                       <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status Update</Text>
+                       <Text className="text-slate-500 text-xs font-black uppercase tracking-wider">Awaiting Instructor Review</Text>
+                    </View>
                 </View>
             )}
         </View>
@@ -160,38 +170,45 @@ export default function DoubtsScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaWrapper bgWhite>
-      <AppHeader navigation={navigation} showMenu role={user?.role} subtitle="Support Desk" />
+      <AppHeader navigation={navigation} role={user?.role} />
 
       <ScrollView 
         className="flex-1 bg-[#F8FAFC]"
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#2563EB" />}
       >
         <View style={{ width: "100%", maxWidth: shellMaxWidth, alignSelf: "center" }}>
             
-            <View className="px-6 pt-10 pb-8">
-                <Text className="text-blue-600 text-[10px] font-black uppercase tracking-[3px] mb-2">Learning Support</Text>
-                <Text className="text-4xl font-black text-slate-900 mb-4">Your <Text className="text-blue-600">Doubts</Text> </Text>
-                <Text className="text-slate-400 font-bold text-sm leading-6">
-                    Track your inquiries and teacher responses as you master the curriculum.
+            <View className="px-6 pt-10 pb-12">
+                <View className="flex-row items-center gap-2 mb-3">
+                  <View className="bg-blue-100 px-3 py-1 rounded-full">
+                    <Text className="text-blue-700 text-[10px] font-black uppercase tracking-widest">Scholar Support</Text>
+                  </View>
+                  <Sparkles size={14} color="#3B82F6" />
+                </View>
+                <Text className="text-[40px] font-black text-slate-900 leading-[44px] tracking-tight">
+                    Your <Text className="text-blue-600">Doubts</Text>
+                </Text>
+                <Text className="text-slate-400 font-bold text-base mt-4 leading-6 max-w-[90%]">
+                    Unblock your logical hurdles with direct access to industry veterans.
                 </Text>
             </View>
 
-            <View className="px-6 pb-24">
+            <View className="px-6 pb-32">
                 {isLoading ? (
                     <View className="gap-8">
-                        <Skeleton height={240} className="rounded-[40px]" />
-                        <Skeleton height={200} className="rounded-[40px]" />
+                        <Skeleton height={280} className="rounded-[48px]" />
+                        <Skeleton height={280} className="rounded-[48px]" />
                     </View>
                 ) : doubts.length > 0 ? (
                     doubts.map(doubt => renderDoubtCard(doubt))
                 ) : (
-                    <View className="items-center py-20 bg-white rounded-[44px] border border-slate-100 border-dashed mx-2">
-                        <View className="w-20 h-20 bg-slate-50 rounded-full items-center justify-center mb-6">
-                            <HelpCircle size={32} color={COLORS.slate300} />
+                    <View className="items-center py-24 bg-white rounded-[56px] border border-dashed border-slate-200 mx-2">
+                        <View className="w-24 h-24 bg-slate-50 rounded-full items-center justify-center mb-8">
+                            <HelpCircle size={40} color="#CBD5E1" />
                         </View>
-                        <Text className="text-slate-900 font-black text-xl mb-2">No doubts yet</Text>
-                        <Text className="text-slate-400 text-center px-10 leading-6">When you have a question about a lesson, it will appear here.</Text>
+                        <Text className="text-slate-400 font-black text-xl tracking-tight">Clear horizon</Text>
+                        <Text className="text-slate-300 text-[10px] mt-2 font-black uppercase tracking-[2px]">No active inquiries found</Text>
                     </View>
                 )}
             </View>
@@ -200,94 +217,99 @@ export default function DoubtsScreen({ route, navigation }: any) {
 
       <TouchableOpacity 
         onPress={() => setModalVisible(true)}
-        className="absolute bottom-24 right-6 w-16 h-16 bg-blue-600 rounded-2xl items-center justify-center shadow-2xl shadow-blue-900/50"
+        activeOpacity={0.9}
+        className="absolute bottom-24 right-8 w-20 h-20 bg-slate-900 rounded-[28px] items-center justify-center shadow-2xl shadow-slate-900/40"
       >
-        <Plus size={32} color="white" />
+        <Plus size={36} color="white" />
       </TouchableOpacity>
 
       {/* Ask Doubt Modal Overhaul */}
       <Modal visible={modalVisible} animationType="slide" presentationStyle="fullScreen">
         <SafeAreaWrapper bgWhite>
             <View className="flex-row items-center justify-between px-6 py-4">
-                <TouchableOpacity onPress={() => setModalVisible(false)}>
-                    <ChevronLeft size={24} color={COLORS.primary} strokeWidth={2.5} />
+                <TouchableOpacity onPress={() => setModalVisible(false)} className="w-12 h-12 rounded-2xl bg-slate-50 items-center justify-center border border-slate-100">
+                    <ChevronLeft size={24} color="#0F172A" strokeWidth={2.5} />
                 </TouchableOpacity>
-                <Text className="text-lg font-black text-slate-900">CodeCure Academy</Text>
-                <View className="w-10 h-10 rounded-full bg-slate-900 items-center justify-center">
-                    <Text className="text-white font-black text-xs">{(user?.name || "U")[0]}</Text>
-                </View>
+                <Text className="text-lg font-black text-slate-900">Inquiry Console</Text>
+                <View className="w-12 h-12" />
             </View>
 
-            <ScrollView className="flex-1 px-8 pt-6" showsVerticalScrollIndicator={false}>
-                <View className="mb-10">
-                    <View className="bg-blue-100/50 px-4 py-1.5 rounded-full self-start mb-4">
-                        <Text className="text-blue-600 text-[10px] font-black uppercase tracking-[2px]">Support Desk</Text>
+            <ScrollView className="flex-1 bg-[#F8FAFC]" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+                <View className="px-8 pt-10 mb-10">
+                    <View className="bg-blue-600 self-start px-4 py-1.5 rounded-full mb-6 shadow-lg shadow-blue-200">
+                        <Text className="text-white text-[10px] font-black uppercase tracking-widest">Knowledge Bridge</Text>
                     </View>
-                    <Text className="text-[34px] font-black text-slate-900 mb-4 leading-tight">Need some clarity?</Text>
-                    <Text className="text-slate-500 font-bold text-base leading-6">
-                        Describe your challenge and our mentors will help you debug it.
+                    <Text className="text-[34px] font-black text-slate-900 mb-4 leading-tight tracking-tight">Need some clarity?</Text>
+                    <Text className="text-slate-400 font-bold text-base leading-6">
+                        Describe your technical hurdle and our mentors will help you debug the logic.
                     </Text>
                 </View>
 
                 {/* Form Card */}
-                <View className="bg-white rounded-[44px] p-8 border border-slate-100 shadow-2xl shadow-slate-900/[0.04] mb-8">
-                    <View className="mb-8">
-                        <Text className="text-slate-900 font-black text-sm mb-4">Related Lesson</Text>
+                <View className="mx-6 bg-white rounded-[48px] p-10 border border-white shadow-2xl shadow-slate-900/[0.04] mb-10">
+                    <View className="mb-10">
+                        <Text className="text-slate-900 font-black text-sm mb-4">Contextual Lesson</Text>
                         <TouchableOpacity className="bg-slate-50 h-16 rounded-2xl px-6 flex-row items-center justify-between border border-slate-100">
-                            <Text className="text-slate-400 font-bold">Select the lesson you're working on</Text>
-                            <ChevronDown size={20} color={COLORS.slate400} />
+                            <Text className="text-slate-400 font-black text-xs">Select related curriculum track</Text>
+                            <ChevronDown size={20} color="#94A3B8" />
                         </TouchableOpacity>
                     </View>
 
-                    <View className="mb-8">
-                        <Text className="text-slate-900 font-black text-sm mb-4">Your Question</Text>
+                    <View className="mb-10">
+                        <Text className="text-slate-900 font-black text-sm mb-4">Your Technical Query</Text>
                         <Input 
-                            placeholder="What specific part are you struggling with? Paste error messages if any..."
+                            placeholder="Describe the logic issue or paste the console error..."
                             value={description}
                             onChangeText={setDescription}
                             multiline
                             numberOfLines={8}
-                            containerClassName="h-56 rounded-[34px] bg-slate-50 border-0 p-6"
-                            inputClassName="h-full text-sm leading-6"
+                            containerClassName="h-60 rounded-[32px] bg-slate-50 border-0 p-8"
+                            inputClassName="h-full text-sm font-black text-slate-900 leading-6"
                         />
                     </View>
 
-                    <View className="mb-10">
-                        <Text className="text-slate-900 font-black text-sm mb-4">Supporting Visuals</Text>
-                        <TouchableOpacity className="border-2 border-slate-200 border-dashed rounded-[34px] py-10 items-center justify-center">
-                            <View className="w-12 h-12 bg-blue-100 rounded-2xl items-center justify-center mb-4">
-                                <ImageIcon size={24} color={COLORS.primary} />
+                    <View className="mb-12">
+                        <Text className="text-slate-900 font-black text-sm mb-4">Evidence (Screenshots)</Text>
+                        <TouchableOpacity className="border-2 border-slate-100 border-dashed rounded-[32px] py-12 items-center justify-center">
+                            <View className="w-16 h-16 bg-blue-50 rounded-2xl items-center justify-center mb-4">
+                                <ImageIcon size={28} color="#2563EB" />
                             </View>
-                            <Text className="text-slate-900 font-black text-sm mb-1">Upload Screenshot</Text>
-                            <Text className="text-slate-400 text-[10px] font-bold">PNG, JPG or GIF up to 5MB</Text>
+                            <Text className="text-slate-900 font-black text-sm mb-1">Attach Source Image</Text>
+                            <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Max resolution: 4K</Text>
                         </TouchableOpacity>
                     </View>
 
                     <TouchableOpacity 
                         onPress={handleCreateDoubt}
                         disabled={isSubmitting || !description}
-                        className="bg-blue-600 py-6 rounded-[30px] flex-row items-center justify-center shadow-xl shadow-blue-900/30 active:opacity-90"
+                        activeOpacity={0.8}
+                        className="w-full"
                     >
-                        {isSubmitting ? (
-                            <ActivityIndicator color="white" />
-                        ) : (
-                            <View className="flex-row items-center">
-                                <Text className="text-white font-black text-base uppercase tracking-widest mr-3">Send Your Doubt</Text>
-                                <Send size={20} color="white" />
-                            </View>
-                        )}
+                       <LinearGradient
+                          colors={description ? ['#1E293B', '#0F172A'] : ['#F1F5F9', '#E2E8F0']}
+                          className="py-6 rounded-[28px] flex-row items-center justify-center gap-3"
+                       >
+                          {isSubmitting ? (
+                              <ActivityIndicator color="white" />
+                          ) : (
+                              <>
+                                  <Text className={`font-black text-sm uppercase tracking-widest ${description ? 'text-white' : 'text-slate-400'}`}>Dispatch Inquiry</Text>
+                                  <Send size={18} color={description ? "white" : "#94A3B8"} />
+                              </>
+                          )}
+                       </LinearGradient>
                     </TouchableOpacity>
                 </View>
 
                 {/* Quick Tip Banner */}
-                <View className="bg-slate-50 rounded-[34px] p-8 flex-row items-center gap-6 mb-12 border border-slate-100">
-                    <View className="w-14 h-14 bg-blue-100 rounded-full items-center justify-center">
-                        <Lightbulb size={28} color={COLORS.primary} />
+                <View className="mx-6 bg-slate-900 rounded-[44px] p-10 flex-row items-center gap-8 mb-12 border border-slate-800">
+                    <View className="w-16 h-16 bg-white/10 rounded-full items-center justify-center border border-white/10">
+                        <Lightbulb size={32} color="#3B82F6" />
                     </View>
                     <View className="flex-1">
-                        <Text className="text-slate-900 font-black text-base mb-1">Quick Tip</Text>
-                        <Text className="text-slate-500 text-xs leading-5 font-bold">
-                            Providing a clear screenshot of your code and the console error helps our mentors respond up to 2x faster.
+                        <Text className="text-white font-black text-lg mb-2">Architect Tip</Text>
+                        <Text className="text-slate-400 text-xs leading-5 font-bold">
+                            Providing a clear screenshot of your console errors helps our mentors respond up to 2x faster.
                         </Text>
                     </View>
                 </View>

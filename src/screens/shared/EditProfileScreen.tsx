@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Image, useWindowDimensions, Alert, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Image, useWindowDimensions, Alert, ActivityIndicator, Platform } from "react-native";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
 import { useAuth } from "../../context/AuthContext";
 import { authApi, notificationsApi } from "../../api/endpoints";
@@ -9,13 +9,7 @@ import { Input } from "../../components/Input";
 import { extractApiData, getApiError, isApiSuccess } from "../../api/response";
 import { AppHeader } from "../../components/AppHeader";
 import { LinearGradient } from "expo-linear-gradient";
-/*
-import { 
-  requestMediaLibraryPermissionsAsync, 
-  launchImageLibraryAsync, 
-  MediaTypeOptions 
-} from 'expo-image-picker';
-*/
+import * as ImagePicker from 'expo-image-picker';
 
 export default function EditProfileScreen({ navigation }: any) {
   const { width } = useWindowDimensions();
@@ -38,26 +32,28 @@ export default function EditProfileScreen({ navigation }: any) {
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   const handlePickImage = async () => {
-    /*
-    const { status } = await requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission Denied', 'We need access to your photos to update your profile picture.');
-      return;
-    }
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'We need access to your photos to update your profile picture.');
+        return;
+      }
 
-    const result = await launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.5,
-    });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
 
-    if (!result.canceled && result.assets && result.assets[0]) {
-      const selectedImage = result.assets[0];
-      handleUploadImage(selectedImage.uri);
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const selectedImage = result.assets[0];
+        handleUploadImage(selectedImage.uri);
+      }
+    } catch (e) {
+      console.log("ImagePicker Error:", e);
+      Alert.alert("Error", "Failed to open image picker. If you are on web, please ensure your browser supports this feature.");
     }
-    */
-    Alert.alert("Notice", "Image picker is temporarily disabled for maintenance.");
   };
 
   const handleUploadImage = async (uri: string) => {
@@ -68,18 +64,30 @@ export default function EditProfileScreen({ navigation }: any) {
       const match = /\.(\w+)$/.exec(filename);
       const type = match ? `image/${match[1]}` : `image/jpg`;
 
-      // @ts-ignore
-      formData.append('avatar', { uri, name: filename, type });
+      // For web compatibility, we might need a different approach for FormData
+      if (Platform.OS === 'web') {
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        formData.append('avatar', blob, filename);
+      } else {
+        // @ts-ignore
+        formData.append('avatar', { uri, name: filename, type });
+      }
 
       const res = await authApi.updateAvatar(formData);
       if (isApiSuccess(res.data)) {
         const data = extractApiData<any>(res.data, {});
-        updateUser({ ...user!, profile_picture: data.profile_picture || data.avatar });
+        const profilePicture = data.profile_picture || data.avatar;
+        
+        if (user) {
+          updateUser({ ...user, profile_picture: profilePicture });
+        }
         Alert.alert("Success", "Profile picture updated successfully.");
       } else {
         Alert.alert("Upload Failed", getApiError(res.data));
       }
     } catch (e) {
+      console.log("Upload Error:", e);
       Alert.alert("Error", "Failed to upload image.");
     } finally {
       setIsUploading(false);
@@ -187,25 +195,29 @@ export default function EditProfileScreen({ navigation }: any) {
             <View className="bg-white rounded-[44px] p-10 items-center border border-white shadow-2xl shadow-slate-900/[0.04] mb-10 overflow-hidden">
                 <View className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 rounded-full -mr-16 -mt-16" />
                 <View className="relative">
-                    <View className="w-32 h-32 rounded-full border-4 border-slate-50 overflow-hidden shadow-xl shadow-blue-900/10">
+                    <View className="w-32 h-32 rounded-full border-4 border-slate-50 overflow-hidden shadow-xl shadow-blue-900/10 bg-slate-50">
                         {isUploading ? (
                           <View className="w-full h-full items-center justify-center bg-slate-50">
                              <ActivityIndicator color={COLORS.primary} />
                           </View>
                         ) : (
-                          <Image source={{ uri: user?.profile_picture || "https://i.pravatar.cc/300?u=alex" }} className="w-full h-full" />
+                          <Image 
+                            source={{ uri: user?.profile_picture || "https://ui-avatars.com/api/?name=" + (user?.name || "User") + "&background=random" }} 
+                            className="w-full h-full" 
+                          />
                         )}
                     </View>
                     <TouchableOpacity 
                         onPress={handlePickImage}
                         disabled={isUploading}
+                        activeOpacity={0.8}
                         className="absolute bottom-0 right-0 w-11 h-11 bg-blue-600 rounded-full border-4 border-white items-center justify-center shadow-lg"
                     >
                         <Camera size={16} color="white" />
                     </TouchableOpacity>
                 </View>
                 <Text className="text-slate-400 text-[10px] font-black uppercase tracking-[3px] mt-6">Profile Photo</Text>
-                <Text className="text-slate-900 font-black text-sm mt-1 uppercase">Student ID: #CC-{user?.id?.substring(0,6) || "8821"}</Text>
+                <Text className="text-slate-900 font-black text-sm mt-1 uppercase">ID: #CC-{user?.id?.substring(0,6) || "8821"}</Text>
             </View>
 
             {/* Basic Info Section */}
