@@ -52,7 +52,7 @@ export default function EditProfileScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper bgWhite>
-      <AppHeader showBack role={user?.role} subtitle="Identity Management" />
+      <AppHeader navigation={navigation} showBack role={user?.role} subtitle="Identity Management" />
       
       <ScrollView 
         className="flex-1 bg-[#F8FAFC]" 

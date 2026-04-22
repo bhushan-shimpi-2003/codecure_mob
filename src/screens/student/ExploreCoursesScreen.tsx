@@ -131,7 +131,7 @@ export default function ExploreCoursesScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper bgWhite>
-      <AppHeader role={user?.role} subtitle="Catalog" />
+      <AppHeader navigation={navigation} role={user?.role} subtitle="Catalog" />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: isTablet ? 34 : 24 }}

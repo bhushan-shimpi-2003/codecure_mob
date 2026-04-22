@@ -261,11 +261,11 @@ export default function LessonScreen({ route, navigation }: any) {
     }
   };
 
-  if (isLoading) return <SafeAreaWrapper><AppHeader showBack /><Skeleton height={250} /><View className="p-6"><Skeleton height={30} width="60%" className="mb-4"/><Skeleton height={150}/></View></SafeAreaWrapper>;
+  if (isLoading) return <SafeAreaWrapper><AppHeader navigation={navigation} showBack /><Skeleton height={250} /><View className="p-6"><Skeleton height={30} width="60%" className="mb-4"/><Skeleton height={150}/></View></SafeAreaWrapper>;
 
   return (
     <SafeAreaWrapper bgWhite>
-      <AppHeader showBack role={user?.role} subtitle="Active Lesson" />
+      <AppHeader navigation={navigation} showBack role={user?.role} subtitle="Active Lesson" />
       
       <ScrollView className="bg-[#F8FAFC]" showsVerticalScrollIndicator={false}>
         {/* Premium Video Player Container */}

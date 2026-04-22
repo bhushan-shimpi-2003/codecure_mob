@@ -101,7 +101,7 @@ export default function TeacherJobsScreen() {
 
   return (
     <SafeAreaWrapper>
-      <AppHeader role="Teacher" />
+      <AppHeader navigation={navigation} role="Teacher" />
       <ScrollView className="flex-1 bg-[#F8FAFC]" contentContainerStyle={{ paddingBottom: 60 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchJobs(); }} />}>
         <View className="px-6 pt-6">
           <View className="flex-row items-center justify-between mb-2">

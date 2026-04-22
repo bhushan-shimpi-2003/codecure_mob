@@ -44,7 +44,7 @@ export default function TeacherCoursesScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper>
-      <AppHeader role="Teacher" />
+      <AppHeader navigation={navigation} role="Teacher" />
       <ScrollView className="flex-1 bg-[#F8FAFC]" contentContainerStyle={{ paddingBottom: 40 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchCourses(); }} />}>
         <View className="px-6 pt-6">
           <View className="flex-row items-center justify-between mb-2">

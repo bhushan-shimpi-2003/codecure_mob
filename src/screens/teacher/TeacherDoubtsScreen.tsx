@@ -87,7 +87,7 @@ export default function TeacherDoubtsScreen() {
   if (isLoading) {
     return (
       <SafeAreaWrapper>
-        <AppHeader role="Teacher" />
+        <AppHeader navigation={navigation} role="Teacher" />
         <View className="flex-1 items-center justify-center bg-[#F8FAFC]">
           <ActivityIndicator size="large" color="#2563EB" />
           <Text className="text-slate-400 font-bold mt-4">Loading Queries...</Text>
@@ -98,7 +98,7 @@ export default function TeacherDoubtsScreen() {
 
   return (
     <SafeAreaWrapper>
-      <AppHeader role="Teacher" />
+      <AppHeader navigation={navigation} role="Teacher" />
       <ScrollView 
         className="flex-1 bg-[#F8FAFC]" 
         contentContainerStyle={{ paddingBottom: 60 }}

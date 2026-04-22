@@ -72,7 +72,7 @@ export default function TeacherCreateLessonScreen({ navigation, route }: any) {
 
   return (
     <SafeAreaWrapper>
-      <AppHeader role="Teacher" />
+      <AppHeader navigation={navigation} role="Teacher" />
       <ScrollView className="flex-1 bg-[#F8FAFC]" contentContainerStyle={{ paddingBottom: 40 }}>
         <View className="px-6 pt-6">
           <View className="flex-row items-center mb-6">

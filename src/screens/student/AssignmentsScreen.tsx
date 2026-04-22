@@ -129,7 +129,7 @@ export default function AssignmentsScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper bgWhite>
-      <AppHeader showMenu role={user?.role} subtitle="Student Hub" />
+      <AppHeader navigation={navigation} showMenu role={user?.role} subtitle="Student Hub" />
 
       <ScrollView 
         className="flex-1 bg-[#F8FAFC]"

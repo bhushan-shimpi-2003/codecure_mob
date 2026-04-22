@@ -152,7 +152,7 @@ export default function DoubtsScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaWrapper bgWhite>
-      <AppHeader showMenu role={user?.role} subtitle="Support Desk" />
+      <AppHeader navigation={navigation} showMenu role={user?.role} subtitle="Support Desk" />
 
       <ScrollView 
         className="flex-1 bg-[#F8FAFC]"

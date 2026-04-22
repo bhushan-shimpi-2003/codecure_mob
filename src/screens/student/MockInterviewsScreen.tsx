@@ -89,7 +89,7 @@ export default function MockInterviewsScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper bgWhite>
-      <AppHeader role={user?.role} subtitle="Preparation Center" />
+      <AppHeader navigation={navigation} role={user?.role} subtitle="Preparation Center" />
 
       <ScrollView 
         className="flex-1 bg-[#F8FAFC]"

@@ -144,7 +144,7 @@ export default function CoursesScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper bgWhite>
-      <AppHeader role={user?.role} subtitle="My Library" />
+      <AppHeader navigation={navigation} role={user?.role} subtitle="My Library" />
 
       <ScrollView className="flex-1 bg-[#F8FAFC]" showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <View style={{ width: "100%", maxWidth: shellMaxWidth, alignSelf: "center" }}>

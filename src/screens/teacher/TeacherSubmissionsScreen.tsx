@@ -53,7 +53,7 @@ export default function TeacherSubmissionsScreen({ navigation, route }: any) {
 
   return (
     <SafeAreaWrapper>
-      <AppHeader role="Teacher" />
+      <AppHeader navigation={navigation} role="Teacher" />
       <ScrollView
         className="flex-1 bg-[#F8FAFC]"
         contentContainerStyle={{ paddingBottom: 40 }}

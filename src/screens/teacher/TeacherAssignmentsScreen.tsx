@@ -127,7 +127,7 @@ export default function TeacherAssignmentsScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper>
-      <AppHeader role="Teacher" />
+      <AppHeader navigation={navigation} role="Teacher" />
       <ScrollView
         className="flex-1 bg-[#F8FAFC]"
         contentContainerStyle={{ paddingBottom: 40 }}

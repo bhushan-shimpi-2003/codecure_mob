@@ -275,7 +275,7 @@ export default function DashboardScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper bgWhite>
-      <AppHeader role={user?.role} subtitle="Learning Dashboard" />
+      <AppHeader navigation={navigation} role={user?.role} subtitle="Learning Dashboard" />
 
       <ScrollView 
         className="flex-1 bg-[#F8FAFC]"

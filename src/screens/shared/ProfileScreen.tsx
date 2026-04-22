@@ -97,7 +97,7 @@ export default function ProfileScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper bgWhite>
-      <AppHeader role={user?.role} subtitle="Account Center" />
+      <AppHeader navigation={navigation} role={user?.role} subtitle="Account Center" />
 
       <ScrollView 
         className="flex-1 bg-[#F8FAFC]" 

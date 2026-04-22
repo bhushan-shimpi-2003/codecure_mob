@@ -167,7 +167,7 @@ export default function CourseDetailScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaWrapper bgWhite>
-      <AppHeader showBack role={user?.role} subtitle="Course Overview" />
+      <AppHeader navigation={navigation} showBack role={user?.role} subtitle="Course Overview" />
       <ScrollView className="bg-[#F8FAFC]">
         {/* Dark Hero Card */}
         <View className="px-5 pt-5 pb-8">

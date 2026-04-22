@@ -2,7 +2,6 @@ import React from "react";
 import { View, Text, TouchableOpacity, Image, useWindowDimensions } from "react-native";
 import { GraduationCap, ChevronLeft, Menu, User, Bell } from "lucide-react-native";
 import { COLORS } from "../utils/theme";
-import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
 import { Alert } from "react-native";
 import { LogOut } from "lucide-react-native";
@@ -19,28 +18,7 @@ interface AppHeaderProps {
   navigation?: any;
 }
 
-function AppHeaderInternal(props: AppHeaderProps) {
-  let navigation;
-  try {
-    const hookNavigation = useNavigation<any>();
-    navigation = props.navigation || hookNavigation;
-  } catch (e) {
-    navigation = props.navigation;
-  }
-
-  return <AppHeaderContent {...props} navigation={navigation} />;
-}
-
-export function AppHeader(props: AppHeaderProps) {
-  // If navigation is passed as a prop, we can skip the hook to avoid context errors
-  if (props.navigation) {
-    return <AppHeaderContent {...props} />;
-  }
-  
-  return <AppHeaderInternal {...props} />;
-}
-
-function AppHeaderContent({ 
+export function AppHeader({ 
     title = "CodeCure", 
     subtitle, 
     showBack = false, 

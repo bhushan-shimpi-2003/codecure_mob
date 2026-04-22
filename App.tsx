@@ -3,17 +3,17 @@ import React from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from "./src/context/AuthContext";
 import { NavigationContainer } from "@react-navigation/native";
-import RootNavigator from "./src/navigation/RootNavigator";
+import AppNavigator from "./src/navigation/AppNavigator";
 
 export default function App() {
-  console.log("App Rendering - NavigationContainer initialized within providers");
+  console.log("App Rendering - NavigationContainer should be parent of all");
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <NavigationContainer>
-          <RootNavigator />
-        </NavigationContainer>
-      </AuthProvider>
+      <NavigationContainer>
+        <AuthProvider>
+          <AppNavigator />
+        </AuthProvider>
+      </NavigationContainer>
     </SafeAreaProvider>
   );
 }

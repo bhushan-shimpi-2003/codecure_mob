@@ -119,7 +119,7 @@ export default function TeacherInterviewsScreen({ navigation }: any) {
   if (isLoading) {
     return (
       <SafeAreaWrapper>
-        <AppHeader role="Teacher" />
+        <AppHeader navigation={navigation} role="Teacher" />
         <View className="flex-1 items-center justify-center bg-[#F8FAFC]">
           <ActivityIndicator size="large" color="#2563EB" />
           <Text className="text-slate-400 font-bold mt-4">Initializing Hub...</Text>
@@ -130,7 +130,7 @@ export default function TeacherInterviewsScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper>
-      <AppHeader role="Teacher" />
+      <AppHeader navigation={navigation} role="Teacher" />
       <ScrollView className="flex-1 bg-[#F8FAFC]" contentContainerStyle={{ paddingBottom: 40 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchInitialData(); }} />}>
         <View className="px-6 pt-6">
           <View className="flex-row items-center justify-between mb-2">
