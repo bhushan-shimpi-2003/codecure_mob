@@ -89,9 +89,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
     // Register the global 401 logout listener for the axios interceptor
     setLogoutListener(async () => {
-      await AsyncStorage.removeItem("auth_token");
+      // Set React state FIRST for immediate UI transition
       setToken(null);
       setUser(null);
+      // Then clean up storage
+      AsyncStorage.removeItem("auth_token").catch(() => {});
     });
   }, []);
 
@@ -103,9 +105,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const logout = async () => {
-    await AsyncStorage.removeItem("auth_token");
+    // Set React state FIRST for immediate UI transition
     setToken(null);
     setUser(null);
+    // Then clean up persistent storage (non-blocking)
+    try {
+      await AsyncStorage.removeItem("auth_token");
+    } catch (e) {
+      // Storage cleanup failed but UI already transitioned
+    }
   };
 
   const updateUser = (userData: User) => setUser(normalizeUser(userData));

@@ -6,8 +6,6 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   LayoutAnimation,
-  Platform,
-  UIManager,
   TextInput,
   ActivityIndicator,
   Alert,
@@ -33,11 +31,6 @@ import {
 import { coursesApi, lessonsApi } from "../../api/endpoints";
 import { extractApiData, isApiSuccess } from "../../api/response";
 
-if (Platform.OS === "android") {
-  if (UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-  }
-}
 
 export default function TeacherManageLessonsScreen({ navigation, route }: any) {
   const { courseId, courseTitle: initialTitle } = route.params || {};
@@ -167,7 +160,7 @@ export default function TeacherManageLessonsScreen({ navigation, route }: any) {
   if (isLoading) {
     return (
       <SafeAreaWrapper>
-        <AppHeader role="Teacher" />
+        <AppHeader role="Teacher" navigation={navigation} />
         <View className="flex-1 items-center justify-center bg-[#F8FAFC]">
           <ActivityIndicator size="large" color="#2563EB" />
           <Text className="mt-4 text-slate-500 font-bold">Loading curriculum...</Text>
@@ -185,7 +178,7 @@ export default function TeacherManageLessonsScreen({ navigation, route }: any) {
 
   return (
     <SafeAreaWrapper>
-      <AppHeader role="Teacher" />
+      <AppHeader role="Teacher" navigation={navigation} />
       <ScrollView className="flex-1 bg-[#F8FAFC]" contentContainerStyle={{ paddingBottom: 40 }}>
         <View className="px-6 pt-6">
           <Text className="text-[10px] font-black text-blue-600 uppercase tracking-[2px] mb-1">

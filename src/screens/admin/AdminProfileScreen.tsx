@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, ScrollView, TouchableOpacity, Image, Alert } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Image, Alert, Pressable, ActivityIndicator } from "react-native";
 import { useAuth } from "../../context/AuthContext";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
 import { User, Settings, ShieldCheck, LogOut, ChevronRight, Mail, Phone } from "lucide-react-native";
@@ -18,22 +18,12 @@ export default function AdminProfileScreen({ navigation }: any) {
         (user?.email ? String(user.email).split("@")[0] : "Admin")
     ) || "Admin";
 
-  const handleLogout = () => {
-    Alert.alert("Logout", "Are you sure you want to log out?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Logout",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await authApi.logout();
-            await logout();
-          } catch (e) {
-            await logout();
-          }
-        },
-      },
-    ]);
+  const [loggingOut, setLoggingOut] = React.useState(false);
+
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    await logout();
   };
 
   const menuItems = [
@@ -44,7 +34,7 @@ export default function AdminProfileScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper>
-      <AppHeader role={user?.role} subtitle="Admin center" />
+      <AppHeader role={user?.role} subtitle="Admin center" navigation={navigation} />
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 24, paddingTop: 16, paddingBottom: 24 }}>
         <View className="mb-4">
           <Text className="text-sm font-black text-blue-600 uppercase tracking-widest mb-1">Admin Panel</Text>
@@ -119,13 +109,30 @@ export default function AdminProfileScreen({ navigation }: any) {
           ))}
         </View>
 
-        <TouchableOpacity
+        <Pressable
           onPress={handleLogout}
-          className="flex-row items-center justify-center p-4 rounded-3xl bg-red-50 border border-red-100"
+          disabled={loggingOut}
+          style={({ pressed }) => ({
+            opacity: pressed || loggingOut ? 0.5 : 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+            borderRadius: 24,
+            backgroundColor: '#FEF2F2',
+            borderWidth: 1,
+            borderColor: '#FEE2E2',
+          })}
         >
-          <LogOut size={20} color={COLORS.error} className="mr-2" />
-          <Text className="text-red-500 font-bold text-base">Log Out</Text>
-        </TouchableOpacity>
+          {loggingOut ? (
+            <ActivityIndicator size="small" color="#EF4444" />
+          ) : (
+            <>
+              <LogOut size={20} color={COLORS.error} className="mr-2" />
+              <Text className="text-red-500 font-bold text-base">Log Out</Text>
+            </>
+          )}
+        </Pressable>
 
         <Text className="text-center text-slate-400 text-xs mt-8">CodeCure Academy v1.0.0</Text>
       </ScrollView>

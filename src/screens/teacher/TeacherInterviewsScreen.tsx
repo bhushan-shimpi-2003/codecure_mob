@@ -14,7 +14,6 @@ import {
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
 import { interviewsApi, coursesApi, teacherApi } from "../../api/endpoints";
 import { extractApiData, isApiSuccess } from "../../api/response";
-import { useNavigation } from "@react-navigation/native";
 import { 
   CalendarClock, 
   Video, 
@@ -31,8 +30,7 @@ import {
 } from "lucide-react-native";
 import { AppHeader } from "../../components/AppHeader";
 
-export default function TeacherInterviewsScreen() {
-  const navigation = useNavigation<any>();
+export default function TeacherInterviewsScreen({ navigation }: any) {
   const [interviews, setInterviews] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);

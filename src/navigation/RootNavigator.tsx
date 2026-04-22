@@ -1,6 +1,5 @@
 import React from "react";
 import { View, ActivityIndicator } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from "../context/AuthContext";
 import AuthNavigator from "./AuthNavigator";
@@ -20,60 +19,57 @@ const Stack = createNativeStackNavigator();
 
 export default function RootNavigator() {
   const { isAuthenticated, isLoading, user } = useAuth();
-
-  if (isLoading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
-    );
-  }
-
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!isAuthenticated ? (
-          <Stack.Screen name="Auth" component={AuthNavigator} />
-        ) : (
-          <>
-            {/* Conditional Entry based on Role */}
-            {user?.role === "admin" ? (
-              <Stack.Screen name="AdminMain" component={AdminMainNavigator} />
-            ) : user?.role === "teacher" ? (
-              <Stack.Screen name="TeacherMain" component={TeacherMainNavigator} />
-            ) : (
-              <Stack.Screen name="StudentMain" component={MainNavigator} />
-            )}
+    <>
+      {isLoading ? (
+        <View className="flex-1 items-center justify-center bg-white">
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      ) : (
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {!isAuthenticated ? (
+            <Stack.Screen name="Auth" component={AuthNavigator} />
+          ) : (
+            <>
+              {/* Conditional Entry based on Role */}
+              {user?.role === "admin" ? (
+                <Stack.Screen name="AdminMain" component={AdminMainNavigator} />
+              ) : user?.role === "teacher" ? (
+                <Stack.Screen name="TeacherMain" component={TeacherMainNavigator} />
+              ) : (
+                <Stack.Screen name="StudentMain" component={MainNavigator} />
+              )}
 
-            {/* Global screens that don't belong to a specific tab branch or hide tabs intentionally */}
-            <Stack.Screen 
-              name="Assignments" 
-              component={AssignmentsScreen} 
-              options={{ headerShown: true, title: "My Assignments" }}
-            />
-            <Stack.Screen 
-              name="MockInterviews" 
-              component={MockInterviewsScreen} 
-              options={{ headerShown: true, title: "Mock Interviews" }}
-            />
-            <Stack.Screen
-              name="TeacherDoubts"
-              component={TeacherDoubtsScreen}
-              options={{ headerShown: true, title: "Teacher Doubts" }}
-            />
-            <Stack.Screen
-              name="TeacherAssignments"
-              component={TeacherAssignmentsScreen}
-              options={{ headerShown: true, title: "Teacher Assignments" }}
-            />
-            <Stack.Screen 
-              name="EditProfile" 
-              component={EditProfileScreen} 
-              options={{ headerShown: true, title: "Edit Your Profile" }}
-            />
-          </>
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+              {/* Global screens that don't belong to a specific tab branch or hide tabs intentionally */}
+              <Stack.Screen 
+                name="Assignments" 
+                component={AssignmentsScreen} 
+                options={{ headerShown: true, title: "My Assignments" }}
+              />
+              <Stack.Screen 
+                name="MockInterviews" 
+                component={MockInterviewsScreen} 
+                options={{ headerShown: true, title: "Mock Interviews" }}
+              />
+              <Stack.Screen
+                name="TeacherDoubts"
+                component={TeacherDoubtsScreen}
+                options={{ headerShown: true, title: "Teacher Doubts" }}
+              />
+              <Stack.Screen
+                name="TeacherAssignments"
+                component={TeacherAssignmentsScreen}
+                options={{ headerShown: true, title: "Teacher Assignments" }}
+              />
+              <Stack.Screen 
+                name="EditProfile" 
+                component={EditProfileScreen} 
+                options={{ headerShown: true, title: "Edit Your Profile" }}
+              />
+            </>
+          )}
+        </Stack.Navigator>
+      )}
+    </>
   );
 }

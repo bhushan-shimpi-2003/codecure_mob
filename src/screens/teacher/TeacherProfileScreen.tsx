@@ -7,8 +7,10 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Pressable,
 } from "react-native";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
+import { useAuth } from "../../context/AuthContext";
 import { authApi, coursesApi } from "../../api/endpoints";
 import { extractApiData, isApiSuccess } from "../../api/response";
 import { 
@@ -19,10 +21,13 @@ import {
   Edit2, 
   Star, 
   Users, 
+  LogOut,
 } from "lucide-react-native";
 import { AppHeader } from "../../components/AppHeader";
 
-export default function TeacherProfileScreen() {
+
+export default function TeacherProfileScreen({ navigation }: any) {
+  const { logout } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [courses, setCourses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,6 +54,14 @@ export default function TeacherProfileScreen() {
     }
   };
 
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    await logout();
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -65,10 +78,11 @@ export default function TeacherProfileScreen() {
 
   return (
     <SafeAreaWrapper>
-      <AppHeader role="Teacher" />
+      <AppHeader role="Teacher" navigation={navigation} />
       <ScrollView 
         className="flex-1 bg-[#F8FAFC]" 
-        contentContainerStyle={{ paddingBottom: 60 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} />}
       >
         <View className="items-center pt-8 px-6">
@@ -193,8 +207,37 @@ export default function TeacherProfileScreen() {
                      </View>
                   </View>
                 ))}
-             </View>
-          </View>
+              </View>
+           </View>
+
+            {/* Pure Pressable Logout - New Architecture Friendly */}
+            <View className="px-8 pb-40 pt-10">
+                <Pressable 
+                    onPress={handleLogout}
+                    disabled={loggingOut}
+                    style={({ pressed }) => ({
+                        opacity: pressed || loggingOut ? 0.5 : 1,
+                        backgroundColor: '#FEF2F2',
+                        borderColor: '#FEE2E2',
+                        borderWidth: 2,
+                        paddingVertical: 20,
+                        borderRadius: 30,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexDirection: 'row'
+                    })}
+                >
+                    {loggingOut ? (
+                        <ActivityIndicator size="small" color="#EF4444" />
+                    ) : (
+                        <>
+                            <LogOut size={20} color="#EF4444" strokeWidth={2.5} />
+                            <Text className="text-red-500 font-black text-xs uppercase tracking-[2px] ml-3">Log Out</Text>
+                        </>
+                    )}
+                </Pressable>
+                <Text className="text-center text-slate-300 text-[10px] font-black uppercase tracking-widest mt-8">CodeCure Academy v1.2.4</Text>
+            </View>
         </View>
       </ScrollView>
     </SafeAreaWrapper>

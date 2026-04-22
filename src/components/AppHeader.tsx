@@ -4,6 +4,9 @@ import { GraduationCap, ChevronLeft, Menu, User, Bell } from "lucide-react-nativ
 import { COLORS } from "../utils/theme";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
+import { Alert } from "react-native";
+import { LogOut } from "lucide-react-native";
+import { authApi } from "../api/endpoints";
 
 interface AppHeaderProps {
   title?: string;
@@ -13,9 +16,31 @@ interface AppHeaderProps {
   showBell?: boolean;
   onMenuPress?: () => void;
   role?: string;
+  navigation?: any;
 }
 
-export function AppHeader({ 
+function AppHeaderInternal(props: AppHeaderProps) {
+  let navigation;
+  try {
+    const hookNavigation = useNavigation<any>();
+    navigation = props.navigation || hookNavigation;
+  } catch (e) {
+    navigation = props.navigation;
+  }
+
+  return <AppHeaderContent {...props} navigation={navigation} />;
+}
+
+export function AppHeader(props: AppHeaderProps) {
+  // If navigation is passed as a prop, we can skip the hook to avoid context errors
+  if (props.navigation) {
+    return <AppHeaderContent {...props} />;
+  }
+  
+  return <AppHeaderInternal {...props} />;
+}
+
+function AppHeaderContent({ 
     title = "CodeCure", 
     subtitle, 
     showBack = false, 
@@ -23,11 +48,22 @@ export function AppHeader({
     showBell = true,
     onMenuPress,
     role = "Student",
+    navigation,
 }: AppHeaderProps) {
-  const navigation = useNavigation<any>();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
+
+  const handleProfilePress = () => {
+    const roleLower = user?.role?.toLowerCase() || role.toLowerCase();
+    if (roleLower === "teacher") {
+      navigation.navigate("TeacherMain", { screen: "TeacherProfile" });
+    } else if (roleLower === "admin") {
+      navigation.navigate("AdminMain", { screen: "AdminProfile" });
+    } else {
+      navigation.navigate("StudentMain", { screen: "Profile" });
+    }
+  };
 
   return (
     <View className="bg-white border-b border-slate-100/50 z-50">
@@ -71,7 +107,7 @@ export function AppHeader({
                 </TouchableOpacity>
             )}
             <TouchableOpacity 
-                onPress={() => navigation.navigate("Account")}
+                onPress={handleProfilePress}
                 className="w-10 h-10 rounded-full border-2 border-slate-100 overflow-hidden bg-slate-50 items-center justify-center shadow-sm"
             >
                 {user?.profile_picture ? (

@@ -1,5 +1,15 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Image, Alert, useWindowDimensions, RefreshControl } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
+  Pressable,
+  useWindowDimensions,
+} from "react-native";
 import { useAuth } from "../../context/AuthContext";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
 import { 
@@ -66,26 +76,12 @@ export default function ProfileScreen({ navigation }: any) {
     fetchProfileData();
   };
 
-  const handleLogout = () => {
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to log out?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Logout", 
-          style: "destructive", 
-          onPress: async () => {
-            try {
-              await authApi.logout();
-              await logout();
-            } catch (e) {
-              await logout();
-            }
-          } 
-        }
-      ]
-    );
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    await logout();
   };
 
   const displayName = user?.name || user?.email?.split("@")[0] || "Scholar";
@@ -231,13 +227,30 @@ export default function ProfileScreen({ navigation }: any) {
 
             {/* Large Logout Trigger */}
             <View className="px-10 mb-20">
-                <TouchableOpacity 
+                <Pressable 
                     onPress={handleLogout}
-                    className="flex-row items-center justify-center border-2 border-red-50 py-6 rounded-[32px] bg-red-50/20"
+                    disabled={loggingOut}
+                    style={({ pressed }) => ({
+                        opacity: pressed || loggingOut ? 0.5 : 1,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderWidth: 2,
+                        borderColor: '#FEF2F2',
+                        paddingVertical: 24,
+                        borderRadius: 32,
+                        backgroundColor: 'rgba(254, 242, 242, 0.2)'
+                    })}
                 >
-                    <LogOut size={20} color="#EF4444" strokeWidth={2.5} className="mr-3" />
-                    <Text className="text-red-500 font-black text-xs uppercase tracking-widest">Log out</Text>
-                </TouchableOpacity>
+                    {loggingOut ? (
+                        <ActivityIndicator size="small" color="#EF4444" />
+                    ) : (
+                        <>
+                            <LogOut size={20} color="#EF4444" strokeWidth={2.5} className="mr-3" />
+                            <Text className="text-red-500 font-black text-xs uppercase tracking-widest">Log out</Text>
+                        </>
+                    )}
+                </Pressable>
                 <Text className="text-center text-slate-300 text-[10px] font-black uppercase tracking-widest mt-8">CodeCure v1.2.4 • Build 882</Text>
             </View>
         </View>
