@@ -118,10 +118,12 @@ export default function TeacherDashboardScreen({ navigation }: { navigation: App
     fetchTeacherData();
   }, []);
 
-  const totalStudents = useMemo(
-    () => dashboardStats?.total_students || courses.reduce((sum: number, item: Course) => sum + Number(item?.students_enrolled || 0), 0),
-    [courses, dashboardStats]
-  );
+  const totalStudents = useMemo(() => {
+    if (dashboardStats && typeof dashboardStats.total_students === 'number') {
+      return dashboardStats.total_students;
+    }
+    return courses.reduce((sum: number, item: any) => sum + Number(item?.students_enrolled || 0), 0);
+  }, [courses, dashboardStats]);
 
   const getActivityIcon = (type: string) => {
     switch (type?.toLowerCase()) {

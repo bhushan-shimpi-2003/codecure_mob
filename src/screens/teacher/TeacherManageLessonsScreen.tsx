@@ -124,6 +124,7 @@ export default function TeacherManageLessonsScreen({ navigation, route }: any) {
         module_id: moduleId || null,
         video_url: newLessonVideoUrl.trim() || null,
         content: newLessonNotes.trim() || null,
+        duration: newLessonDuration.trim() || null,
         lesson_order: lessons.length + 1,
         is_live: false,
         is_free_preview: false,

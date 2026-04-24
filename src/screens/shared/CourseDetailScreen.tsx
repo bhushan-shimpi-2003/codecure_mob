@@ -192,18 +192,8 @@ export default function CourseDetailScreen({ route, navigation }: any) {
 
                 <Text className="text-[44px] font-black text-white leading-[50px] tracking-tight mb-8">{course?.title}</Text>
                 
-                <View className="flex-row items-center justify-between mt-auto">
-                    <View className="flex-row items-center gap-4">
-                        <View className="w-14 h-14 rounded-[20px] bg-white/10 items-center justify-center border border-white/10">
-                            <User size={28} color="white" />
-                        </View>
-                        <View>
-                            <Text className="text-white/40 text-[10px] font-black uppercase tracking-widest">Architect</Text>
-                            <Text className="text-white font-black text-lg">{(course as any)?.profiles?.name || "Expert Mentor"}</Text>
-                        </View>
-                    </View>
-                    
-                    {isEnrolled && (
+                {isEnrolled && (
+                    <View className="flex-row justify-end mt-auto">
                         <TouchableOpacity 
                             onPress={() => {
                                 const firstLesson = curriculumModules[0]?.lessons?.[0];
@@ -217,9 +207,20 @@ export default function CourseDetailScreen({ route, navigation }: any) {
                                 <Text className="text-slate-900 font-black text-xs uppercase tracking-widest">{currentProgressPercent === 100 ? "Review" : "Continue"}</Text>
                             </View>
                         </TouchableOpacity>
-                    )}
-                </View>
+                    </View>
+                )}
             </LinearGradient>
+            
+            {/* Teacher Info - Moved outside the header card */}
+            <View className="flex-row items-center gap-4 mt-8 px-5">
+                <View className="w-14 h-14 rounded-[20px] bg-slate-100 items-center justify-center border border-slate-200">
+                    <User size={28} color="#64748B" />
+                </View>
+                <View>
+                    <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Architect</Text>
+                    <Text className="text-slate-900 font-black text-lg">{(course as any)?.profiles?.name || "Expert Mentor"}</Text>
+                </View>
+            </View>
         </View>
 
         <View className="px-8">
