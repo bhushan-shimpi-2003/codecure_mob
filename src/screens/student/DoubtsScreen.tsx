@@ -142,7 +142,7 @@ export default function DoubtsScreen({ route, navigation }: any) {
                 </View>
             </View>
 
-            <Text className="text-2xl font-black text-slate-900 mb-2 leading-tight tracking-tight">{doubt.subject || "Question"}</Text>
+            <Text className="text-2xl font-black text-slate-900 mb-2 leading-tight tracking-tight">{doubt.title || "Question"}</Text>
             <Text className="text-slate-400 text-base font-bold leading-6 mb-8">{doubt.description}</Text>
 
 

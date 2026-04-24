@@ -10,7 +10,7 @@ export const UPLOADS_URL = `${API_BASE_URL}/uploads`;
 const client = axios.create({
   baseURL: API_URL,
   headers: { "Content-Type": "application/json" },
-  timeout: 15000,
+  timeout: 30000,
 });
 
 // ─── Request Interceptor – Attach Bearer Token ────────────────────────────────

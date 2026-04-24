@@ -36,7 +36,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const { user } = useAuth();
 
   const fetchNotifications = useCallback(async () => {
-    if (!user) return;
+    if (!user || isLoading) return;
     setIsLoading(true);
     setError(null);
     try {
@@ -59,7 +59,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, isLoading]);
 
   const markAsRead = async (id: string) => {
     try {
@@ -111,8 +111,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     if (user) {
       fetchNotifications();
-      // Poll every 10 seconds
-      const interval = setInterval(fetchNotifications, 10000);
+      // Poll every 30 seconds to reduce server load and prevent timeouts
+      const interval = setInterval(fetchNotifications, 30000);
       return () => clearInterval(interval);
     }
   }, [user, fetchNotifications]);

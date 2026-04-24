@@ -4,6 +4,9 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { LayoutDashboard, BookOpen, User, MessageSquare, Layers } from "lucide-react-native";
 import DashboardScreen from "../screens/student/DashboardScreen";
+import JobsScreen from "../screens/student/JobsScreen";
+import AssignmentsScreen from "../screens/student/AssignmentsScreen";
+import MockInterviewsScreen from "../screens/student/MockInterviewsScreen";
 import CoursesScreen from "../screens/shared/CoursesScreen";
 import ExploreCoursesScreen from "../screens/student/ExploreCoursesScreen";
 import ProfileScreen from "../screens/shared/ProfileScreen";
@@ -29,6 +32,9 @@ function DashboardStack() {
       <Stack.Screen name="DashboardHome" component={DashboardScreen} />
       <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
       <Stack.Screen name="Lesson" component={LessonScreen} />
+      <Stack.Screen name="Jobs" component={JobsScreen} />
+      <Stack.Screen name="Assignments" component={AssignmentsScreen} />
+      <Stack.Screen name="MockInterviews" component={MockInterviewsScreen} />
     </Stack.Navigator>
   );
 }

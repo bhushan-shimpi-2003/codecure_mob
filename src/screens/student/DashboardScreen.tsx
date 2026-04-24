@@ -8,7 +8,9 @@ import {
   TextInput, 
   Image,
   useWindowDimensions,
-  ActivityIndicator
+  ActivityIndicator,
+  Linking,
+  Alert
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../../context/AuthContext";
@@ -170,7 +172,7 @@ export default function DashboardScreen({ navigation }: any) {
         const doubts = extractApiData<any[]>(dbtRes.value.data, []).slice(0, 2);
         doubts.forEach(d => combined.push({
           title: d.reply ? "Mentor Responded" : "New Doubt Ticket",
-          description: d.subject || d.description || "Question about lesson",
+          description: d.title || d.description || "Question about lesson",
           time_ago: "RECENT",
           type: "doubt",
           date: d.created_at,
@@ -469,34 +471,51 @@ export default function DashboardScreen({ navigation }: any) {
           {/* Jobs */}
           {jobs.length > 0 && (
             <View className="mb-12">
-               <View className="flex-row items-center justify-between mb-8 px-1">
-                  <Text className="text-2xl font-black text-slate-900">Career Radar</Text>
-                  <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Partner Openings</Text>
-               </View>
-               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 20 }}>
-                  {jobs.map((job, i) => (
-                    <TouchableOpacity 
-                        key={i}
-                        activeOpacity={0.9}
-                        className="bg-white rounded-[48px] p-10 mr-6 border border-white shadow-2xl shadow-slate-900/[0.04]"
-                        style={{ width: CARD_WIDTH }}
-                    >
-                        <View className="flex-row justify-between items-start mb-8">
-                            <View className="w-16 h-16 bg-amber-50 rounded-[24px] items-center justify-center border border-amber-100 shadow-sm">
-                                <Star size={28} color="#F59E0B" fill="#F59E0B" />
-                            </View>
-                            <View className="bg-emerald-50 px-4 py-2 rounded-full border border-emerald-100">
-                                <Text className="text-emerald-600 text-[9px] font-black uppercase tracking-widest">Hiring</Text>
-                            </View>
-                        </View>
-                        <Text className="text-2xl font-black text-slate-900 mb-2 h-16 leading-tight tracking-tight" numberOfLines={2}>{job.title}</Text>
-                        <Text className="text-slate-400 font-black text-[10px] mb-10 uppercase tracking-[2px]">{job.company || 'Tech Solutions'} • {job.location || 'Remote'}</Text>
-                        <TouchableOpacity className="bg-slate-900 py-6 rounded-[24px] items-center shadow-xl shadow-slate-200">
-                            <Text className="text-white font-black text-[11px] uppercase tracking-widest">Quick Apply</Text>
-                        </TouchableOpacity>
-                    </TouchableOpacity>
-                  ))}
-               </ScrollView>
+                <View className="flex-row items-center justify-between mb-8 px-1">
+                   <View>
+                      <Text className="text-2xl font-black text-slate-900">Career Radar</Text>
+                      <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Partner Openings</Text>
+                   </View>
+                   <TouchableOpacity onPress={() => navigation.navigate("Jobs")}>
+                      <Text className="text-blue-600 text-[10px] font-black uppercase tracking-widest">See All</Text>
+                   </TouchableOpacity>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 20 }}>
+                   {jobs.map((job, i) => (
+                     <View 
+                         key={i}
+                         className="bg-white rounded-[48px] p-10 mr-6 border border-white shadow-2xl shadow-slate-900/[0.04]"
+                         style={{ width: CARD_WIDTH }}
+                     >
+                         <View className="flex-row justify-between items-start mb-8">
+                             <View className="w-16 h-16 bg-amber-50 rounded-[24px] items-center justify-center border border-amber-100 shadow-sm">
+                                 <Star size={28} color="#F59E0B" fill="#F59E0B" />
+                             </View>
+                             <View className="bg-emerald-50 px-4 py-2 rounded-full border border-emerald-100">
+                                 <Text className="text-emerald-600 text-[9px] font-black uppercase tracking-widest">Hiring</Text>
+                             </View>
+                         </View>
+                         <Text className="text-2xl font-black text-slate-900 mb-2 h-16 leading-tight tracking-tight" numberOfLines={2}>{job.title}</Text>
+                         <Text className="text-slate-400 font-black text-[10px] mb-8 uppercase tracking-[2px]">{job.company || 'Tech Solutions'} • {job.location || 'Remote'}</Text>
+                         
+                         <View className="gap-3">
+                            <TouchableOpacity 
+                                activeOpacity={0.8}
+                                onPress={() => Linking.openURL(job.apply_url || job.application_link).catch(() => Alert.alert("Error", "Could not open link"))}
+                                className="bg-slate-900 py-6 rounded-[24px] items-center shadow-xl shadow-slate-200"
+                            >
+                                <Text className="text-white font-black text-[11px] uppercase tracking-widest">Quick Apply</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                                onPress={() => navigation.navigate("Jobs")}
+                                className="bg-slate-50 py-5 rounded-[24px] items-center border border-slate-100"
+                            >
+                                <Text className="text-slate-500 font-black text-[10px] uppercase tracking-widest">View Opportunity</Text>
+                            </TouchableOpacity>
+                         </View>
+                     </View>
+                   ))}
+                </ScrollView>
             </View>
           )}
 

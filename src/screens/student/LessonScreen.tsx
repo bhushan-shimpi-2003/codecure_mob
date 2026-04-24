@@ -247,7 +247,7 @@ export default function LessonScreen({ route, navigation }: any) {
     setIsSubmittingDoubt(true);
     try {
       const res = await doubtsApi.create({
-        subject: doubtTitle,
+        title: doubtTitle,
         description: doubtDescription,
         course_id: String(courseId),
         lesson_id: String(lesson?.id || lesson?._id || lessonId)

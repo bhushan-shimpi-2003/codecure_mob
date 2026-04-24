@@ -64,25 +64,15 @@ export default function AppNavigator() {
           )}
 
           {/* Global screens */}
-          <Stack.Screen 
-            name="Assignments" 
-            component={AssignmentsScreen} 
-            options={{ headerShown: true, title: "My Assignments" }}
-          />
-          <Stack.Screen 
-            name="MockInterviews" 
-            component={MockInterviewsScreen} 
-            options={{ headerShown: true, title: "Mock Interviews" }}
-          />
           <Stack.Screen
             name="TeacherDoubts"
             component={TeacherDoubtsScreen}
-            options={{ headerShown: true, title: "Teacher Doubts" }}
+            options={{ headerShown: false, title: "Teacher Doubts" }}
           />
           <Stack.Screen
             name="TeacherAssignments"
             component={TeacherAssignmentsScreen}
-            options={{ headerShown: true, title: "Teacher Assignments" }}
+            options={{ headerShown: false, title: "Teacher Assignments" }}
           />
           <Stack.Screen
             name="AdminEnrollments"

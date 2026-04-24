@@ -117,7 +117,7 @@ export default function TeacherDoubtsScreen({ navigation }: any) {
       // Search filter
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
-        const title = (d.subject || d.title || "").toLowerCase();
+        const title = (d.title || d.subject || "").toLowerCase();
         const desc = (d.description || d.query || "").toLowerCase();
         const studentName = (d.profiles?.name || d.student?.name || "").toLowerCase();
         if (!title.includes(query) && !desc.includes(query) && !studentName.includes(query)) {
@@ -259,7 +259,7 @@ export default function TeacherDoubtsScreen({ navigation }: any) {
                       </View>
 
                       <View className="mb-4">
-                        <Text className="text-lg font-black text-slate-900 mb-2 leading-6">{doubt.subject || doubt.title || "Course Query"}</Text>
+                        <Text className="text-lg font-black text-slate-900 mb-2 leading-6">{doubt.title || doubt.subject || "Course Query"}</Text>
                         <View className="bg-slate-50/50 rounded-[24px] p-5 border border-slate-100/50">
                           <Text className="text-sm text-slate-600 leading-6 font-bold italic">
                             "{doubt.description || doubt.query || "No description provided."}"
