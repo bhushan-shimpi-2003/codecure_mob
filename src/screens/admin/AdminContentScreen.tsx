@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  TextInput,
 } from "react-native";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
 import { coursesApi } from "../../api/endpoints";
@@ -25,6 +26,7 @@ import {
 } from "lucide-react-native";
 import { COLORS, UPLOADS_URL } from "../../utils/theme";
 import { LinearGradient } from "expo-linear-gradient";
+import { AppHeader } from "../../components/AppHeader";
 
 const CATEGORIES = ["All Courses", "Development", "Data Science", "UI/UX Design", "Cybersecurity", "Cloud Computing"];
 
@@ -51,7 +53,14 @@ export default function AdminContentScreen({ navigation }: any) {
 
   useEffect(() => {
     fetchCourses();
-  }, []);
+    
+    // Add listener to refresh when returning to this screen
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchCourses();
+    });
+    
+    return unsubscribe;
+  }, [navigation]);
 
   const filteredCourses = useMemo(() => {
     if (activeCategory === "All Courses") return courses;
@@ -64,8 +73,8 @@ export default function AdminContentScreen({ navigation }: any) {
   };
 
   const AdminCourseCard = ({ course }: any) => {
-    const imageUrl = course.thumbnail && course.thumbnail !== "no-course-photo.jpg"
-      ? course.thumbnail.startsWith("http") ? course.thumbnail : `${UPLOADS_URL}/${course.thumbnail}`
+    const imageUrl = (typeof course.thumbnail === 'string' && course.thumbnail !== "no-course-photo.jpg" && !course.thumbnail.includes('[object Object]'))
+      ? (course.thumbnail.startsWith("http") ? course.thumbnail : `${UPLOADS_URL}/${course.thumbnail}`)
       : null;
 
     return (
@@ -94,7 +103,7 @@ export default function AdminContentScreen({ navigation }: any) {
         <View className="p-8">
           <View className="flex-row justify-between items-center mb-4">
              <Text className="text-blue-600 text-xs font-black uppercase tracking-widest">{course.category || "Development"}</Text>
-             <Text className="text-blue-600 text-2xl font-black">₹{course.price || "19,999"}</Text>
+             <Text className="text-blue-600 text-2xl font-black">₹{course.price ?? "19,999"}</Text>
           </View>
 
           <Text className="text-3xl font-black text-slate-900 leading-[38px] mb-4">
@@ -108,9 +117,11 @@ export default function AdminContentScreen({ navigation }: any) {
           <View className="flex-row items-center justify-between border-t border-slate-50 pt-8">
             <View className="flex-row items-center">
               <View className="w-10 h-10 rounded-full bg-slate-100 mr-3 overflow-hidden">
-                <Image source={{ uri: 'https://i.pravatar.cc/100?u=instructor' }} className="w-full h-full" />
+                <Image source={{ uri: `https://i.pravatar.cc/100?u=${course?.profiles?.name || 'instructor'}` }} className="w-full h-full" />
               </View>
-              <Text className="text-slate-900 font-bold text-sm">{(course as any).instructor_name || "Dr. Alex Rivera"}</Text>
+              <Text className="text-slate-900 font-bold text-sm">
+                {(course as any)?.profiles?.name || course?.instructor_name || "Academy Expert"}
+              </Text>
             </View>
 
             <TouchableOpacity 
@@ -128,21 +139,7 @@ export default function AdminContentScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper bgWhite>
-      {/* Custom Header */}
-      <View className="flex-row items-center justify-between px-6 py-4">
-        <TouchableOpacity className="p-2 bg-slate-50 rounded-xl">
-          <Menu size={24} color={COLORS.slate900} />
-        </TouchableOpacity>
-        <Text className="text-blue-900 font-black text-lg">CodeCure Admin</Text>
-        <View className="flex-row items-center gap-3">
-          <TouchableOpacity className="p-2 bg-slate-50 rounded-xl">
-            <Search size={20} color={COLORS.slate900} />
-          </TouchableOpacity>
-          <View className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden border-2 border-white shadow-sm">
-             <Image source={{ uri: 'https://i.pravatar.cc/100?u=admin' }} className="w-full h-full" />
-          </View>
-        </View>
-      </View>
+      <AppHeader navigation={navigation} role="Admin" title="Academy" subtitle="Content" />
 
       <ScrollView 
         className="flex-1 bg-[#F8FAFC]"
@@ -158,6 +155,42 @@ export default function AdminContentScreen({ navigation }: any) {
               Course <Text className="text-blue-600">Academy</Text>
            </Text>
            <Text className="text-slate-400 text-base font-medium mt-2">Manage curriculum, instructors, and track course performance.</Text>
+        </View>
+
+        {/* Search and Quick Filters */}
+        <View className="px-8 flex-row gap-4 mb-8">
+           <View className="flex-1 bg-white h-16 rounded-[24px] border border-slate-50 shadow-sm flex-row items-center px-5">
+              <Search size={20} color={COLORS.slate300} />
+              <TextInput 
+                placeholder="Search by title, category..."
+                className="flex-1 ml-3 font-bold text-slate-900"
+                placeholderTextColor={COLORS.slate300}
+                // value={searchQuery}
+                // onChangeText={setSearchQuery}
+              />
+           </View>
+           <TouchableOpacity 
+             onPress={() => navigation.navigate('AdminCreateCourse')}
+             className="w-16 h-16 bg-blue-600 rounded-[24px] items-center justify-center shadow-lg shadow-blue-600/30"
+           >
+              <Plus size={28} color="white" />
+           </TouchableOpacity>
+        </View>
+
+        {/* Course Status Stats */}
+        <View className="px-8 mb-10 flex-row gap-4">
+           <View className="flex-1 bg-white p-6 rounded-[32px] border border-slate-50 shadow-sm">
+              <Text className="text-blue-600 text-xl font-black">{courses.filter(c => c.status === 'published').length}</Text>
+              <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Published</Text>
+           </View>
+           <View className="flex-1 bg-white p-6 rounded-[32px] border border-slate-50 shadow-sm">
+              <Text className="text-amber-500 text-xl font-black">{courses.filter(c => c.status !== 'published').length}</Text>
+              <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Drafts</Text>
+           </View>
+           <View className="flex-1 bg-white p-6 rounded-[32px] border border-slate-50 shadow-sm">
+              <Text className="text-slate-900 text-xl font-black">{courses.length}</Text>
+              <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Total</Text>
+           </View>
         </View>
 
         {/* Categories */}

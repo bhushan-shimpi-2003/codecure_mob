@@ -32,7 +32,8 @@ import {
   ArrowRight,
   BookOpen
 } from "lucide-react-native";
-import { coursesApi, lessonsApi, notificationsApi } from "../../api/endpoints";
+import { coursesApi, lessonsApi } from "../../api/endpoints";
+import { notifyStudentNewLesson, notifyStudentNewModule } from "../../utils/notificationHelper";
 import { extractApiData, isApiSuccess } from "../../api/response";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -41,6 +42,7 @@ export default function TeacherManageLessonsScreen({ navigation, route }: any) {
   const { width } = useWindowDimensions();
   
   const [course, setCourse] = useState<any>(null);
+  const [realCourseId, setRealCourseId] = useState("");
   const [lessons, setLessons] = useState<any[]>([]);
   const [modules, setModules] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -67,16 +69,19 @@ export default function TeacherManageLessonsScreen({ navigation, route }: any) {
       if (isApiSuccess(res.data)) {
         const data = extractApiData<any>(res.data, null);
         setCourse(data);
+        const actualId = data?._id || data?.id || courseId;
+        setRealCourseId(actualId);
+
         if (data.modules && data.modules.length > 0) {
           setModules(data.modules);
           setExpandedModules({ [data.modules[0].id || data.modules[0]._id]: true });
         }
-      }
 
-      const lessonRes = await lessonsApi.byCourse(courseId);
-      if (isApiSuccess(lessonRes.data)) {
-        const lessonData = extractApiData<any[]>(lessonRes.data, []);
-        setLessons(lessonData);
+        const lessonRes = await lessonsApi.byCourse(actualId);
+        if (isApiSuccess(lessonRes.data)) {
+          const lessonData = extractApiData<any[]>(lessonRes.data, []);
+          setLessons(lessonData);
+        }
       }
     } catch (e) {
       console.log("Error fetching course data", e);
@@ -103,28 +108,31 @@ export default function TeacherManageLessonsScreen({ navigation, route }: any) {
       return;
     }
     
+    const usableCourseId = realCourseId || courseId;
+    // Guard: UUID format check — slugs (non-UUID) will cause 500
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(usableCourseId)) {
+      Alert.alert("Error", "Course ID is not ready yet. Please wait a moment and try again.");
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
       const payload = {
-        title: newLessonTitle,
-        course_id: courseId,
-        module_id: moduleId,
-        video_url: newLessonVideoUrl,
-        duration: newLessonDuration,
-        content: newLessonNotes,
-        status: "published",
+        title: newLessonTitle.trim(),
+        course_id: usableCourseId,
+        module_id: moduleId || null,
+        video_url: newLessonVideoUrl.trim() || null,
+        content: newLessonNotes.trim() || null,
+        lesson_order: lessons.length + 1,
+        is_live: false,
+        is_free_preview: false,
       };
       
       const res = await lessonsApi.create(payload);
       if (isApiSuccess(res.data)) {
         Alert.alert("Success", "Lesson published successfully");
-        
-        notificationsApi.send({
-          role: 'student',
-          title: 'New Lesson Published!',
-          message: `Check out the new lesson: "${newLessonTitle}" in ${course?.title || 'your course'}.`,
-          type: 'academy'
-        });
+        notifyStudentNewLesson(newLessonTitle.trim(), course?.title || 'your course');
 
         setNewLessonTitle("");
         setNewLessonVideoUrl("");
@@ -150,16 +158,16 @@ export default function TeacherManageLessonsScreen({ navigation, route }: any) {
 
     setIsAddingModule(true);
     try {
-      const res = await coursesApi.addModule(courseId, { title: newModuleTitle });
+      const res = await coursesApi.addModule(realCourseId || courseId, { 
+        title: newModuleTitle.trim(),
+        course_id: realCourseId || courseId,
+        module_order: modules.length,
+        duration: null,
+      });
       if (isApiSuccess(res.data)) {
         Alert.alert("Success", "Module added successfully");
+        notifyStudentNewModule(newModuleTitle.trim(), course?.title || 'your course');
 
-        notificationsApi.send({
-          role: 'student',
-          title: 'Curriculum Expansion!',
-          message: `A new module "${newModuleTitle}" has been added to ${course?.title || 'your course'}.`,
-          type: 'academy'
-        });
 
         setNewModuleTitle("");
         setShowModuleInput(false);
@@ -257,7 +265,7 @@ export default function TeacherManageLessonsScreen({ navigation, route }: any) {
                    <Text className="text-slate-400 font-black text-[10px] uppercase tracking-widest mt-4 text-center">No curriculum paths defined yet</Text>
                    <TouchableOpacity 
                       className="mt-8 bg-blue-600 px-8 py-4 rounded-2xl shadow-xl shadow-blue-200"
-                      onPress={() => navigation.navigate("TeacherCreateLesson", { courseId })}
+                      onPress={() => navigation.navigate("TeacherCreateLesson", { courseId: realCourseId || courseId })}
                    >
                       <Text className="text-white font-black text-xs uppercase tracking-widest">Add First Lesson</Text>
                    </TouchableOpacity>
@@ -318,7 +326,7 @@ export default function TeacherManageLessonsScreen({ navigation, route }: any) {
                                     </View>
                                   </View>
                                   <TouchableOpacity 
-                                    onPress={() => navigation.navigate("TeacherEditLesson", { lesson, courseId })}
+                                    onPress={() => navigation.navigate("TeacherEditLesson", { lesson, courseId: realCourseId || courseId })}
                                     className="w-10 h-10 rounded-2xl bg-slate-50 items-center justify-center border border-slate-100 shadow-sm"
                                   >
                                     <Edit3 size={16} color="#64748B" />

@@ -13,6 +13,7 @@ import AdminTransactionsScreen from "../screens/admin/AdminTransactionsScreen";
 import AdminStaffScreen from "../screens/admin/AdminStaffScreen";
 import AdminContentScreen from "../screens/admin/AdminContentScreen";
 import AdminEditCourseScreen from "../screens/admin/AdminEditCourseScreen";
+import AdminCreateCourseScreen from "../screens/admin/AdminCreateCourseScreen";
 import AdminProfileScreen from "../screens/admin/AdminProfileScreen";
 import { COLORS } from "../utils/theme";
 
@@ -29,6 +30,7 @@ function AdminAcademyStack() {
       }}
     >
       <Stack.Screen name="AdminAcademyHome" component={AdminContentScreen} />
+      <Stack.Screen name="AdminCreateCourse" component={AdminCreateCourseScreen} />
       <Stack.Screen name="AdminEditCourse" component={AdminEditCourseScreen} />
     </Stack.Navigator>
   );

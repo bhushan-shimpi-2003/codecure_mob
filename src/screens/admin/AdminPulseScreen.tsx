@@ -15,8 +15,9 @@ import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
 import { Wallet, Settings2, Plus } from "lucide-react-native";
 import { COLORS } from "../../utils/theme";
+import { AppHeader } from "../../components/AppHeader";
 
-export default function AdminPulseScreen() {
+export default function AdminPulseScreen({ navigation }: any) {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [settings, setSettings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -148,7 +149,9 @@ export default function AdminPulseScreen() {
   };
 
   return (
-    <SafeAreaWrapper>
+    <SafeAreaWrapper bgWhite>
+      <AppHeader navigation={navigation} role="Admin" title="Platform" subtitle="Pulse" showBack />
+
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 24 }}
@@ -162,19 +165,6 @@ export default function AdminPulseScreen() {
           />
         }
       >
-        <View className="px-6 pt-4 pb-2 flex-row items-center justify-between">
-          <View>
-            <Text className="text-2xl font-black text-slate-900">Platform Pulse</Text>
-            <Text className="text-slate-500 mt-1">Monitor finances and global settings</Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => setTxModalVisible(true)}
-            className="bg-blue-600 rounded-2xl p-3"
-          >
-            <Plus size={22} color={COLORS.white} />
-          </TouchableOpacity>
-        </View>
-
         <View className="px-6 pt-2 pb-4 flex-row gap-3">
           <View className="flex-1 bg-white rounded-2xl border border-slate-100 p-4">
             <Text className="text-xs text-slate-500 uppercase font-black tracking-wider">Transactions</Text>

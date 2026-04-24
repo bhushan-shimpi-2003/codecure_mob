@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Modal, useWindowDimensions, Image, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Modal, useWindowDimensions, Image, ActivityIndicator, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
-import { doubtsApi, enrollmentsApi, notificationsApi } from "../../api/endpoints";
+import { doubtsApi, enrollmentsApi } from "../../api/endpoints";
+import { notifyTeacherNewDoubt } from "../../utils/notificationHelper";
 import { 
     MessageSquare, 
     Plus, 
@@ -25,9 +26,11 @@ import {
     Layers,
     Play,
     Video,
-    Paperclip
+    Paperclip,
+    ExternalLink,
+    X
 } from "lucide-react-native";
-import { COLORS } from "../../utils/theme";
+import { COLORS, UPLOADS_URL } from "../../utils/theme";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
 import { Skeleton } from "../../components/Skeleton";
@@ -35,6 +38,7 @@ import { extractApiData, getApiError, isApiSuccess } from "../../api/response";
 import { useAuth } from "../../context/AuthContext";
 import { AppHeader } from "../../components/AppHeader";
 import { LinearGradient } from "expo-linear-gradient";
+
 
 export default function DoubtsScreen({ route, navigation }: any) {
   const { width } = useWindowDimensions();
@@ -50,6 +54,7 @@ export default function DoubtsScreen({ route, navigation }: any) {
   const [description, setDescription] = useState("");
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [courseModalVisible, setCourseModalVisible] = useState(false);
 
   const { user } = useAuth();
 
@@ -85,32 +90,35 @@ export default function DoubtsScreen({ route, navigation }: any) {
     fetchDoubts();
   };
 
+
+
   const handleCreateDoubt = async () => {
-    if (!description) return;
+    if (!description || !selectedCourse) {
+      Alert.alert("Required", "Please select a course and describe your query");
+      return;
+    }
     setIsSubmitting(true);
     try {
-      const res = await doubtsApi.create({ 
-          subject: title || "New Question", 
-          description,
-          course_id: selectedCourse?.course?.id || selectedCourse?.course_id
-      });
+      const payload = { 
+        title: title.trim() || "New Question", 
+        description: description.trim(),
+        course_id: selectedCourse?.course?.id || selectedCourse?.course_id || selectedCourse?.id || null,
+      };
+
+      const res = await doubtsApi.create(payload);
       if (isApiSuccess(res.data)) {
         setModalVisible(false);
         setTitle("");
         setDescription("");
         setSelectedCourse(null);
         fetchDoubts();
-
-        // Notify Teacher
-        notificationsApi.send({
-           role: 'teacher',
-           title: 'New Student Doubt',
-           message: `${user?.name || 'A student'} asked a question: ${description.substring(0, 50)}...`,
-           type: 'doubt'
-        });
+        notifyTeacherNewDoubt(user?.name || 'A Student', description.trim());
+      } else {
+        Alert.alert("Error", "Failed to post your doubt. Please try again.");
       }
-    } catch (e) {
-      console.log("Post doubt error", e);
+    } catch (e: any) {
+      console.log("Post doubt error", e?.response?.data || e);
+      Alert.alert("Error", e?.response?.data?.message || "Failed to post doubt. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -137,16 +145,22 @@ export default function DoubtsScreen({ route, navigation }: any) {
             <Text className="text-2xl font-black text-slate-900 mb-2 leading-tight tracking-tight">{doubt.subject || "Question"}</Text>
             <Text className="text-slate-400 text-base font-bold leading-6 mb-8">{doubt.description}</Text>
 
+
             {doubt.reply ? (
                 <View className="bg-slate-900 rounded-[36px] p-8 relative overflow-hidden">
                     <View className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full -mr-12 -mt-12" />
-                    <View className="flex-row items-center gap-4 mb-6">
-                        <View className="w-12 h-12 rounded-2xl bg-white/10 items-center justify-center border border-white/10">
-                            <Image source={{ uri: "https://i.pravatar.cc/100?u=mentor" }} className="w-full h-full rounded-2xl" />
+                    <View className="flex-row items-center justify-between mb-6">
+                        <View className="flex-row items-center gap-4">
+                            <View className="w-12 h-12 rounded-2xl bg-white/10 items-center justify-center border border-white/10">
+                                <Image source={{ uri: doubt.teacher?.avatar_url || `https://ui-avatars.com/api/?name=${doubt.teacher?.name || 'M'}&background=random` }} className="w-full h-full rounded-2xl" />
+                            </View>
+                            <View>
+                                <Text className="text-white font-black text-xs uppercase tracking-widest">{doubt.teacher?.name || "Mentor Response"}</Text>
+                                <Text className="text-slate-400 text-[10px] font-bold uppercase">Technical Expert</Text>
+                            </View>
                         </View>
-                        <View>
-                            <Text className="text-white font-black text-xs uppercase tracking-widest">Mentor Response</Text>
-                            <Text className="text-slate-400 text-[10px] font-bold uppercase">Technical Expert</Text>
+                        <View className="bg-white/10 px-3 py-1 rounded-full border border-white/10">
+                          <Text className="text-white text-[8px] font-black uppercase tracking-widest">Verified</Text>
                         </View>
                     </View>
                     <Text className="text-slate-300 italic leading-6 text-sm font-medium">
@@ -249,8 +263,13 @@ export default function DoubtsScreen({ route, navigation }: any) {
                 <View className="mx-6 bg-white rounded-[48px] p-10 border border-white shadow-2xl shadow-slate-900/[0.04] mb-10">
                     <View className="mb-10">
                         <Text className="text-slate-900 font-black text-sm mb-4">Contextual Lesson</Text>
-                        <TouchableOpacity className="bg-slate-50 h-16 rounded-2xl px-6 flex-row items-center justify-between border border-slate-100">
-                            <Text className="text-slate-400 font-black text-xs">Select related curriculum track</Text>
+                        <TouchableOpacity 
+                          onPress={() => setCourseModalVisible(true)}
+                          className="bg-slate-50 h-16 rounded-2xl px-6 flex-row items-center justify-between border border-slate-100"
+                        >
+                            <Text className={`font-black text-xs ${selectedCourse ? 'text-slate-900' : 'text-slate-400'}`}>
+                                {selectedCourse ? (selectedCourse.courses?.title || selectedCourse.course?.title || selectedCourse.title) : 'Select related curriculum track'}
+                            </Text>
                             <ChevronDown size={20} color="#94A3B8" />
                         </TouchableOpacity>
                     </View>
@@ -268,16 +287,7 @@ export default function DoubtsScreen({ route, navigation }: any) {
                         />
                     </View>
 
-                    <View className="mb-12">
-                        <Text className="text-slate-900 font-black text-sm mb-4">Evidence (Screenshots)</Text>
-                        <TouchableOpacity className="border-2 border-slate-100 border-dashed rounded-[32px] py-12 items-center justify-center">
-                            <View className="w-16 h-16 bg-blue-50 rounded-2xl items-center justify-center mb-4">
-                                <ImageIcon size={28} color="#2563EB" />
-                            </View>
-                            <Text className="text-slate-900 font-black text-sm mb-1">Attach Source Image</Text>
-                            <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Max resolution: 4K</Text>
-                        </TouchableOpacity>
-                    </View>
+
 
                     <TouchableOpacity 
                         onPress={handleCreateDoubt}
@@ -301,20 +311,48 @@ export default function DoubtsScreen({ route, navigation }: any) {
                     </TouchableOpacity>
                 </View>
 
-                {/* Quick Tip Banner */}
-                <View className="mx-6 bg-slate-900 rounded-[44px] p-10 flex-row items-center gap-8 mb-12 border border-slate-800">
-                    <View className="w-16 h-16 bg-white/10 rounded-full items-center justify-center border border-white/10">
-                        <Lightbulb size={32} color="#3B82F6" />
-                    </View>
-                    <View className="flex-1">
-                        <Text className="text-white font-black text-lg mb-2">Architect Tip</Text>
-                        <Text className="text-slate-400 text-xs leading-5 font-bold">
-                            Providing a clear screenshot of your console errors helps our mentors respond up to 2x faster.
-                        </Text>
-                    </View>
-                </View>
+
             </ScrollView>
         </SafeAreaWrapper>
+      </Modal>
+
+      {/* Course Picker Modal */}
+      <Modal visible={courseModalVisible} transparent animationType="fade">
+        <View className="flex-1 bg-slate-900/60 justify-end">
+           <View className="bg-white rounded-t-[44px] p-8 pb-12 h-[60%]">
+              <View className="flex-row justify-between items-center mb-8">
+                 <Text className="text-slate-900 text-xl font-black">Select Course</Text>
+                 <TouchableOpacity onPress={() => setCourseModalVisible(false)} className="p-3 bg-slate-50 rounded-2xl">
+                    <ChevronDown size={20} color="#0F172A" />
+                 </TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {enrollments.length > 0 ? enrollments.map((item) => (
+                  <TouchableOpacity 
+                    key={item.id}
+                    onPress={() => { setSelectedCourse(item); setCourseModalVisible(false); }}
+                    className={`p-6 rounded-[28px] mb-4 flex-row items-center justify-between ${selectedCourse?.id === item.id ? 'bg-blue-50 border border-blue-100' : 'bg-slate-50 border border-slate-50'}`}
+                  >
+                     <View className="flex-1 mr-4">
+                        <Text className={`font-black ${selectedCourse?.id === item.id ? 'text-blue-600' : 'text-slate-900'}`}>
+                           {item.courses?.title || item.course?.title || item.title || 'Untitled Track'}
+                        </Text>
+                        <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">
+                           Enrolled {item.enrolled_at || item.created_at ? new Date(item.enrolled_at || item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently'}
+                        </Text>
+                     </View>
+                     <ChevronRight size={18} color={selectedCourse?.id === item.id ? "#2563EB" : "#94A3B8"} />
+                  </TouchableOpacity>
+                ))
+ : (
+                  <View className="items-center py-12">
+                     <Layers size={40} color="#CBD5E1" />
+                     <Text className="text-slate-400 font-bold mt-4">No enrollments found</Text>
+                  </View>
+                )}
+              </ScrollView>
+           </View>
+        </View>
       </Modal>
     </SafeAreaWrapper>
   );

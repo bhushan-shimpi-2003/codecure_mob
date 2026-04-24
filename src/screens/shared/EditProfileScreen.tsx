@@ -112,13 +112,6 @@ export default function EditProfileScreen({ navigation }: any) {
           phone,
         });
 
-        notificationsApi.send({
-          user_id: user?.id || user?._id,
-          title: 'Security Update',
-          message: 'Your account profile information was recently updated.',
-          type: 'maintenance'
-        });
-
         Alert.alert("Success", "Your professional profile has been updated.");
         navigation.goBack();
       } else {
@@ -154,13 +147,6 @@ export default function EditProfileScreen({ navigation }: any) {
         setNewPassword("");
         setConfirmPassword("");
         
-        notificationsApi.send({
-          user_id: user?.id || user?._id,
-          title: 'Security Alert',
-          message: 'Your account password was successfully changed.',
-          type: 'maintenance'
-        });
-
         Alert.alert("Success", "Your password has been changed successfully.");
       } else {
         Alert.alert("Failed", getApiError(res.data));

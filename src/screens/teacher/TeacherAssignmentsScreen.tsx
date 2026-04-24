@@ -12,7 +12,8 @@ import {
   Modal,
 } from "react-native";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
-import { assignmentsApi, coursesApi, notificationsApi } from "../../api/endpoints";
+import { assignmentsApi, coursesApi } from "../../api/endpoints";
+import { notifyStudentNewAssignment } from "../../utils/notificationHelper";
 import { extractApiData, isApiSuccess } from "../../api/response";
 import {
   Plus,
@@ -104,13 +105,7 @@ export default function TeacherAssignmentsScreen({ navigation }: any) {
       });
       if (isApiSuccess(res.data)) {
         Alert.alert("Success", "Assignment created successfully");
-        
-        notificationsApi.send({
-          role: 'student',
-          title: 'New Assignment Alert!',
-          message: `A new assignment "${title.trim()}" has been posted. Due date: ${dueDate || 'Not specified'}.`,
-          type: 'assignment'
-        });
+        notifyStudentNewAssignment(title.trim(), dueDate);
 
         setTitle("");
         setDescription("");

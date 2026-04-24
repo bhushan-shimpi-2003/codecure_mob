@@ -163,8 +163,8 @@ export default function CourseDetailScreen({ route, navigation }: any) {
 
   if (isLoading) return <SafeAreaWrapper bgWhite><AppHeader navigation={navigation} showBack /><View className="p-10"><Skeleton height={320} className="rounded-[56px] mb-10"/><Skeleton height={40} width="80%" className="mb-6"/><Skeleton height={200} className="rounded-[40px]"/></View></SafeAreaWrapper>;
 
-  const imageUrl = course?.thumbnail && course.thumbnail !== "no-course-photo.jpg" 
-    ? course.thumbnail.startsWith("http") ? course.thumbnail : `${UPLOADS_URL}/${course.thumbnail}` 
+  const imageUrl = (typeof course?.thumbnail === 'string' && course.thumbnail !== "no-course-photo.jpg" && !course.thumbnail.includes('[object Object]'))
+    ? (course.thumbnail.startsWith("http") ? course.thumbnail : `${UPLOADS_URL}/${course.thumbnail}`) 
     : null;
 
   return (

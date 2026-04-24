@@ -50,11 +50,13 @@ export default function TeacherCreateLessonScreen({ navigation, route }: any) {
       const payload = {
         title: title.trim(),
         course_id: courseId,
-        video_url: videoUrl.trim(),
-        content: notes.trim(),
-        duration: duration.trim(),
-        category: category,
-        status: isVisible ? "published" : "draft",
+        video_url: videoUrl.trim() || null,
+        content: notes.trim() || null,
+        duration: duration.trim() || null,
+        lesson_order: 1,
+        is_live: isVisible,
+        is_free_preview: false,
+        module_id: null,
       };
 
       const res = await lessonsApi.create(payload);

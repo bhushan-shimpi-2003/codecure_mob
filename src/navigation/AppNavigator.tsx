@@ -87,12 +87,12 @@ export default function AppNavigator() {
           <Stack.Screen
             name="AdminEnrollments"
             component={AdminEnrollmentsScreen}
-            options={{ headerShown: true, title: "Enrollment Requests" }}
+            options={{ headerShown: false, title: "Enrollment Requests" }}
           />
           <Stack.Screen
             name="AdminPulse"
             component={AdminPulseScreen}
-            options={{ headerShown: true, title: "Platform Pulse" }}
+            options={{ headerShown: false, title: "Platform Pulse" }}
           />
           <Stack.Screen 
             name="EditProfile" 

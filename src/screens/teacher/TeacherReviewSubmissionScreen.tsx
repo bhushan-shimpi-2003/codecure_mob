@@ -23,7 +23,8 @@ import {
   Layers,
   CheckCircle2
 } from "lucide-react-native";
-import { assignmentsApi, notificationsApi } from "../../api/endpoints";
+import { assignmentsApi } from "../../api/endpoints";
+import { notifyStudentGraded } from "../../utils/notificationHelper";
 import { isApiSuccess } from "../../api/response";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -49,16 +50,13 @@ export default function TeacherReviewSubmissionScreen({ navigation, route }: any
         feedback: comments.trim(),
       });
       if (isApiSuccess(res.data)) {
+        // Notify the graded student silently
+        const studentId = student?.id || student?._id;
+        if (studentId) notifyStudentGraded(studentId, submission?.title || 'your assignment', parseInt(score));
+
         Alert.alert("Success", "Submission graded successfully", [
           { text: "OK", onPress: () => navigation.goBack() }
         ]);
-
-        notificationsApi.send({
-          user_id: student.id || student._id,
-          title: 'Assignment Graded!',
-          message: `Your submission has been reviewed. Score: ${score}/100. Feedback: ${comments.trim().substring(0, 50)}...`,
-          type: 'assignment'
-        });
       }
     } catch (e) {
       Alert.alert("Error", "Failed to submit grade");

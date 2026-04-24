@@ -13,7 +13,8 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
-import { jobsApi, notificationsApi } from "../../api/endpoints";
+import { jobsApi } from "../../api/endpoints";
+import { notifyStudentNewJob } from "../../utils/notificationHelper";
 import { extractApiData, isApiSuccess } from "../../api/response";
 import { 
   Briefcase, 
@@ -83,28 +84,20 @@ export default function TeacherJobsScreen({ navigation }: any) {
     }
     setIsSubmitting(true);
     try {
-      const skillsArray = skills.split(",").map(s => s.trim()).filter(s => s !== "");
       const res = await jobsApi.create({
         title: title.trim(),
         company: company.trim(),
-        location: location.trim(),
-        salary: salary.trim(),
+        location: location.trim() || undefined,
+        salary: salary.replace(/[^0-9.]/g, '') || undefined,
         description: description.trim(),
-        skills: skillsArray,
-        application_link: link.trim(),
+        apply_url: link.trim() || undefined,
+        skills: skills.trim() ? skills.split(',').map(s => s.trim()) : [],
         is_active: isActive,
       });
       if (isApiSuccess(res.data)) {
         Alert.alert("Success", "Job vacancy published successfully");
+        notifyStudentNewJob(title.trim(), company.trim());
         
-        // Notify Students
-        notificationsApi.send({
-          role: 'student',
-          title: 'New Career Opportunity!',
-          message: `${company} just posted a new position: ${title.trim()}. Check it out now!`,
-          type: 'job'
-        });
-
         setTitle(""); setCompany(""); setLocation(""); setSalary(""); setDescription(""); setSkills(""); setLink("");
         setShowPostModal(false);
         fetchJobs();
@@ -203,7 +196,6 @@ export default function TeacherJobsScreen({ navigation }: any) {
               ) : (
                 <View className="gap-8">
                   {jobs.map((job) => {
-                    const skillsArr = Array.isArray(job.skills) ? job.skills : (job.skills?.split(",") || []);
                     return (
                       <View key={job.id || job._id} className="bg-white rounded-[44px] p-8 border border-white shadow-2xl shadow-slate-900/[0.04]">
                         <View className="flex-row items-start justify-between mb-8">
@@ -229,17 +221,10 @@ export default function TeacherJobsScreen({ navigation }: any) {
                            </View>
                         </View>
 
-                        <View className="flex-row flex-wrap gap-2 mb-10">
-                           {skillsArr.slice(0, 3).map((s: string, sIdx: number) => (
-                             <View key={sIdx} className="bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm">
-                               <Text className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{s.trim()}</Text>
-                             </View>
-                           ))}
-                        </View>
 
                         <TouchableOpacity 
                           activeOpacity={0.8}
-                          onPress={() => handleOpenLink(job.application_link)}
+                          onPress={() => handleOpenLink(job.apply_url || job.application_link)}
                           className="bg-slate-900 rounded-[28px] py-6 items-center justify-center shadow-xl shadow-slate-200"
                         >
                           <Text className="text-white font-black text-[11px] uppercase tracking-[2px]">Review Application</Text>
@@ -319,6 +304,16 @@ export default function TeacherJobsScreen({ navigation }: any) {
                           />
                        </View>
                     </View>
+                    <View className="mb-8">
+                       <Text className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Required Skills</Text>
+                       <TextInput 
+                         placeholder="React, Tailwind, Node.js" 
+                         className="bg-white border border-slate-50 rounded-3xl px-8 py-6 text-slate-900 text-[14px] font-black shadow-sm" 
+                         placeholderTextColor="#CBD5E1" 
+                         value={skills} 
+                         onChangeText={setSkills} 
+                       />
+                    </View>
                     <View>
                        <Text className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Job Description</Text>
                        <TextInput 
@@ -328,17 +323,7 @@ export default function TeacherJobsScreen({ navigation }: any) {
                          multiline 
                          textAlignVertical="top" 
                          value={description} 
-                         onChangeText={setDescription} 
-                       />
-                    </View>
-                    <View>
-                       <Text className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Required Skills</Text>
-                       <TextInput 
-                         placeholder="React, Tailwind, Node.js" 
-                         className="bg-white border border-slate-50 rounded-3xl px-8 py-6 text-slate-900 text-[14px] font-black shadow-sm" 
-                         placeholderTextColor="#CBD5E1" 
-                         value={skills} 
-                         onChangeText={setSkills} 
+                         onChangeText={description => setDescription(description)} 
                        />
                     </View>
 

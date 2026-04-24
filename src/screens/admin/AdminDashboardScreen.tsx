@@ -24,6 +24,7 @@ import { COLORS } from "../../utils/theme";
 import { Skeleton } from "../../components/Skeleton";
 import { extractApiData, isApiSuccess } from "../../api/response";
 import { LinearGradient } from "expo-linear-gradient";
+import { AppHeader } from "../../components/AppHeader";
 
 const { width } = Dimensions.get("window");
 
@@ -69,7 +70,7 @@ export default function AdminDashboardScreen({ navigation }: any) {
 
   const stats = useMemo(() => {
     const revenue = transactions.reduce((sum, tx) => sum + Number(tx?.amount || 0), 0);
-    const activeCourses = courses.filter(c => c.status === 'active').length;
+    const activeCourses = courses.filter(c => c.status === 'published').length;
     
     // Group transactions by month for trends
     const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
@@ -133,19 +134,7 @@ export default function AdminDashboardScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper bgWhite>
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-6 py-4 border-b border-slate-50">
-        <Text className="text-lg font-black text-slate-900">Dashboard Overview</Text>
-        <View className="flex-row items-center gap-4">
-          <TouchableOpacity className="p-2 bg-slate-50 rounded-full">
-            <Search size={20} color={COLORS.slate600} />
-          </TouchableOpacity>
-          <TouchableOpacity className="p-2 bg-slate-50 rounded-full">
-            <Bell size={20} color={COLORS.slate600} />
-            <View className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <AppHeader navigation={navigation} role="Admin" title="Admin" subtitle="Dashboard" />
 
       <ScrollView 
         className="flex-1 bg-[#F8FAFC]"
@@ -203,6 +192,37 @@ export default function AdminDashboardScreen({ navigation }: any) {
               color="#E11D48" 
               bg="bg-rose-50" 
             />
+
+            {/* Quick Actions / Platform Governance */}
+            <View className="bg-white p-8 rounded-[40px] border border-slate-50 shadow-sm mb-8">
+              <View className="flex-row items-center justify-between mb-6">
+                <View>
+                  <Text className="text-xl font-black text-slate-900">Governance</Text>
+                  <Text className="text-slate-400 text-xs font-bold mt-1">Platform management tools</Text>
+                </View>
+                <View className="bg-purple-50 px-4 py-2 rounded-2xl">
+                   <Bell size={18} color="#7C3AED" />
+                </View>
+              </View>
+
+              <View className="flex-row gap-3">
+                <TouchableOpacity 
+                  onPress={() => navigation.navigate('AdminSendNotification')}
+                  className="flex-1 bg-slate-900 py-6 rounded-[24px] flex-row items-center justify-center shadow-xl shadow-slate-900/20"
+                >
+                   <Text className="text-white font-black text-[10px] uppercase tracking-[1px] mr-2">Broadcast</Text>
+                   <Zap size={14} color="white" fill="white" />
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  onPress={() => navigation.navigate('AdminPulse')}
+                  className="flex-1 bg-blue-50 py-6 rounded-[24px] flex-row items-center justify-center border border-blue-100"
+                >
+                   <Text className="text-blue-600 font-black text-[10px] uppercase tracking-[1px] mr-2">Pulse</Text>
+                   <TrendingUp size={14} color="#2563EB" />
+                </TouchableOpacity>
+              </View>
+            </View>
 
             {/* Enrollment Trends Derived Chart */}
             <View className="bg-white p-8 rounded-[40px] border border-slate-50 shadow-sm mb-8">

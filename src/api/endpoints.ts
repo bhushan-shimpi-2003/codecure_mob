@@ -22,8 +22,8 @@ export const coursesApi = {
   detail: (slug: string) => client.get(`/courses/${slug}`),                  // GET /courses/:slug
   teacherCourses: () => client.get("/courses/teacher/my"),                   // GET /courses/teacher/my (teacher/admin)
   adminAll: () => client.get("/courses/admin/all"),                          // GET /courses/admin/all (admin)
-  create: (data: any) => client.post("/courses", data),                      // POST /courses
-  update: (id: string, data: any) => client.put(`/courses/${id}`, data),     // PUT /courses/:id
+  create: (data: any, config?: any) => client.post("/courses", data, config),                      // POST /courses
+  update: (id: string, data: any, config?: any) => client.put(`/courses/${id}`, data, config),     // PUT /courses/:id
   delete: (id: string) => client.delete(`/courses/${id}`),                   // DELETE /courses/:id
   addModule: (courseId: string, data: any) =>
     client.post(`/courses/${courseId}/modules`, data),                       // POST /courses/:courseId/modules
@@ -148,6 +148,10 @@ export const notificationsApi = {
   markAsRead: (id: string) => client.put(`/notifications/${id}/read`, {}),   // PUT /notifications/:id/read
   markAllAsRead: () => client.put("/notifications/read-all", {}),            // PUT /notifications/read-all
   send: (data: { user_id?: string; role?: string; title: string; message: string; type?: string }) => 
-    client.post("/notifications/send", data).catch(err => console.log("Notification suppressed:", err.message)),
+    client.post("/notifications/send", data, {
+      // Treat all HTTP responses (including 403) as resolved — prevents Axios
+      // from throwing on permission errors and polluting the browser console.
+      validateStatus: () => true,
+    }),
   delete: (id: string) => client.delete(`/notifications/${id}`),             // DELETE /notifications/:id
 };

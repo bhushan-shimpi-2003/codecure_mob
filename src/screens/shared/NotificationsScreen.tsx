@@ -41,7 +41,11 @@ export default function NotificationsScreen({ navigation }: any) {
       case 'course': return <MessageSquare size={20} color="#3B82F6" />;
       case 'assignment': return <CheckCircle2 size={20} color="#10B981" />;
       case 'message': return <MessageSquare size={20} color="#2563EB" />;
+      case 'doubt': return <MessageSquare size={20} color="#0EA5E9" />;
+      case 'resolution': return <CheckCircle2 size={20} color="#059669" />;
+      case 'alert': return <AlertCircle size={20} color="#F59E0B" />;
       case 'system': return <AlertCircle size={20} color="#A855F7" />;
+      case 'admin': return <Bell size={20} color="#F43F5E" />;
       default: return <Info size={20} color="#64748B" />;
     }
   };
@@ -51,7 +55,11 @@ export default function NotificationsScreen({ navigation }: any) {
       case 'course': return 'bg-blue-50';
       case 'assignment': return 'bg-emerald-50';
       case 'message': return 'bg-blue-50';
+      case 'doubt': return 'bg-sky-50';
+      case 'resolution': return 'bg-emerald-50';
+      case 'alert': return 'bg-amber-50';
       case 'system': return 'bg-purple-50';
+      case 'admin': return 'bg-rose-50';
       default: return 'bg-slate-50';
     }
   };

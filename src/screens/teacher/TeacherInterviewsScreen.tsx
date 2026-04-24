@@ -12,7 +12,8 @@ import {
   Modal,
 } from "react-native";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
-import { interviewsApi, coursesApi, teacherApi, notificationsApi } from "../../api/endpoints";
+import { interviewsApi, coursesApi, teacherApi } from "../../api/endpoints";
+import { notifyStudentInterviewScheduled, notifyStudentInterviewCompleted } from "../../utils/notificationHelper";
 import { extractApiData, isApiSuccess } from "../../api/response";
 import { 
   CalendarClock, 
@@ -97,15 +98,9 @@ export default function TeacherInterviewsScreen({ navigation }: any) {
         interview_type: "Technical Round"
       });
       if (isApiSuccess(res.data)) {
+        const courseTitle = courses.find((c: any) => c.id === selectedCourseId)?.title || 'your course';
         Alert.alert("Success", "Interview scheduled successfully");
-        
-        // Notify Student
-        notificationsApi.send({
-          user_id: studentId,
-          title: 'Interview Scheduled!',
-          message: `Your technical interview for ${courses.find(c => c.id === selectedCourseId)?.title || 'Course'} has been scheduled for ${new Date(scheduledAt).toLocaleString()}.`,
-          type: 'info'
-        });
+        notifyStudentInterviewScheduled(studentId, courseTitle, scheduledAt);
 
         setStudentId(""); setScheduledAt(""); setSelectedCourseId(""); setCourseStudents([]); setSelectedSlot("");
         setShowScheduleModal(false);
@@ -136,15 +131,7 @@ export default function TeacherInterviewsScreen({ navigation }: any) {
               
               if (isApiSuccess(res.data)) {
                 Alert.alert("Success", "Interview marked as completed.");
-                
-                // Notify Student
-                notificationsApi.send({
-                  user_id: studentId,
-                  title: 'Interview Completed!',
-                  message: 'Your recent technical interview has been evaluated. Check your feedback loop.',
-                  type: 'success'
-                });
-
+                notifyStudentInterviewCompleted(studentId);
                 fetchInitialData();
               }
             } catch (e) {
@@ -160,12 +147,34 @@ export default function TeacherInterviewsScreen({ navigation }: any) {
 
   const handleSlotSelect = (slot: string) => {
     setSelectedSlot(slot);
-    const dateStr = `2026-04-${selectedDate.toString().padStart(2, '0')}`;
-    setScheduledAt(`${dateStr} ${slot}`);
+    // Use current date dynamically instead of a hardcoded year/month
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(selectedDate).padStart(2, '0');
+    // Format: "YYYY-MM-DD HH:MM" → backend converts to timestamp
+    const slotTime = slot.includes('AM') || slot.includes('PM')
+      ? slot.replace(' AM', '').replace(' PM', '') + (slot.includes('PM') && !slot.startsWith('12') ? '' : '')
+      : slot;
+    setScheduledAt(`${year}-${month}-${day}T${convertTo24Hour(slot)}:00`);
+  };
+
+  const convertTo24Hour = (time12h: string): string => {
+    const [time, modifier] = time12h.split(' ');
+    let [hours, minutes] = time.split(':');
+    if (hours === '12') hours = modifier === 'AM' ? '00' : '12';
+    else if (modifier === 'PM') hours = String(parseInt(hours, 10) + 12);
+    return `${hours.padStart(2, '0')}:${minutes}`;
   };
 
   const upcomingInterviews = useMemo(() => {
-    return interviews.filter((i: any) => i.status !== 'completed').sort((a: any, b: any) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
+    return interviews
+      .filter((i: any) => {
+        const status = (i.status || '').toLowerCase();
+        // Show everything that is NOT explicitly completed
+        return status !== 'completed';
+      })
+      .sort((a: any, b: any) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
   }, [interviews]);
 
   const selectedCourse = courses.find(c => c.id === selectedCourseId);
@@ -268,9 +277,23 @@ export default function TeacherInterviewsScreen({ navigation }: any) {
                  </View>
               </View>
 
-              {upcomingInterviews.map((item: any) => {
-                const studentProfile = item.profiles || {};
-                const interviewTitle = item.title ? (item.title.includes("-") ? item.title.split("-")[1].trim() : item.title) : "Technical Round";
+              {upcomingInterviews.length === 0 ? (
+                <View className="bg-white rounded-[44px] p-10 border border-slate-50 shadow-sm items-center">
+                  <View className="w-16 h-16 rounded-full bg-blue-50 items-center justify-center mb-4">
+                    <CalendarClock size={28} color="#2563EB" />
+                  </View>
+                  <Text className="text-slate-900 font-black text-base mb-2">No Sessions Yet</Text>
+                  <Text className="text-slate-400 text-xs font-bold text-center leading-5">
+                    Tap "Book Session" above to schedule your first mock interview with a student.
+                  </Text>
+                </View>
+              ) : upcomingInterviews.map((item: any) => {
+                // Backend may join student profile as item.profiles or item.student
+                const studentProfile = item.profiles || item.student || {};
+                const interviewTitle = item.title
+                  ? (item.title.includes("-") ? item.title.split("-")[1].trim() : item.title)
+                  : "Technical Round";
+
                 return (
                   <View key={item.id} className="bg-white rounded-[44px] p-8 border border-white shadow-2xl shadow-slate-900/[0.04] mb-8 overflow-hidden">
                     <View className="flex-row items-center justify-between mb-8">
@@ -329,13 +352,7 @@ export default function TeacherInterviewsScreen({ navigation }: any) {
                 );
               })}
 
-              {upcomingInterviews.length === 0 && (
-                <View className="items-center justify-center py-20 bg-slate-50 rounded-[44px] border border-dashed border-slate-200">
-                   <CalendarClock size={40} color="#CBD5E1" />
-                   <Text className="text-slate-400 font-black text-[10px] uppercase tracking-widest mt-4">No sessions reserved</Text>
-                </View>
-              )}
-           </View>
+            </View>
         </View>
       </ScrollView>
 

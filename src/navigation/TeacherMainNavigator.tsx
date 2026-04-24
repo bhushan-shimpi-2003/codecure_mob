@@ -23,6 +23,7 @@ import TeacherDoubtsScreen from "../screens/teacher/TeacherDoubtsScreen";
 import TeacherInterviewsScreen from "../screens/teacher/TeacherInterviewsScreen";
 import TeacherJobsScreen from "../screens/teacher/TeacherJobsScreen";
 import TeacherProfileScreen from "../screens/teacher/TeacherProfileScreen";
+import TeacherSendNotificationScreen from "../screens/teacher/TeacherSendNotificationScreen";
 import CourseDetailScreen from "../screens/shared/CourseDetailScreen";
 import LessonScreen from "../screens/student/LessonScreen";
 import { COLORS } from "../utils/theme";
@@ -47,6 +48,7 @@ function TeacherDashboardStack() {
       <Stack.Screen name="TeacherReviewSubmission" component={TeacherReviewSubmissionScreen} />
       <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
       <Stack.Screen name="Lesson" component={LessonScreen} />
+      <Stack.Screen name="TeacherSendNotification" component={TeacherSendNotificationScreen} />
     </Stack.Navigator>
   );
 }

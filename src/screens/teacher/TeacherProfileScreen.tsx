@@ -28,7 +28,8 @@ import {
   Star,
   Bell,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Megaphone,
 } from "lucide-react-native";
 import { AppHeader } from "../../components/AppHeader";
 import { LinearGradient } from "expo-linear-gradient";
@@ -240,6 +241,13 @@ export default function TeacherProfileScreen({ navigation }: any) {
               title="Notifications" 
               subtitle="Manage Alert Preferences"
               onPress={() => navigation.navigate("Notifications")} 
+            />
+            <ProfileLink 
+              icon={Megaphone} 
+              title="Send Announcement" 
+              subtitle="Broadcast to Your Students"
+              color="#2563EB"
+              onPress={() => navigation.navigate("TeacherSendNotification")} 
             />
             <ProfileLink 
               icon={Shield} 

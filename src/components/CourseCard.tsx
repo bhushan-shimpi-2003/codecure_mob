@@ -20,10 +20,8 @@ interface CourseCardProps {
 
 export const CourseCard: React.FC<CourseCardProps> = ({ course, onPress, isEnrolled = false }) => {
   const imageUrl =
-    course.thumbnail && course.thumbnail !== "no-course-photo.jpg"
-      ? course.thumbnail.startsWith("http")
-        ? course.thumbnail
-        : `${UPLOADS_URL}/${course.thumbnail}`
+    (typeof course.thumbnail === 'string' && course.thumbnail !== "no-course-photo.jpg" && !course.thumbnail.includes('[object Object]'))
+      ? (course.thumbnail.startsWith("http") ? course.thumbnail : `${UPLOADS_URL}/${course.thumbnail}`)
       : null;
 
   const instructorName = (course as any)?.profiles?.name || (course as any)?.instructor?.name || "Expert Mentor";
@@ -43,7 +41,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onPress, isEnrol
         ) : (
           <View className="flex-1 items-center justify-center bg-slate-900">
              <GraduationCap size={48} color="white" />
-             <Text className="text-white font-black text-xs uppercase mt-3 tracking-widest">{course.level || "Beginner"}</Text>
+             <Text className="text-white font-black text-xs uppercase mt-3 tracking-widest text-center">{course.level || "Beginner"}</Text>
           </View>
         )}
         
@@ -92,4 +90,3 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onPress, isEnrol
     </TouchableOpacity>
   );
 };
-

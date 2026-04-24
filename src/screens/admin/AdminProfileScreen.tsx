@@ -30,6 +30,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { adminApi } from "../../api/endpoints";
 import { extractApiData, isApiSuccess } from "../../api/response";
 import { useAuth } from "../../context/AuthContext";
+import { AppHeader } from "../../components/AppHeader";
 
 const { width } = Dimensions.get("window");
 
@@ -108,18 +109,7 @@ export default function AdminProfileScreen({ navigation }: any) {
 
   return (
     <SafeAreaWrapper bgWhite>
-      {/* Header */}
-      <View className="flex-row items-center px-6 py-4">
-        <TouchableOpacity className="p-2" onPress={() => navigation.goBack()}>
-           <ChevronLeft size={24} color={COLORS.slate900} />
-        </TouchableOpacity>
-        <View className="flex-1 items-center">
-           <Text className="text-slate-900 font-black text-lg">Platform Settings</Text>
-        </View>
-        <TouchableOpacity className="p-2" onPress={logout}>
-           <LogOut size={20} color={COLORS.error} />
-        </TouchableOpacity>
-      </View>
+      <AppHeader navigation={navigation} role="Admin" title="Platform" subtitle="Settings" />
 
       <ScrollView 
         className="flex-1 bg-[#F8FAFC]"
@@ -155,6 +145,19 @@ export default function AdminProfileScreen({ navigation }: any) {
              value={pushNotifications} 
              onValueChange={setPushNotifications}
            />
+           <View className="h-[1px] bg-slate-50 w-full mb-8" />
+           <TouchableOpacity 
+             onPress={() => navigation.navigate('AdminSendNotification')}
+             className="flex-row items-center justify-between"
+           >
+             <View className="flex-1 mr-4">
+               <Text className="text-slate-900 font-black text-base">Broadcast Center</Text>
+               <Text className="text-slate-400 text-xs font-bold leading-5 mt-1">Send notifications to roles or individuals</Text>
+             </View>
+             <View className="bg-purple-50 p-3 rounded-xl">
+                <Bell size={18} color="#7C3AED" />
+             </View>
+           </TouchableOpacity>
         </View>
 
         <Text className="text-slate-900 text-lg font-black mb-8">Appearance</Text>

@@ -111,8 +111,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     if (user) {
       fetchNotifications();
-      // Poll every 60 seconds
-      const interval = setInterval(fetchNotifications, 60000);
+      // Poll every 10 seconds
+      const interval = setInterval(fetchNotifications, 10000);
       return () => clearInterval(interval);
     }
   }, [user, fetchNotifications]);

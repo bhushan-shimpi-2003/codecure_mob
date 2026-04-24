@@ -103,7 +103,7 @@ export default function CoursesScreen({ navigation }: any) {
     const courseId = course?.id || course?._id || enr.course_id;
     const progress = enr.progress || 0;
     const nextLesson = nextLessonsMap[String(courseId)];
-    const thumbnail = course?.thumbnail && course.thumbnail !== "no-course-photo.jpg" 
+    const thumbnail = (typeof course?.thumbnail === 'string' && course.thumbnail !== "no-course-photo.jpg" && !course.thumbnail.includes('[object Object]'))
         ? (course.thumbnail.startsWith("http") ? course.thumbnail : `${UPLOADS_URL}/${course.thumbnail}`) 
         : null;
 
@@ -160,7 +160,7 @@ export default function CoursesScreen({ navigation }: any) {
                             <Text className="text-blue-600"> Courses</Text> 
                         </Text>
                         <Text className="text-slate-500 mt-4 text-[15px] leading-6 max-w-[90%]">
-                            Pic k up right where you left off.
+                            Pick up right where you left off.
                         </Text>
                       </View>
 
@@ -219,7 +219,7 @@ export default function CoursesScreen({ navigation }: any) {
                 </View>
 
                 {recommendedCourses.map((course, i) => {
-                    const thumb = course?.thumbnail && course.thumbnail !== "no-course-photo.jpg" 
+                    const thumb = (typeof course?.thumbnail === 'string' && course.thumbnail !== "no-course-photo.jpg" && !course.thumbnail.includes('[object Object]'))
                         ? (course.thumbnail.startsWith("http") ? course.thumbnail : `${UPLOADS_URL}/${course.thumbnail}`) 
                         : null;
                     return (

@@ -24,6 +24,7 @@ import {
 } from "lucide-react-native";
 import { COLORS } from "../../utils/theme";
 import { LinearGradient } from "expo-linear-gradient";
+import { AppHeader } from "../../components/AppHeader";
 
 const TABS = ["All", "Enrollments", "Refunds", "Payouts"];
 
@@ -164,21 +165,7 @@ export default function AdminTransactionsScreen() {
 
   return (
     <SafeAreaWrapper bgWhite>
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-6 py-4">
-        <TouchableOpacity className="p-2 bg-slate-50 rounded-xl" onPress={() => fetchData()}>
-           <TrendingUp size={24} color={COLORS.slate900} />
-        </TouchableOpacity>
-        <Text className="text-slate-900 font-black text-lg">Financial Ledger</Text>
-        <View className="flex-row gap-3">
-           <TouchableOpacity className="p-2 bg-slate-50 rounded-xl">
-              <Search size={20} color={COLORS.slate900} />
-           </TouchableOpacity>
-           <TouchableOpacity className="p-2 bg-slate-50 rounded-xl">
-              <MoreVertical size={20} color={COLORS.slate900} />
-           </TouchableOpacity>
-        </View>
-      </View>
+      <AppHeader navigation={navigation} role="Admin" title="Financial" subtitle="Ledger" />
 
       <ScrollView 
         className="flex-1 bg-[#F8FAFC]"

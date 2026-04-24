@@ -9,7 +9,8 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaWrapper } from "../../layouts/SafeAreaWrapper";
-import { enrollmentsApi, adminApi, notificationsApi } from "../../api/endpoints";
+import { enrollmentsApi, adminApi } from "../../api/endpoints";
+import { notifyStudentEnrollmentApproved, notifyStudentEnrollmentRejected } from "../../utils/notificationHelper";
 import { extractApiData, isApiSuccess } from "../../api/response";
 import { Skeleton } from "../../components/Skeleton";
 import { 
@@ -21,8 +22,9 @@ import {
 } from "lucide-react-native";
 import { COLORS } from "../../utils/theme";
 import { LinearGradient } from "expo-linear-gradient";
+import { AppHeader } from "../../components/AppHeader";
 
-export default function AdminEnrollmentsScreen() {
+export default function AdminEnrollmentsScreen({ navigation }: any) {
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,16 +66,16 @@ export default function AdminEnrollmentsScreen() {
       const res = await enrollmentsApi.updateRequest(requestId, status);
       
       if (isApiSuccess(res.data)) {
-        // Notify Student
         if (request) {
-          notificationsApi.send({
-            user_id: request.user_id || request.student_id || request.student?.id || request.student?._id,
-            title: status === 'approved' ? 'Enrollment Approved!' : 'Enrollment Update',
-            message: status === 'approved' 
-              ? `Your request for "${request.course_title || 'the course'}" has been approved. You can start learning now!` 
-              : `Your request for "${request.course_title || 'the course'}" was not approved at this time.`,
-            type: status === 'approved' ? 'resolution' : 'admin'
-          });
+          const studentId = request.user_id || request.student_id || request.student?.id || request.student?._id;
+          const courseTitle = request.course_title || 'the course';
+          if (studentId) {
+            if (status === 'approved') {
+              notifyStudentEnrollmentApproved(studentId, courseTitle);
+            } else {
+              notifyStudentEnrollmentRejected(studentId, courseTitle);
+            }
+          }
         }
         fetchData();
       }
@@ -148,19 +150,7 @@ export default function AdminEnrollmentsScreen() {
 
   return (
     <SafeAreaWrapper bgWhite>
-       {/* Header */}
-       <View className="flex-row items-center justify-between px-6 py-4">
-        <TouchableOpacity className="p-2 bg-slate-100 rounded-full">
-           <LinearGradient colors={['#3B82F6', '#1D4ED8']} className="w-10 h-10 rounded-full items-center justify-center">
-              <Image source={{ uri: 'https://i.pravatar.cc/100?u=admin' }} className="w-8 h-8 rounded-full" />
-           </LinearGradient>
-        </TouchableOpacity>
-        <Text className="text-blue-900 font-black text-lg">CodeCure Admin</Text>
-        <TouchableOpacity className="p-2 bg-slate-50 rounded-xl relative">
-           <Bell size={20} color={COLORS.primary} />
-           <View className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-white" />
-        </TouchableOpacity>
-      </View>
+      <AppHeader navigation={navigation} role="Admin" title="Academy" subtitle="Enrollments" showBack />
 
       <ScrollView 
         className="flex-1 bg-[#F8FAFC]"

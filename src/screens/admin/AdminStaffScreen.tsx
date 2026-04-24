@@ -28,10 +28,11 @@ import {
   X
 } from "lucide-react-native";
 import { COLORS } from "../../utils/theme";
+import { AppHeader } from "../../components/AppHeader";
 
 const { width, height } = Dimensions.get("window");
 
-export default function AdminStaffScreen() {
+export default function AdminStaffScreen({ navigation }: any) {
   const [staff, setStaff] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -130,30 +131,35 @@ export default function AdminStaffScreen() {
     const isOnline = useMemo(() => Math.random() > 0.3, [user.id || user._id]);
 
     return (
-      <View className="bg-white rounded-[32px] p-5 flex-row items-center justify-between border border-slate-50 mb-4 shadow-sm">
+      <View className="bg-white rounded-[32px] p-6 flex-row items-center justify-between border border-slate-50 mb-4 shadow-sm">
         <View className="flex-row items-center flex-1">
           <View className="relative">
-            <View className="w-14 h-14 rounded-full bg-slate-100 overflow-hidden border-2 border-white shadow-sm">
-               <Image source={{ uri: `https://i.pravatar.cc/150?u=${user.id || user._id}` }} className="w-full h-full" />
+            <View className="w-16 h-16 rounded-2xl bg-slate-50 overflow-hidden border-2 border-white shadow-sm items-center justify-center">
+               {user.image ? (
+                 <Image source={{ uri: user.image }} className="w-full h-full" />
+               ) : (
+                 <Text className="text-blue-600 font-black text-lg">{(user.name || "U").substring(0, 1)}</Text>
+               )}
             </View>
             {isOnline && (
-              <View className="absolute bottom-0 right-0 w-4 h-4 bg-emerald-400 rounded-full border-2 border-white" />
+              <View className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-4 border-white" />
             )}
           </View>
           
-          <View className="ml-4 flex-1">
-            <Text className="text-slate-900 font-black text-base" numberOfLines={1}>{user.name || "User"}</Text>
+          <View className="ml-5 flex-1">
+            <View className="flex-row items-center gap-2 mb-1">
+              <Text className="text-slate-900 font-black text-lg" numberOfLines={1}>{user.name || "User"}</Text>
+              {user.role === 'admin' && <ShieldCheck size={14} color="#4F46E5" />}
+            </View>
             <Text className="text-slate-400 text-xs font-bold" numberOfLines={1}>{user.email || "user@example.com"}</Text>
             
-            <View className="flex-row mt-2 gap-2">
-               <View className="bg-blue-50 px-3 py-1 rounded-lg">
-                  <Text className="text-blue-600 text-[8px] font-black uppercase tracking-widest">{user.role || 'STUDENT'}</Text>
+            <View className="flex-row mt-3 gap-2">
+               <View className="bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">
+                  <Text className="text-slate-500 text-[8px] font-black uppercase tracking-widest">{user.role || 'STUDENT'}</Text>
                </View>
-               {(user.specialization || user.role === 'teacher') && (
-                 <View className="bg-indigo-50 px-3 py-1 rounded-lg">
-                    <Text className="text-indigo-600 text-[8px] font-black uppercase tracking-widest">
-                      {user.specialization || (user.role === 'teacher' ? 'INSTRUCTOR' : 'ACTIVE')}
-                    </Text>
+               {user.role === 'teacher' && (
+                 <View className="bg-blue-50 px-3 py-1 rounded-lg border border-blue-100">
+                    <Text className="text-blue-600 text-[8px] font-black uppercase tracking-widest">Instructor</Text>
                  </View>
                )}
             </View>
@@ -161,13 +167,13 @@ export default function AdminStaffScreen() {
         </View>
         
         <TouchableOpacity 
-          className="p-2"
+          className="w-12 h-12 items-center justify-center bg-slate-50 rounded-2xl"
           onPress={() => {
             setSelectedUser(user);
             setMenuVisible(true);
           }}
         >
-           <MoreHorizontal size={20} color={COLORS.slate300} />
+           <MoreHorizontal size={20} color={COLORS.slate900} />
         </TouchableOpacity>
       </View>
     );
@@ -175,16 +181,7 @@ export default function AdminStaffScreen() {
 
   return (
     <SafeAreaWrapper bgWhite>
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-6 py-4">
-        <TouchableOpacity className="p-2 bg-slate-50 rounded-xl">
-           <Menu size={24} color={COLORS.slate900} />
-        </TouchableOpacity>
-        <Text className="text-blue-900 font-black text-lg">CodeCure Admin</Text>
-        <TouchableOpacity className="p-2 bg-slate-50 rounded-xl">
-           <Bell size={20} color={COLORS.slate900} />
-        </TouchableOpacity>
-      </View>
+      <AppHeader navigation={navigation} role="Admin" title="Directory" subtitle="Management" />
 
       <ScrollView 
         className="flex-1 bg-[#F8FAFC]"
@@ -203,69 +200,103 @@ export default function AdminStaffScreen() {
         </View>
 
            {/* Tab Switcher */}
-           <View className="bg-slate-100/50 p-2 rounded-[32px] flex-row mb-10">
-              {["Students", "Teachers", "Admins"].map((tab) => (
-                <TouchableOpacity 
-                  key={tab} 
-                  onPress={() => setActiveTab(tab as any)}
-                  className={`flex-1 py-4 rounded-[26px] items-center ${activeTab === tab ? 'bg-white shadow-sm' : ''}`}
-                >
-                  <Text className={`font-black text-sm ${activeTab === tab ? 'text-blue-600' : 'text-slate-400'}`}>{tab}</Text>
-                </TouchableOpacity>
-              ))}
+           <View className="px-8 mb-10">
+              <View className="bg-slate-100/50 p-2 rounded-[32px] flex-row">
+                {["Students", "Teachers", "Admins"].map((tab) => (
+                  <TouchableOpacity 
+                    key={tab} 
+                    onPress={() => setActiveTab(tab as any)}
+                    className={`flex-1 py-4 rounded-[26px] items-center ${activeTab === tab ? 'bg-white shadow-sm' : ''}`}
+                  >
+                    <Text className={`font-black text-sm ${activeTab === tab ? 'text-blue-600' : 'text-slate-400'}`}>{tab}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
            </View>
 
            {/* Stats Card */}
-           <View className="bg-white rounded-[44px] p-8 border border-slate-50 shadow-sm mb-10">
-              <Text className="text-slate-900 text-base font-black mb-6">User Statistics</Text>
-              
-              <View className="flex-row justify-between items-end mb-4">
-                 <Text className="text-slate-400 text-sm font-bold">Total Users</Text>
-                 <Text className="text-blue-600 text-2xl font-black">{(students.length + staff.length).toLocaleString()}</Text>
-              </View>
-              <View className="h-2 bg-slate-100 rounded-full overflow-hidden mb-8">
-                 <View className="h-full bg-blue-600 w-[65%]" />
-              </View>
-
-              <View className="flex-row justify-between items-center">
-                 <Text className="text-slate-400 text-sm font-bold">Active Now</Text>
-                 <Text className="text-slate-900 text-2xl font-black">{Math.ceil((students.length + staff.length) * 0.18)}</Text>
-              </View>
-           </View>
-
-           {/* Search and Add */}
-           <View className="flex-row gap-4 mb-8">
-              <View className="flex-1 bg-white h-16 rounded-[24px] border border-slate-50 shadow-sm flex-row items-center px-5">
-                 <Search size={20} color={COLORS.slate300} />
-                 <TextInput 
-                   placeholder="Search by name, email..."
-                   className="flex-1 ml-3 font-bold text-slate-900"
-                   placeholderTextColor={COLORS.slate300}
-                   value={searchQuery}
-                   onChangeText={setSearchQuery}
-                 />
-              </View>
-              <TouchableOpacity className="w-16 h-16 bg-blue-600 rounded-[24px] items-center justify-center shadow-lg shadow-blue-600/30">
-                 <Plus size={28} color="white" />
-              </TouchableOpacity>
-           </View>
-
-           {/* User List */}
-           <View>
-              {isLoading ? (
-                <View className="gap-4">
-                  <Skeleton height={80} className="rounded-[32px]" />
-                  <Skeleton height={80} className="rounded-[32px]" />
-                  <Skeleton height={80} className="rounded-[32px]" />
+           <View className="px-8 mb-10">
+              <View className="bg-white rounded-[44px] p-8 border border-slate-50 shadow-sm">
+                <Text className="text-slate-900 text-base font-black mb-8">Ecosystem Health</Text>
+                
+                <View className="flex-row gap-4">
+                    <View className="flex-1 bg-blue-50/50 p-6 rounded-[32px] border border-blue-50">
+                      <Text className="text-blue-600/60 text-[10px] font-black uppercase tracking-widest mb-2">Total Students</Text>
+                      <Text className="text-blue-600 text-3xl font-black">{students.length.toLocaleString()}</Text>
+                    </View>
+                    <View className="flex-1 bg-slate-50 p-6 rounded-[32px] border border-slate-50">
+                      <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">Total Staff</Text>
+                      <Text className="text-slate-900 text-3xl font-black">{staff.length.toLocaleString()}</Text>
+                    </View>
                 </View>
-              ) : filteredUsers.length === 0 ? (
-                <Text className="text-center text-slate-400 font-bold py-10">No users found</Text>
-              ) : (
-                filteredUsers.map((user, idx) => (
-                  <UserCard key={idx} user={user} />
-                ))
-              )}
+
+                <View className="mt-8 flex-row items-center justify-between px-2">
+                    <View className="flex-row items-center">
+                      <View className="w-2 h-2 rounded-full bg-emerald-500 mr-2" />
+                      <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Active Now</Text>
+                    </View>
+                    <Text className="text-slate-900 font-black text-sm">{Math.ceil((students.length + staff.length) * 0.18)}</Text>
+                </View>
+              </View>
            </View>
+
+            {/* Quick Filters */}
+            <View className="px-8 mb-6">
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+                 {['All Members', 'Recently Joined', 'Premium', 'Pending Verify'].map((filter) => (
+                   <TouchableOpacity 
+                     key={filter}
+                     className="mr-3 px-6 py-4 bg-white rounded-2xl border border-slate-50 shadow-sm"
+                   >
+                      <Text className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{filter}</Text>
+                   </TouchableOpacity>
+                 ))}
+              </ScrollView>
+            </View>
+
+            {/* Search and Add */}
+            <View className="px-8 flex-row gap-4 mb-8">
+               <View className="flex-1 bg-white h-16 rounded-[24px] border border-slate-50 shadow-sm flex-row items-center px-5">
+                  <Search size={20} color={COLORS.slate300} />
+                  <TextInput 
+                    placeholder="Search by name, email..."
+                    className="flex-1 ml-3 font-bold text-slate-900"
+                    placeholderTextColor={COLORS.slate300}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                  />
+               </View>
+               <TouchableOpacity className="w-16 h-16 bg-blue-600 rounded-[24px] items-center justify-center shadow-lg shadow-blue-600/30">
+                  <Plus size={28} color="white" />
+               </TouchableOpacity>
+            </View>
+
+            {/* User List */}
+            <View className="px-8">
+               {!isLoading && filteredUsers.length > 0 && (
+                 <View className="flex-row items-center justify-between mb-6 px-2">
+                    <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                       Showing {filteredUsers.length} {activeTab.toLowerCase()}
+                    </Text>
+                    <TouchableOpacity>
+                       <Text className="text-blue-600 text-[10px] font-black uppercase tracking-widest">Sort by Date</Text>
+                    </TouchableOpacity>
+                 </View>
+               )}
+               {isLoading ? (
+                 <View className="gap-4">
+                   <Skeleton height={80} className="rounded-[32px]" />
+                   <Skeleton height={80} className="rounded-[32px]" />
+                   <Skeleton height={80} className="rounded-[32px]" />
+                 </View>
+               ) : filteredUsers.length === 0 ? (
+                 <Text className="text-center text-slate-400 font-bold py-10">No users found</Text>
+               ) : (
+                 filteredUsers.map((user, idx) => (
+                   <UserCard key={idx} user={user} />
+                 ))
+               )}
+            </View>
       </ScrollView>
 
       {/* User Actions Modal */}
@@ -332,6 +363,22 @@ export default function AdminStaffScreen() {
                     <View>
                        <Text className="text-slate-900 font-black text-base">Deactivate Account</Text>
                        <Text className="text-slate-400 text-xs font-bold">Temporarily disable access</Text>
+                    </View>
+                 </TouchableOpacity>
+
+                 <TouchableOpacity 
+                   onPress={() => {
+                     setMenuVisible(false);
+                     navigation.navigate('AdminSendNotification', { targetUser: selectedUser.id || selectedUser._id, targetRole: 'user' });
+                   }}
+                   className="bg-purple-50 p-6 rounded-[28px] flex-row items-center border border-purple-100"
+                 >
+                    <View className="w-12 h-12 bg-white rounded-2xl items-center justify-center mr-4">
+                       <Bell size={20} color="#7C3AED" />
+                    </View>
+                    <View>
+                       <Text className="text-purple-900 font-black text-base">Send Notification</Text>
+                       <Text className="text-purple-600/60 text-xs font-bold">Dispatch a direct platform alert</Text>
                     </View>
                  </TouchableOpacity>
 
