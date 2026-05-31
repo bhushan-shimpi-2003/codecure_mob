@@ -10,7 +10,8 @@ import {
   useWindowDimensions,
   ActivityIndicator,
   Linking,
-  Alert
+  Alert,
+  InteractionManager
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../../context/AuthContext";
@@ -47,6 +48,7 @@ import Svg, { Circle } from "react-native-svg";
 import { extractApiData, isApiSuccess } from "../../api/response";
 import { calculateProgress, getProgressString } from "../../utils/progress";
 import { AppHeader } from "../../components/AppHeader";
+import { createRequestCache } from "../../utils/requestCache";
 
 const ProgressRing = ({ progress = 0, size = 60, strokeWidth = 5 }: { progress?: number; size?: number; strokeWidth?: number }) => {
   const radius = (size - strokeWidth) / 2;
@@ -84,6 +86,23 @@ const ProgressRing = ({ progress = 0, size = 60, strokeWidth = 5 }: { progress?:
   );
 };
 
+const dashboardRequestCache = createRequestCache();
+const DASHBOARD_CACHE_TTL = 30 * 1000;
+const COURSES_CACHE_TTL = 5 * 60 * 1000;
+const JOBS_CACHE_TTL = 2 * 60 * 1000;
+const LESSONS_COUNT_CACHE_TTL = 5 * 60 * 1000;
+
+const getCourseId = (item: any) => String(item?.courses?.id || item?.course?.id || item?.course_id || "");
+
+const pickRecommended = (courses: any[], limit: number) => {
+  const copy = [...courses];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, limit);
+};
+
 export default function DashboardScreen({ navigation }: any) {
   const { user, isAuthenticated } = useAuth();
   const { width } = useWindowDimensions();
@@ -96,49 +115,61 @@ export default function DashboardScreen({ navigation }: any) {
   const [recommendedCourses, setRecommendedCourses] = useState<any[]>([]);
   const [pendingAssignments, setPendingAssignments] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
+  const [isSecondaryLoading, setIsSecondaryLoading] = useState(false);
   
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (forceRefresh = false) => {
     if (!isAuthenticated) return;
+    const useCache = !forceRefresh;
+    let enrolledIds = new Set<string>();
 
     try {
       const results = await Promise.allSettled([
-        enrollmentsApi.myEnrollments(),
-        interviewsApi.myInterviews(),
-        doubtsApi.myDoubts(),
-        assignmentsApi.myAssignments(),
-        coursesApi.list(),
-        jobsApi.list()
+        useCache
+          ? dashboardRequestCache.getOrFetch("dashboard:enrollments", DASHBOARD_CACHE_TTL, () => enrollmentsApi.myEnrollments())
+          : enrollmentsApi.myEnrollments(),
+        useCache
+          ? dashboardRequestCache.getOrFetch("dashboard:interviews", DASHBOARD_CACHE_TTL, () => interviewsApi.myInterviews())
+          : interviewsApi.myInterviews(),
+        useCache
+          ? dashboardRequestCache.getOrFetch("dashboard:doubts", DASHBOARD_CACHE_TTL, () => doubtsApi.myDoubts())
+          : doubtsApi.myDoubts(),
+        useCache
+          ? dashboardRequestCache.getOrFetch("dashboard:assignments", DASHBOARD_CACHE_TTL, () => assignmentsApi.myAssignments())
+          : assignmentsApi.myAssignments(),
       ]);
 
-      const [enrRes, intRes, dbtRes, asgRes, crsRes, jobRes] = results;
+      const [enrRes, intRes, dbtRes, asgRes] = results;
 
         // 1. Enrollments & Last Attended
         if (enrRes.status === "fulfilled" && isApiSuccess(enrRes.value.data)) {
           const data = extractApiData<any[]>(enrRes.value.data, []);
-          
-          const enrichedEnr = await Promise.all(data.map(async (enr) => {
-            const courseId = enr.courses?.id || enr.course?.id || enr.course_id;
-            let lessonCount = 0;
-            if (courseId) {
-              try {
-                const lessonsRes = await lessonsApi.byCourse(courseId);
-                if (isApiSuccess(lessonsRes.data)) {
-                  const lessonsData = extractApiData<any[]>(lessonsRes.data, []);
-                  lessonCount = lessonsData.length;
-                }
-              } catch (e) {}
-            }
-            
-            const tempEnr = { ...enr, lesson_count: lessonCount };
+
+          const uniqueCourseIds = Array.from(new Set(data.map(getCourseId).filter(Boolean)));
+          const lessonCounts = new Map<string, number>();
+          await Promise.all(uniqueCourseIds.map(async (courseId) => {
+            try {
+              const lessonsRes = useCache
+                ? await dashboardRequestCache.getOrFetch(`dashboard:lessons:${courseId}`, LESSONS_COUNT_CACHE_TTL, () => lessonsApi.byCourse(courseId))
+                : await lessonsApi.byCourse(courseId);
+              if (isApiSuccess(lessonsRes.data)) {
+                const lessonsData = extractApiData<any[]>(lessonsRes.data, []);
+                lessonCounts.set(courseId, lessonsData.length);
+              }
+            } catch {}
+          }));
+
+          const enrichedEnr = data.map((enr) => {
+            const courseId = getCourseId(enr);
+            const tempEnr = { ...enr, lesson_count: lessonCounts.get(courseId) || 0 };
             return {
               ...tempEnr,
               percent: calculateProgress(tempEnr),
               displayStr: getProgressString(tempEnr)
             };
-          }));
+          });
 
           const sorted = [...enrichedEnr].sort((a, b) => {
             const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
@@ -148,6 +179,8 @@ export default function DashboardScreen({ navigation }: any) {
 
           setEnrollments(sorted);
           setLastAttended(sorted[0] || null);
+
+          enrolledIds = new Set(sorted.map((e) => getCourseId(e)).filter(Boolean));
         }
 
       // 2. Upcoming Events
@@ -155,15 +188,6 @@ export default function DashboardScreen({ navigation }: any) {
         const interviews = extractApiData<any[]>(intRes.value.data, []);
         const futureEvs = interviews.filter(i => String(i.status).toLowerCase() !== "completed");
         setUpcomingEvent(futureEvs[0] || null);
-      }
-
-      // 3. Recommended Courses
-      if (crsRes.status === "fulfilled" && isApiSuccess(crsRes.value.data)) {
-        const allCourses = extractApiData<any[]>(crsRes.value.data, []);
-        const enrolledIds = new Set(enrollments.map(e => e.course_id));
-        const available = allCourses.filter(c => !enrolledIds.has(c.id || c._id));
-        const shuffled = [...available].sort(() => 0.5 - Math.random());
-        setRecommendedCourses(shuffled.slice(0, 3));
       }
 
       // 4. Combined Activities
@@ -194,12 +218,6 @@ export default function DashboardScreen({ navigation }: any) {
         }));
       }
 
-      // 5. Jobs
-      if (jobRes.status === "fulfilled" && isApiSuccess(jobRes.value.data)) {
-        const jobsData = extractApiData<any[]>(jobRes.value.data, []);
-        setJobs(jobsData.slice(0, 3));
-      }
-
       combined.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setActivities(combined.slice(0, 4));
 
@@ -209,17 +227,44 @@ export default function DashboardScreen({ navigation }: any) {
       setIsLoading(false);
       setRefreshing(false);
     }
+
+    setIsSecondaryLoading(true);
+    InteractionManager.runAfterInteractions(async () => {
+      try {
+        const [crsRes, jobRes] = await Promise.allSettled([
+          useCache
+            ? dashboardRequestCache.getOrFetch("dashboard:courses", COURSES_CACHE_TTL, () => coursesApi.list())
+            : coursesApi.list(),
+          useCache
+            ? dashboardRequestCache.getOrFetch("dashboard:jobs", JOBS_CACHE_TTL, () => jobsApi.list())
+            : jobsApi.list()
+        ]);
+
+        if (crsRes.status === "fulfilled" && isApiSuccess(crsRes.value.data)) {
+          const allCourses = extractApiData<any[]>(crsRes.value.data, []);
+          const available = allCourses.filter(c => !enrolledIds.has(String(c.id || c._id || "")));
+          setRecommendedCourses(pickRecommended(available, 3));
+        }
+
+        if (jobRes.status === "fulfilled" && isApiSuccess(jobRes.value.data)) {
+          const jobsData = extractApiData<any[]>(jobRes.value.data, []);
+          setJobs(jobsData.slice(0, 3));
+        }
+      } finally {
+        setIsSecondaryLoading(false);
+      }
+    });
   };
 
   useFocusEffect(
     useCallback(() => {
-      fetchDashboardData();
+      fetchDashboardData(false);
     }, [])
   );
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchDashboardData();
+    fetchDashboardData(true);
   };
 
   const handlePlayLesson = (enr: any) => {
@@ -596,6 +641,12 @@ export default function DashboardScreen({ navigation }: any) {
                    </View>
                 </TouchableOpacity>
               ))}
+            </View>
+          )}
+
+          {isSecondaryLoading && (
+            <View className="items-center py-6">
+              <ActivityIndicator size="small" color="#2563EB" />
             </View>
           )}
 
