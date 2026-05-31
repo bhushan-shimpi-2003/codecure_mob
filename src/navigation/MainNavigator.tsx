@@ -26,7 +26,7 @@ function DashboardStack() {
       screenOptions={{ 
         headerShown: false,
         animation: 'slide_from_right',
-        animationDuration: 400
+        animationDuration: 220
       }}
     >
       <Stack.Screen name="DashboardHome" component={DashboardScreen} />
@@ -45,7 +45,7 @@ function MyCoursesStack() {
       screenOptions={{ 
         headerShown: false,
         animation: 'slide_from_right',
-        animationDuration: 400
+        animationDuration: 220
       }}
     >
       <Stack.Screen name="MyCoursesHome" component={CoursesScreen} />
@@ -61,7 +61,7 @@ function ExploreStack() {
       screenOptions={{ 
         headerShown: false,
         animation: 'slide_from_right',
-        animationDuration: 400
+        animationDuration: 220
       }}
     >
       <Stack.Screen name="ExploreHome" component={ExploreCoursesScreen} />

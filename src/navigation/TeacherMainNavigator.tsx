@@ -40,7 +40,7 @@ function TeacherDashboardStack() {
       screenOptions={{ 
         headerShown: false,
         animation: 'slide_from_right',
-        animationDuration: 400
+        animationDuration: 220
       }}
     >
       <Stack.Screen name="TeacherDashboardHome" component={TeacherDashboardScreen} />
@@ -59,7 +59,7 @@ function TeacherCoursesStack() {
       screenOptions={{ 
         headerShown: false,
         animation: 'slide_from_right',
-        animationDuration: 400
+        animationDuration: 220
       }}
     >
       <Stack.Screen name="TeacherCoursesHome" component={TeacherCoursesScreen} />
@@ -80,7 +80,7 @@ function TeacherAssignmentsStack() {
       screenOptions={{ 
         headerShown: false,
         animation: 'slide_from_right',
-        animationDuration: 400
+        animationDuration: 220
       }}
     >
       <Stack.Screen name="TeacherAssignmentsHome" component={TeacherAssignmentsScreen} />
@@ -96,7 +96,7 @@ function TeacherCareerStack() {
       screenOptions={{ 
         headerShown: false,
         animation: 'slide_from_right',
-        animationDuration: 400
+        animationDuration: 220
       }}
     >
       <Stack.Screen name="TeacherInterviewsHome" component={TeacherInterviewsScreen} />
